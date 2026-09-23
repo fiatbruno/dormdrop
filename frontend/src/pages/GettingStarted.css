@@ -1,0 +1,26 @@
+#header {
+  text-align: center;
+  place-content: center;
+  place-items: center;
+  margin-top: 15px;
+}
+
+#getting-started {
+  text-align: left;
+  margin:10px;
+}
+
+#documentation {
+  text-align: left;
+  margin: 10px;
+}
+
+.failure {
+  color: #ba1833;
+  font-weight: bold;
+}
+
+.success {
+  color: #007a0c;
+  font-weight: bold;
+}
