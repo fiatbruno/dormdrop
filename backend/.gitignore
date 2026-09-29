@@ -31,3 +31,19 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Secrets
+.env
+.env.*
+application-local.properties
+
+# IntelliJ
+.idea/
+
+# Node
+node_modules/
+dist/
+.next/
+
+# Mac
+.DS_Store
