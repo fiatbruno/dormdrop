@@ -46,7 +46,7 @@ function Login() {
       // ***  Instead of alert(...), redirect to authenticated home
       // ***  screen (or wherever you want to go after login) here.
       // ***
-      alert('Login successful!');
+      alert('Login successful! Redirecting to Dormdrop...');
     } catch (err) {
       // On failure, set an error message.
       setError('Invalid email or password.');
