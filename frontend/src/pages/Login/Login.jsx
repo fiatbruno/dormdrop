@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import api from "../../api/backendApi.js";
 import "./Login.css";
-import Button from "../../components/button.jsx";
-import AuthLeftPanel from "../../components/AuthLeftPanel.jsx";
-import Footer from "../../components/Footer.jsx";
+import Button from "../../components/Button/Button.jsx";
+import AuthLeftPanel from "../../components/AuthLeftPanel/AuthLeftPanel.jsx";
+import Footer from "../../components/Footer/Footer.jsx";
 import { useNavigate, Link } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema } from "../../schemas/authSchemas.js";
+import logo from "../../assets/Logo.png";
 
 /*
  * A simple login page to help you get started with authenticating
@@ -63,7 +64,7 @@ function Login() {
     <div id="loginPage">
       <header className="loginHeader">
         <div className="headerLeft">
-          <img className="logo" src="src/assets/Logo.png" alt="DormDrop Logo" />
+          <img className="logo" src={logo} alt="DormDrop Logo" />
         </div>
 
         <div className="headerRight">
@@ -150,6 +151,7 @@ function Login() {
           </div>
 
           <div className="campusInfoBox">
+            <ShieldCheck className="campusInfoIcon" />
             <div className="campusInfoText">
               <h3>Made for your campus</h3>
               <p>A verified .edu email is required to use DormDrop.</p>
