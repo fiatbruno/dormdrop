@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import api from "../../api/backendApi.js";
 import "./Login.css";
 import Button from "../../components/button.jsx";
-import { useNavigate, Link } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import AuthLeftPanel from "../../components/AuthLeftPanel.jsx";
 import Footer from "../../components/Footer.jsx";
+import { useNavigate, Link } from "react-router-dom";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { loginSchema } from "../../schemas/authSchemas.js";
 
 /*
  * A simple login page to help you get started with authenticating
@@ -32,8 +34,9 @@ function Login() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
-  } = useForm();
+    formState: { errors, isSubmitting },
+  } = useForm({ resolver: zodResolver(loginSchema), mode: "onBlur" });
+
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -44,16 +47,11 @@ function Login() {
   // This is a function that gets called when the login button is clicked.
   const onSubmit = async (data) => {
     try {
-      // Call the login endpoint. On success, store the authorization
-      // token.
+      // Make a POST request to the backend with the user's credentials.
       const response = await api.post("auth/login", data);
       localStorage.setItem("token", response.data.token);
-
-      // ***
-      // ***  Instead of alert(...), redirect to authenticated home
-      // ***  screen (or wherever you want to go after login) here.
-      // ***
       navigate("/home");
+
     } catch (err) {
       // On failure, set an error message.
       setError("Invalid email or password.");
@@ -65,7 +63,7 @@ function Login() {
     <div id="loginPage">
       <header className="loginHeader">
         <div className="headerLeft">
-          <img className="logo" src="src/assets/Logo.png" alt="Dormdrop logo" />
+          <img className="logo" src="src/assets/Logo.png" alt="DormDrop Logo" />
         </div>
 
         <div className="headerRight">
@@ -92,13 +90,7 @@ function Login() {
                   type="text"
                   id="email"
                   placeholder="Joe@augustana.edu"
-                  {...register("email", {
-                    required: "Campus email is required",
-                    pattern: {
-                       value: /^[^\s@]+@augustana\.edu$/i,
-                      message: "Please use your school .edu email",
-                    },
-                  })}
+                  {...register("email")}
                   className="credentialField"
                 />
               </div>
@@ -123,9 +115,7 @@ function Login() {
                   id="password"
                   name="password"
                   placeholder="•••••••••••"
-                  {...register("password", {
-                    required: "Password is required",
-                  })}
+                  {...register("password")}
                   className="credentialField"
                 />
                 {showPassword ? (
@@ -149,8 +139,8 @@ function Login() {
               </div>
             </div>
             {error && <p className="error">{error}</p>}
-            <button type="submit" className="submit">
-              Log In
+            <button type="submit" className="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Logging in..." : "Log In"}
             </button>
           </form>
           <div className="createAccount">

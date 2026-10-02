@@ -1,5 +1,6 @@
 #loginPage {
   min-height: 100vh;
+  font-family: "Inter", sans-serif;
 }
 
 /* Header */
@@ -8,6 +9,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
+  box-sizing: border-box;
   padding: 15px 40px;
 }
 
@@ -26,10 +29,26 @@
 }
 
 /* Main Section */
+
+@media (max-width: 1000px) {
+  .loginMain {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .loginRight {
+    width: min(100% - 32px, 420px);
+  }
+
+  .loginHeader {
+    padding: 15px 24px;
+  }
+}
+
 .loginMain {
   display: grid;
-  grid-template-columns: 50% 50%;
+  grid-template-columns: minmax(0, 1fr) minmax(450px, 1fr);
   min-height: 650px;
+  width: 100%;
 }
 
 /* Login Form */
@@ -55,7 +74,6 @@
 .loginRight .error {
   color: red;
   text-align: center;
-  
 }
 
 .createAccount a {
@@ -64,12 +82,9 @@
 }
 
 .loginRight {
-  width: 100%;
-  max-width: 450px;
-
-  margin: 0 auto;
-  padding: 40px;
-
+  width: min(100% - 48px, 450px);
+  margin: auto;
+  padding: 40px 0;
   box-sizing: border-box;
 }
 
@@ -77,7 +92,7 @@
   font-size: 45px;
   font-weight: bold;
   margin-bottom: 20px;
-  line-height: 28px;
+  line-height: 1.1;
   font-family:
     Bricolage Grotesque,
     sans-serif;
@@ -133,7 +148,6 @@
   height: 18px;
   flex-shrink: 0;
 }
-
 
 .input label {
   font-size: 15px;
@@ -211,7 +225,6 @@
   font-weight: 500;
 }
 
-
 .campusInfoBox {
   display: flex;
   align-items: flex-start;
@@ -243,7 +256,7 @@
 
 .campusInfoText h3 {
   margin: 0 0 5px 0;
-  color: #0B2255;
+  color: #0b2255;
   font-size: 15px;
   text-align: left;
 }
@@ -251,7 +264,7 @@
 .loginRight .campusInfoText p {
   margin: 0;
   padding: 0;
-  color: #596B82;
+  color: #596b82;
   font-size: 14px;
   line-height: 22px;
   text-align: left;
