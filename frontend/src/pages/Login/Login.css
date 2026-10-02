@@ -1,0 +1,270 @@
+#loginPage {
+  min-height: 100vh;
+}
+
+/* Header */
+
+.loginHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 40px;
+}
+
+.signupButton {
+  background-color: white;
+  color: #29497a;
+
+  border: 1.5px solid #d5dce8;
+  border-radius: 6px;
+
+  padding: 8px 28px;
+
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Main Section */
+.loginMain {
+  display: grid;
+  grid-template-columns: 50% 50%;
+  min-height: 650px;
+}
+
+/* Login Form */
+
+.input {
+  margin-bottom: 18px;
+}
+
+.input label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.credentialField {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.submit {
+  width: 100%;
+  cursor: pointer;
+}
+.loginRight .error {
+  color: red;
+  text-align: center;
+  
+}
+
+.createAccount a {
+  text-decoration: none;
+  color: rgb(50, 50, 152);
+}
+
+.loginRight {
+  width: 100%;
+  max-width: 450px;
+
+  margin: 0 auto;
+  padding: 40px;
+
+  box-sizing: border-box;
+}
+
+.loginRight h1 {
+  font-size: 45px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  line-height: 28px;
+  font-family:
+    Bricolage Grotesque,
+    sans-serif;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.loginRight p {
+  font-size: 17px;
+  line-height: 24px;
+  margin-bottom: 20px;
+  font-family: inter, sans-serif;
+  text-align: left;
+  color: #596b82;
+}
+
+.inputField {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  width: 100%;
+  padding: 12px 14px;
+
+  border: 1px solid #d5dce8;
+  border-radius: 6px;
+
+  box-sizing: border-box;
+}
+
+.credentialField {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #29497a;
+  font-size: 14px;
+}
+
+.inputField.inputError {
+  border-color: #d32f2f;
+}
+
+.loginRight .fieldError {
+  color: #d32f2f;
+  font-size: 13px;
+  margin: 4px 0 0;
+  text-align: left;
+}
+
+.inputicon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+
+.input label {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  display: block;
+  text-align: left;
+  color: #0b2255;
+}
+.error {
+  color: #d32f2f;
+  font-size: 14px;
+  margin: 8px 0;
+  text-align: left;
+}
+
+.loginRight .inputHelp {
+  font-size: 14px;
+  color: #596b82;
+  margin-top: 4px;
+  text-align: left;
+}
+
+.inputField label {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  display: block;
+  text-align: left;
+  color: #0b2255;
+}
+
+.forgotPassword {
+  text-align: right;
+  margin-top: 10px;
+}
+
+.forgotPassword a {
+  text-decoration: none;
+  color: #29497a;
+  font-size: 14px;
+}
+
+.submit {
+  width: 100%;
+  padding: 14px;
+
+  background-color: #134074;
+  color: white;
+
+  border: none;
+  border-radius: 8px;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.createAccount {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.createAccount p {
+  margin: 0;
+  color: #718096;
+  font-size: 14px;
+  text-align: center;
+}
+
+.createAccount a {
+  color: #29497a;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+
+.campusInfoBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  width: 100%;
+  box-sizing: border-box;
+
+  margin-top: 25px;
+  padding: 16px;
+
+  background-color: #eef4fa;
+  border-radius: 8px;
+}
+
+.campusInfoIcon {
+  width: 20px;
+  height: 20px;
+  color: #29497a;
+  flex-shrink: 0;
+}
+
+.campusInfoText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.campusInfoText h3 {
+  margin: 0 0 5px 0;
+  color: #0B2255;
+  font-size: 15px;
+  text-align: left;
+}
+
+.loginRight .campusInfoText p {
+  margin: 0;
+  padding: 0;
+  color: #596B82;
+  font-size: 14px;
+  line-height: 22px;
+  text-align: left;
+  width: 100%;
+}
+
+/* Autofill Styles  for not diplaying bad styles */
+.credentialField:-webkit-autofill,
+.credentialField:-webkit-autofill:hover,
+.credentialField:-webkit-autofill:focus,
+.credentialField:-webkit-autofill:active {
+  -webkit-text-fill-color: #29497a;
+  -webkit-box-shadow: 0 0 0 1000px white inset;
+  box-shadow: 0 0 0 1000px white inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
