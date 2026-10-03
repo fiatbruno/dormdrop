@@ -17,7 +17,6 @@ import "./Signup.css";
 
 export default function Signup() {
   const [serverError, setServerError] = useState("");
-  const [success, setSuccess] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -37,13 +36,18 @@ export default function Signup() {
     setServerError("");
 
     try {
+       
       await registerUser({
         displayName: data.displayName,
         email: data.email,
         password: data.password,
       });
+      
 
-      setSuccess(true);
+      navigate("/verify-email", {
+        state: { email: data.email },
+      });
+
     } catch (error) {
       setServerError(
         error.response?.data?.detail ||
@@ -54,19 +58,6 @@ export default function Signup() {
     }
   }
 
-  if (success) {
-    return (
-      <div className="signupSuccess">
-        <h1>Account created</h1>
-
-        <p>
-          Your account is ready. You can now log in to DormDrop.
-        </p>
-
-        <Link to="/login">Back to login</Link>
-      </div>
-    );
-  }
 
   return (
     <div id="signupPage">

@@ -1,0 +1,219 @@
+
+
+.verifyHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.backMarketplace {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  border: none;
+  background: transparent;
+
+  color: #29497a;
+
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+
+  cursor: pointer;
+}
+
+
+
+.verifyEmailContainer {
+  width: 100%;
+}
+
+
+
+
+.verifyEmailIcon {
+  width: 58px;
+  height: 58px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  margin-bottom: 24px;
+
+  background-color: #eef4fa;
+  color: #134074;
+
+  border-radius: 16px;
+}
+
+
+
+
+.verifyEmailTitle {
+  margin: 0 0 12px;
+
+  color: #0b2255;
+
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1.05;
+
+  text-align: left;
+}
+
+
+
+
+.verifySubtitle {
+  margin: 0 0 24px;
+
+  color: #596b82;
+
+  font-family: "Inter", sans-serif;
+  font-size: 15px;
+  line-height: 22px;
+
+  text-align: left;
+}
+
+
+
+
+.verificationEmailBox {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 22px;
+
+  margin-bottom: 24px;
+
+  background-color: #f7f6f4;
+
+  border-radius: 12px;
+}
+
+.verificationLabel {
+  margin: 0 0 10px;
+
+  color: #718096;
+
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+
+  text-align: left;
+}
+
+.verificationAddress {
+  margin: 0;
+
+  color: #0b2255;
+
+  font-family: "Inter", sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+
+  text-align: left;
+}
+
+
+
+
+.verificationInstructions {
+  margin: 0 0 24px;
+
+  color: #596b82;
+
+  font-family: "Inter", sans-serif;
+  font-size: 15px;
+  line-height: 22px;
+
+  text-align: left;
+}
+
+
+.resendVerificationButton {
+  width: 100%;
+
+  padding: 14px;
+
+  border: none;
+  border-radius: 8px;
+
+  background-color: #134074;
+  color: white;
+
+  font-family: "Inter", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  margin-bottom: 10px;
+}
+
+.resendVerificationButton:hover {
+  background-color: #0b315e;
+}
+
+
+
+.verifyTextButton {
+  display: block;
+
+  margin: 10px auto;
+
+  padding: 4px;
+
+  border: none;
+  background: transparent;
+
+  color: #134074;
+
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.verifyTextButton:hover {
+  text-decoration: underline;
+}
+
+.resendSuccess {
+  margin: 8px 0;
+  color: #2e7d32;
+  font-size: 13px;
+  text-align: center;
+}
+
+.resendError {
+  margin: 8px 0;
+  color: #d32f2f;
+  font-size: 13px;
+  text-align: center;
+}
+
+.resendVerificationButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+
+
+
+@media (max-width: 800px) {
+  .verifyHeaderRight {
+    gap: 12px;
+  }
+
+  .backMarketplace {
+    display: none;
+  }
+
+  .verifyEmailTitle {
+    font-size: 34px;
+  }
+}
