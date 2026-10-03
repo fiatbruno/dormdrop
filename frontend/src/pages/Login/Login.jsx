@@ -49,8 +49,10 @@ function Login() {
   const onSubmit = async (data) => {
     try {
       // Make a POST request to the backend with the user's credentials.
-      const response = await loginUser(data);
-      localStorage.setItem("token", response.data.token);
+
+    const response = await loginUser(data);
+    localStorage.setItem("token", response.data.token);
+
       navigate("/home");
 
     } catch (err) {
