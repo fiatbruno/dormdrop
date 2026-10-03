@@ -1,4 +1,5 @@
 import { ShieldCheck } from "lucide-react";
+import marketplaceImage from "../../assets/marketplace.png";
 import "./AuthLeftPanel.css";
 
 function AuthLeftPanel() {
@@ -17,13 +18,12 @@ function AuthLeftPanel() {
 
       <p className="authDescription">
         Buy, sell, donate, and swap with students, faculty, and
-        <br />
         staff nearby.
       </p>
 
       <img
         className="marketplaceImage"
-        src="src/assets/marketplace.png"
+        src={marketplaceImage}
         alt="Items available for sale on DormDrop"
       />
 
@@ -32,7 +32,6 @@ function AuthLeftPanel() {
 
         <p>
           Every account starts with a .edu address.
-          <br />
           Meet nearby and keep good finds on campus.
         </p>
       </div>

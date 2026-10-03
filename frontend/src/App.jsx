@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
-import GettingStarted from "./pages/GettingStarted";
 import Login from "./pages/Login/Login";
+import Signup from "./pages/Signup/Signup";
 import NotFound from "./pages/NotFound";
 
 /*
@@ -21,13 +21,15 @@ const router = createBrowserRouter([
     path: "/login",
     element: <Login />,
   },
- 
+  {
+    path: "/signup",
+    element: <Signup />,
+  },
+
   {
     path: "*",
     element: <NotFound />,
   },
-  
-
 ]);
 
 function App() {
