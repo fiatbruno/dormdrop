@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import api from "../../api/backendApi.js";
 import "./Login.css";
 import Button from "../../components/Button/Button.jsx";
 import AuthLeftPanel from "../../components/AuthLeftPanel/AuthLeftPanel.jsx";
@@ -10,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema } from "../../schemas/authSchemas.js";
 import logo from "../../assets/Logo.png";
+import { loginUser } from "../../api/backendApi.js";
 
 /*
  * A simple login page to help you get started with authenticating
@@ -49,7 +49,7 @@ function Login() {
   const onSubmit = async (data) => {
     try {
       // Make a POST request to the backend with the user's credentials.
-      const response = await api.post("auth/login", data);
+      const response = await loginUser(data);
       localStorage.setItem("token", response.data.token);
       navigate("/home");
 

@@ -1,13 +1,28 @@
 import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
-import { signupSchema } from "../schemas/signupSchema";
-import { registerUser } from "../services/authApi";
+import { signupSchema } from "../../schemas/authSchemas";
+import { registerUser } from "../../api/backendApi";
 
-export default function SignUpPage() {
+import AuthLeftPanel from "../../components/AuthLeftPanel/AuthLeftPanel";
+import Footer from "../../components/Footer/Footer";
+import Button from "../../components/Button/Button";
+
+import logo from "../../assets/Logo.png";
+
+import "./Signup.css";
+
+export default function Signup() {
   const [serverError, setServerError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const navigate = useNavigate();
 
   const {
     register,
@@ -30,78 +45,196 @@ export default function SignUpPage() {
 
       setSuccess(true);
     } catch (error) {
-      setServerError(error.message || "Something went wrong");
+      setServerError(
+        error.response?.data?.detail ||
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong",
+      );
     }
   }
 
   if (success) {
     return (
-      <div>
-        <h1>Check your email</h1>
+      <div className="signupSuccess">
+        <h1>Account created</h1>
+
         <p>
-          We sent you a verification link to activate your DormDrop account.
+          Your account is ready. You can now log in to DormDrop.
         </p>
+
+        <Link to="/login">Back to login</Link>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate>
-      <div>
-        <label htmlFor="displayName">Display name</label>
+    <div id="signupPage">
+      {/* HEADER */}
+      <header className="signupHeader">
+        <img className="logo" src={logo} alt="DormDrop Logo" />
 
-        <input
-          id="displayName"
-          type="text"
-          placeholder="Alex Morgan"
-          {...register("displayName")}
-        />
+        <Button className="loginButton" onClick={() => navigate("/login")}>
+          Log In
+        </Button>
+      </header>
 
-        {errors.displayName && <p>{errors.displayName.message}</p>}
-      </div>
+      {/* MAIN */}
+      <main className="signupMain">
+        <AuthLeftPanel />
 
-      <div>
-        <label htmlFor="email">Campus email (.edu)</label>
+        <div className="signupRight">
+          <h1 className="signupTitle">Create your account</h1>
 
-        <input
-          id="email"
-          type="email"
-          placeholder="you@college.edu"
-          {...register("email")}
-        />
+          <p className="signupSubtitle">
+            Join your verified campus marketplace.
+          </p>
 
-        <small>We'll send a link to verify this email.</small>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
+            {/* DISPLAY NAME */}
+            <div className="input">
+              <label htmlFor="displayName">Display name</label>
 
-        {errors.email && <p>{errors.email.message}</p>}
-      </div>
+              <div
+                className={`inputField ${
+                  errors.displayName ? "inputError" : ""
+                }`}
+              >
+                <User className="inputicon" />
 
-      <div>
-        <label htmlFor="password">Password</label>
+                <input
+                  id="displayName"
+                  type="text"
+                  placeholder="Alex Morgan"
+                  {...register("displayName")}
+                  className="credentialField"
+                />
+              </div>
 
-        <input id="password" type="password" {...register("password")} />
+              {errors.displayName && (
+                <p className="fieldError">{errors.displayName.message}</p>
+              )}
+            </div>
 
-        <small>Use at least 12 characters.</small>
+            {/* EMAIL */}
+            <div className="input">
+              <label htmlFor="email">Campus Email (.edu)</label>
 
-        {errors.password && <p>{errors.password.message}</p>}
-      </div>
+              <div className={`inputField ${errors.email ? "inputError" : ""}`}>
+                <Mail className="inputicon" />
 
-      <div>
-        <label htmlFor="confirmPassword">Confirm password</label>
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="you@college.edu"
+                  {...register("email")}
+                  className="credentialField"
+                />
+              </div>
 
-        <input
-          id="confirmPassword"
-          type="password"
-          {...register("confirmPassword")}
-        />
+              {errors.email && (
+                <p className="fieldError">{errors.email.message}</p>
+              )}
 
-        {errors.confirmPassword && <p>{errors.confirmPassword.message}</p>}
-      </div>
+              <p className="inputHelp">
+                Use your school-issued .edu email address.
+              </p>
+            </div>
 
-      {serverError && <p role="alert">{serverError}</p>}
+            {/* PASSWORD */}
+            <div className="input">
+              <label htmlFor="password">Password</label>
 
-      <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Creating account..." : "Create account"}
-      </button>
-    </form>
+              <div
+                className={`inputField ${errors.password ? "inputError" : ""}`}
+              >
+                <Lock className="inputicon" />
+
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••••••"
+                  {...register("password")}
+                  className="credentialField"
+                />
+
+                {showPassword ? (
+                  <EyeOff
+                    className="eyeIcon"
+                    onClick={() => setShowPassword(false)}
+                  />
+                ) : (
+                  <Eye
+                    className="eyeIcon"
+                    onClick={() => setShowPassword(true)}
+                  />
+                )}
+              </div>
+
+              {errors.password && (
+                <p className="fieldError">{errors.password.message}</p>
+              )}
+
+              <p className="inputHelp">Use at least 8 characters.</p>
+            </div>
+
+            {/* CONFIRM PASSWORD */}
+            <div className="input">
+              <label htmlFor="confirmPassword">Confirm password</label>
+
+              <div
+                className={`inputField ${
+                  errors.confirmPassword ? "inputError" : ""
+                }`}
+              >
+                <Lock className="inputicon" />
+
+                <input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="••••••••••••"
+                  {...register("confirmPassword")}
+                  className="credentialField"
+                />
+
+                {showConfirmPassword ? (
+                  <EyeOff
+                    className="eyeIcon"
+                    onClick={() => setShowConfirmPassword(false)}
+                  />
+                ) : (
+                  <Eye
+                    className="eyeIcon"
+                    onClick={() => setShowConfirmPassword(true)}
+                  />
+                )}
+              </div>
+
+              {errors.confirmPassword && (
+                <p className="fieldError">{errors.confirmPassword.message}</p>
+              )}
+            </div>
+
+            {serverError && (
+              <p className="serverError" role="alert">
+                {serverError}
+              </p>
+            )}
+
+            <button type="submit" className="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Creating account..." : "Create account"}
+            </button>
+          </form>
+
+          <div className="loginAccount">
+            <p>
+              Already have an account? <Link to="/login">Log in</Link>
+            </p>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
   );
 }
