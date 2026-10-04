@@ -13,6 +13,9 @@ public class User {
     private String name;
     private String email;  // Unique: see the index created in UserRepository.
     private String passwordHash;
+    private boolean emailVerified;
+    private String verificationToken;
+    public long verificationTokenExpiration;
 
     public User() { }
 
@@ -21,6 +24,9 @@ public class User {
         this.name = name;
         this.email = email;
         this.passwordHash = passwordHash;
+        this.emailVerified = false;
+        this.verificationToken = null;
+        this.verificationTokenExpiration = 0;
     }
 
     public ObjectId getId() { return id; }
@@ -34,4 +40,28 @@ public class User {
 
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified){
+        this.emailVerified = emailVerified;
+    }
+
+    public String getVerificationToken(){
+        return verificationToken;
+    }
+
+    public void setVerificationToken(String verificationToken){
+        this.verificationToken = verificationToken;
+    }
+
+    public long getVerificationTokenExpiration(){
+        return verificationTokenExpiration;
+    }
+
+    public void setVerificationTokenExpiration(long verificationTokenExpiration){
+        this.verificationTokenExpiration = verificationTokenExpiration;
+    }
 }
