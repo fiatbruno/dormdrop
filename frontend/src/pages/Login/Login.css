@@ -1,0 +1,371 @@
+#loginPage {
+  width: 100%;
+  min-height: 100vh;
+
+  font-family: "Inter", sans-serif;
+  background: white;
+}
+
+/* =========================
+   HEADER
+   ========================= */
+
+.loginHeader {
+  width: 100%;
+  padding: 20px clamp(24px, 3vw, 40px);
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  box-sizing: border-box;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.logo {
+  display: block;
+  width: clamp(115px, 10vw, 150px);
+  height: auto;
+}
+
+.signupButton {
+  background-color: white;
+  color: #29497a;
+
+  border: 1.5px solid #d5dce8;
+  border-radius: 6px;
+
+  padding: 8px 28px;
+
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* =========================
+   MAIN LAYOUT
+   ========================= */
+
+.loginMain {
+  width: 100%;
+  min-width: 0;
+
+  display: grid;
+
+  /* Matches your Figma proportions much more closely */
+  grid-template-columns: minmax(320px, 39%) minmax(0, 61%);
+
+  align-items: stretch;
+}
+
+/* =========================
+   RIGHT SIDE / FORM
+   ========================= */
+
+.loginRight {
+  width: min(calc(100% - 64px), 430px);
+
+  justify-self: center;
+  align-self: center;
+
+  padding: 20px 0;
+
+  min-width: 0;
+}
+
+.loginFormTitle {
+  margin: 0 0 14px;
+
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: clamp(36px, 3vw, 48px);
+  font-weight: 700;
+  line-height: 1.05;
+
+  text-align: left;
+  color: #194278;
+}
+
+.loginRight > p {
+  margin: 0 0 24px;
+
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+
+  text-align: left;
+  color: #596b82;
+}
+
+/* =========================
+   INPUTS
+   ========================= */
+
+.input {
+  margin-bottom: 18px;
+}
+
+.input label {
+  display: block;
+
+  margin-bottom: 6px;
+
+  font-size: 15px;
+  font-weight: 500;
+
+  text-align: left;
+  color: #0b2255;
+}
+
+.inputField {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  width: 100%;
+  padding: 12px 14px;
+
+  border: 1px solid #d5dce8;
+  border-radius: 6px;
+
+  box-sizing: border-box;
+}
+
+.credentialField {
+  flex: 1;
+
+  /* Important for flex responsiveness */
+  min-width: 0;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+  color: #29497a;
+
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+}
+
+.inputicon,
+.eyeIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.eyeIcon {
+  cursor: pointer;
+}
+
+.inputField.inputError {
+  border-color: #d32f2f;
+}
+
+.loginRight .fieldError {
+  margin: 4px 0 0;
+
+  color: #d32f2f;
+  font-size: 13px;
+  line-height: 18px;
+
+  text-align: left;
+}
+
+.loginRight .inputHelp {
+  margin: 4px 0 0;
+
+  font-size: 13px;
+  line-height: 20px;
+
+  color: #596b82;
+  text-align: left;
+}
+
+/* =========================
+   PASSWORD / ERROR
+   ========================= */
+
+.forgotPassword {
+  margin-top: 10px;
+  text-align: right;
+}
+
+.forgotPassword a {
+  color: #29497a;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.loginRight .error {
+  margin: 8px 0;
+
+  color: #d32f2f;
+  font-size: 14px;
+
+  text-align: left;
+}
+
+/* =========================
+   BUTTON
+   ========================= */
+
+.submit {
+  width: 100%;
+  padding: 14px;
+
+  background-color: #134074;
+  color: white;
+
+  border: none;
+  border-radius: 8px;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* =========================
+   CREATE ACCOUNT
+   ========================= */
+
+.createAccount {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.createAccount p {
+  margin: 0;
+
+  color: #718096;
+  font-size: 14px;
+
+  text-align: center;
+}
+
+.createAccount a {
+  color: #29497a;
+
+  text-decoration: none;
+  font-weight: 500;
+}
+
+/* =========================
+   CAMPUS INFO
+   ========================= */
+
+.campusInfoBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  width: 100%;
+
+  margin-top: 25px;
+  padding: 16px;
+
+  background-color: #eef4fa;
+  border-radius: 8px;
+
+  box-sizing: border-box;
+}
+
+.campusInfoIcon {
+  width: 20px;
+  height: 20px;
+
+  color: #29497a;
+  flex-shrink: 0;
+}
+
+.campusInfoText {
+  flex: 1;
+  min-width: 0;
+}
+
+.campusInfoText h3 {
+  margin: 0 0 5px;
+
+  color: #0b2255;
+
+  font-family: "Inter", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+
+  text-align: left;
+}
+
+.loginRight .campusInfoText p {
+  width: 100%;
+
+  margin: 0;
+  padding: 0;
+
+  color: #596b82;
+
+  font-size: 14px;
+  line-height: 22px;
+
+  text-align: left;
+}
+
+/* =========================
+   AUTOFILL
+   ========================= */
+
+.credentialField:-webkit-autofill,
+.credentialField:-webkit-autofill:hover,
+.credentialField:-webkit-autofill:focus,
+.credentialField:-webkit-autofill:active {
+  -webkit-text-fill-color: #29497a;
+  -webkit-box-shadow: 0 0 0 1000px white inset;
+  box-shadow: 0 0 0 1000px white inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* =========================
+   SMALL LAPTOP / TABLET
+   ========================= */
+
+@media (max-width: 1050px) {
+  .loginMain {
+    grid-template-columns: minmax(300px, 42%) minmax(0, 58%);
+  }
+
+  .loginRight {
+    width: min(calc(100% - 48px), 420px);
+  }
+}
+
+/* =========================
+   MOBILE / NARROW TABLET
+   ========================= */
+
+@media (max-width: 800px) {
+  .loginMain {
+    grid-template-columns: 1fr;
+  }
+
+  .authLeftPanel {
+    display: none;
+  }
+
+  .loginRight {
+    width: min(calc(100% - 40px), 450px);
+    padding: 48px 0;
+  }
+
+  .loginHeader {
+    padding: 16px 20px;
+  }
+}
