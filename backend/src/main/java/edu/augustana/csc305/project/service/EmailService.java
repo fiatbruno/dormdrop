@@ -13,7 +13,7 @@ public class EmailService {
     }
 
     public void sendVerificationEmail(String email, String token){
-        String verificationLink = "http://localhost:5173/api/auth/verify-email?token=" + token;
+        String verificationLink = "http://localhost:8080/api/v1/auth/verify?token=" + token;
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);

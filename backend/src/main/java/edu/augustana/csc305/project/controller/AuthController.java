@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
  * The controller for handling authentication requests. Defines our /auth routes.
  */
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/auth")
 public class AuthController {
 
     private final UserRepository userRepository;
