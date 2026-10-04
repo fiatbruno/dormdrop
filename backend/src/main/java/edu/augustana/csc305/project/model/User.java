@@ -15,7 +15,7 @@ public class User {
     private String passwordHash;
     private boolean emailVerified;
     private String verificationToken;
-    public long verificationTokenExpiration;
+    private long verificationTokenExpiration;
 
     public User() { }
 

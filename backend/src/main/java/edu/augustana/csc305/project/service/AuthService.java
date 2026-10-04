@@ -46,7 +46,7 @@ public class AuthService {
         user.setVerificationToken(verificationToken);
 
         long timeToExpire = System.currentTimeMillis() + (24L * 60 * 60 * 1000);
-        user.setVerificationToken(String.valueOf(timeToExpire));
+        user.setVerificationTokenExpiration(timeToExpire);
         userRepository.storeUser(user);
         emailService.sendVerificationEmail(email, verificationToken);
         return user;
