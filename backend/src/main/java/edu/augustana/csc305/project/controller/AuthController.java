@@ -9,6 +9,7 @@ import edu.augustana.csc305.project.security.JwtService;
 import edu.augustana.csc305.project.security.LoginResponse;
 import edu.augustana.csc305.project.security.RegisterRequest;
 import org.bson.types.ObjectId;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,11 +17,14 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import java.util.Optional;
 
 /**
  * The controller for handling authentication requests. Defines our /auth routes.
  */
 @RestController
+//@RequestMapping("/api/auth")
+//@CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/auth")
 public class AuthController {
 
@@ -58,7 +62,10 @@ public class AuthController {
         }
 
         String token = jwtService.generateToken(user);
+        ResponseEntity.ok("Login successful");
         return new LoginResponse(token, new UserDto(user.getId().toString(), user.getName(), user.getEmail()));
+
+
     }
 
     @PostMapping("/register")
