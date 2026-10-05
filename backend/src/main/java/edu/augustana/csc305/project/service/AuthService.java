@@ -35,7 +35,7 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid email. Please use an Augustana college email address.");
         }
         if(userRepository.emailExists(email)){
-            throw new IllegalArgumentException("This email is already associated with an account!");
+            throw new IllegalArgumentException("This email is already associated with an account! Please try loggin in or use a different address to create a new account.");
 
         }
         String passwordHash = passwordEncoder.encode(password);

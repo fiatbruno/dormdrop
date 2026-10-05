@@ -69,7 +69,7 @@ public class AuthController {
     }
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String handleBadRequest(IllegalArgumentException e){
+   public String handleBadRequest(IllegalArgumentException e){
         return e.getMessage();
     }
 }
