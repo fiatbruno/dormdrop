@@ -4,6 +4,7 @@ import Login from "./pages/Login/Login";
 import Signup from "./pages/Signup/Signup";
 import NotFound from "./pages/NotFound";
 import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
+
 /*
  * We use the react-router-dom library to load pages based
  * on path. This object configures which paths map to which
@@ -30,6 +31,10 @@ const router = createBrowserRouter([
   {
     path: "/signup",
     element: <Signup />,
+  },
+  {
+    path: "/verify-email",
+    element: <VerifyEmail />,
   },
 
   {

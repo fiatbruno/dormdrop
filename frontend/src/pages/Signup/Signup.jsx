@@ -36,10 +36,15 @@ export default function Signup() {
     setServerError("");
 
     try {
-       
+      //         console.log("SIGNUP DATA:", {
+      //           name: data.displayName,
+      //           studentEmail: data.email,
+      //           password: data.password,
+      //         });
+
       await registerUser({
-        displayName: data.displayName,
-        email: data.email,
+        name: data.displayName,
+        studentEmail: data.email,
         password: data.password,
       });
       
@@ -57,7 +62,6 @@ export default function Signup() {
       );
     }
   }
-
 
   return (
     <div id="signupPage">

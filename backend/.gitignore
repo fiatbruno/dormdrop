@@ -47,3 +47,6 @@ dist/
 
 # Mac
 .DS_Store
+
+#Env file
+.env
