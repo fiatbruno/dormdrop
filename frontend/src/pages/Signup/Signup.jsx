@@ -47,6 +47,7 @@ export default function Signup() {
         studentEmail: data.email,
         password: data.password,
       });
+      
 
       navigate("/verify-email", {
         state: { email: data.email },
