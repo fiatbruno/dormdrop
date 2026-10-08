@@ -87,7 +87,7 @@ export default function EmailVerificationExpired() {
             </h1>
 
             <p className="signupSubtitle">
-              Email verification links expire after 24 hours
+              Email verification links expire after 5 minutes
               to protect your account. Request a new
               verification link to try again.
             </p>

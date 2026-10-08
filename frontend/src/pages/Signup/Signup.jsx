@@ -36,12 +36,6 @@ export default function Signup() {
     setServerError("");
 
     try {
-      //         console.log("SIGNUP DATA:", {
-      //           name: data.displayName,
-      //           studentEmail: data.email,
-      //           password: data.password,
-      //         });
-
       await registerUser({
         name: data.displayName,
         studentEmail: data.email,
@@ -51,17 +45,30 @@ export default function Signup() {
       navigate("/verify-email", {
         state: { email: data.email },
       });
-
     } catch (error) {
-      setServerError(
-        error.response?.data?.detail ||
-          error.response?.data?.message ||
-          error.message ||
-          "Something went wrong",
-      );
+      const status = error.response?.status;
+      const backendMessage = error.response?.data;
+
+      const message =
+        typeof backendMessage === "string"
+          ? backendMessage
+          : backendMessage?.detail || backendMessage?.message || "";
+
+      if (
+        status === 409 ||
+        (status === 400 &&
+          /already exists|already registered|already in use/i.test(message))
+      ) {
+        setServerError(
+          "An account with this email already exists. Please log in.",
+        );
+      } else {
+        setServerError(
+          message || "Unable to create your account. Please try again.",
+        );
+      }
     }
   }
-
   return (
     <div id="signupPage">
       <header className="signupHeader">
@@ -71,7 +78,6 @@ export default function Signup() {
           Log In
         </Button>
       </header>
-
 
       <main className="signupMain">
         <AuthLeftPanel />
