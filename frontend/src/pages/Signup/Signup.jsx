@@ -53,19 +53,35 @@ export default function Signup() {
         state: { email: data.email },
       });
 
+      navigate("/verify-email", {
+        state: { email: data.email },
+      });
     } catch (error) {
-      setServerError(
-        error.response?.data?.detail ||
-          error.response?.data?.message ||
-          error.message ||
-          "Something went wrong",
-      );
+      const status = error.response?.status;
+      const backendMessage = error.response?.data;
+
+      const message =
+        typeof backendMessage === "string"
+          ? backendMessage
+          : backendMessage?.detail || backendMessage?.message || "";
+
+      if (
+        status === 409 ||
+        (status === 400 &&
+          /already exists|already registered|already in use/i.test(message))
+      ) {
+        setServerError(
+          "An account with this email already exists. Please log in.",
+        );
+      } else {
+        setServerError(
+          message || "Unable to create your account. Please try again.",
+        );
+      }
     }
   }
-
   return (
     <div id="signupPage">
-      {/* HEADER */}
       <header className="signupHeader">
         <img className="logo" src={logo} alt="DormDrop Logo" />
 
@@ -74,7 +90,6 @@ export default function Signup() {
         </Button>
       </header>
 
-      {/* MAIN */}
       <main className="signupMain">
         <AuthLeftPanel />
 
@@ -86,7 +101,6 @@ export default function Signup() {
           </p>
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
-            {/* DISPLAY NAME */}
             <div className="input">
               <label htmlFor="displayName">Display name</label>
 
@@ -111,7 +125,6 @@ export default function Signup() {
               )}
             </div>
 
-            {/* EMAIL */}
             <div className="input">
               <label htmlFor="email">Campus Email (.edu)</label>
 
@@ -136,7 +149,6 @@ export default function Signup() {
               </p>
             </div>
 
-            {/* PASSWORD */}
             <div className="input">
               <label htmlFor="password">Password</label>
 
@@ -173,7 +185,6 @@ export default function Signup() {
               <p className="inputHelp">Use at least 8 characters.</p>
             </div>
 
-            {/* CONFIRM PASSWORD */}
             <div className="input">
               <label htmlFor="confirmPassword">Confirm password</label>
 
