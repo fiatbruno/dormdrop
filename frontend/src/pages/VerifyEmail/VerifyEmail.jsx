@@ -53,7 +53,7 @@ export default function VerifyEmail() {
     console.log("Resend verification email to:", email);
 
     setResendMessage(
-      "Resend button works. Backend email service is not connected yet."
+      "Resend button works. Backend is not connected yet."
     );
   }
 
@@ -67,7 +67,6 @@ export default function VerifyEmail() {
 
   return (
     <div id="signupPage">
-      {/* HEADER */}
       <header className="signupHeader">
         <img className="logo" src={logo} alt="DormDrop Logo" />
 
@@ -79,7 +78,6 @@ export default function VerifyEmail() {
         </Button>
       </header>
 
-      {/* MAIN */}
       <main className="signupMain">
         <AuthLeftPanel />
 

@@ -6,10 +6,6 @@
   background: white;
 }
 
-/* =========================
-   HEADER
-   ========================= */
-
 .loginHeader {
   width: 100%;
   padding: 20px clamp(24px, 3vw, 40px);
@@ -47,9 +43,6 @@
   cursor: pointer;
 }
 
-/* =========================
-   MAIN LAYOUT
-   ========================= */
 
 .loginMain {
   width: 100%;
@@ -62,10 +55,6 @@
 
   align-items: stretch;
 }
-
-/* =========================
-   RIGHT SIDE / FORM
-   ========================= */
 
 .loginRight {
   width: min(calc(100% - 64px), 430px);
@@ -101,9 +90,7 @@
   color: #596b82;
 }
 
-/* =========================
-   INPUTS
-   ========================= */
+
 
 .input {
   margin-bottom: 18px;
@@ -138,7 +125,6 @@
 .credentialField {
   flex: 1;
 
-  /* Important for flex responsiveness */
   min-width: 0;
 
   border: none;
@@ -186,9 +172,6 @@
   text-align: left;
 }
 
-/* =========================
-   PASSWORD / ERROR
-   ========================= */
 
 .forgotPassword {
   margin-top: 10px;
@@ -210,9 +193,6 @@
   text-align: left;
 }
 
-/* =========================
-   BUTTON
-   ========================= */
 
 .submit {
   width: 100%;
@@ -235,9 +215,7 @@
   opacity: 0.7;
 }
 
-/* =========================
-   CREATE ACCOUNT
-   ========================= */
+
 
 .createAccount {
   width: 100%;
@@ -260,9 +238,7 @@
   font-weight: 500;
 }
 
-/* =========================
-   CAMPUS INFO
-   ========================= */
+
 
 .campusInfoBox {
   display: flex;
@@ -319,9 +295,7 @@
   text-align: left;
 }
 
-/* =========================
-   AUTOFILL
-   ========================= */
+
 
 .credentialField:-webkit-autofill,
 .credentialField:-webkit-autofill:hover,
@@ -333,9 +307,7 @@
   transition: background-color 5000s ease-in-out 0s;
 }
 
-/* =========================
-   SMALL LAPTOP / TABLET
-   ========================= */
+
 
 @media (max-width: 1050px) {
   .loginMain {
@@ -347,9 +319,7 @@
   }
 }
 
-/* =========================
-   MOBILE / NARROW TABLET
-   ========================= */
+
 
 @media (max-width: 800px) {
   .loginMain {

@@ -10,9 +10,12 @@ import edu.augustana.csc305.project.security.LoginResponse;
 import edu.augustana.csc305.project.security.RegisterRequest;
 import edu.augustana.csc305.project.service.AuthService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
 
 /**
  * The controller for handling authentication requests. Defines our /auth routes.
@@ -63,9 +66,26 @@ public class AuthController {
     }
 
     @GetMapping("/verify")
-    public String verify(@RequestParam String token){
-        authService.verifyEmail(token);
-        return "Your email has been verified. You can now log in";
+    public ResponseEntity<Void> verify(@RequestParam String token) {
+
+        try {
+            authService.verifyEmail(token);
+
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("http://localhost:5173/verification-success"))
+                    .build();
+
+        } catch (IllegalArgumentException e) {
+
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(
+                            "http://localhost:5173/verification-expired?token=" +
+                                    java.net.URLEncoder.encode(
+                                            token, java.nio.charset.StandardCharsets.UTF_8
+                                    )
+                    ))
+                    .build();
+        }
     }
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
