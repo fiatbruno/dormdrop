@@ -1,0 +1,89 @@
+.verificationSuccessContent {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+
+.verificationSuccessIcon {
+  width: 55px;
+  height: 55px;
+  background-color: #eaf6ee;
+  color: #27834c;
+  border-radius: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.verificationSuccessBadge {
+  background-color: #eaf6ee;
+  color: #27834c;
+  padding: 7px 15px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.verificationCollegeBox {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 20px;
+  background-color: #f7f7f7;
+  border-radius: 10px;
+}
+
+.verificationCollegeBox h3 {
+  color: #142f60;
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+
+.verificationCollegeBox p {
+  color: #65748b;
+  font-size: 13px;
+  margin: 0;
+}
+
+
+.verificationExpiredButtons {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 12px;
+}
+
+.verificationExpiredButtons button {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+
+.verificationExpiredButtons .signupSubmitButton {
+  background-color: #173e73;
+  color: white;
+  border: 1px solid #173e73;
+}
+
+
+.verificationExpiredButtons .secondaryButton {
+  background-color: white;
+  color: #173e73;
+  border: 1px solid #d5dce5;
+}
+
+
+@media (max-width: 800px) {
+  .verificationSuccessContent {
+    max-width: 100%;
+    padding: 10px 0;
+  }
+}

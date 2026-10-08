@@ -6,7 +6,6 @@
   background: white;
 }
 
-/* HEADER */
 
 .signupHeader {
   display: flex;
@@ -38,7 +37,6 @@
   cursor: pointer;
 }
 
-/* MAIN */
 
 .signupMain {
   width: 100%;
@@ -51,7 +49,7 @@
   align-items: center;
 }
 
-/* RIGHT FORM */
+
 
 .signupRight {
   width: min(calc(100% - 64px), 450px);
@@ -87,7 +85,6 @@
   text-align: left;
 }
 
-/* INPUTS */
 
 .input {
   margin-bottom: 16px;
@@ -201,8 +198,6 @@
   cursor: not-allowed;
 }
 
-/* LOGIN LINK */
-
 .loginAccount {
   margin-top: 20px;
 }
@@ -221,7 +216,6 @@
   text-decoration: none;
 }
 
-/* RESPONSIVE */
 
 @media (max-width: 1050px) {
   .signupMain {

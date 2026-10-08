@@ -19,7 +19,7 @@ public class EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
         message.setSubject("Verify your Augustana email to finish setting up DormDrop.");
-        message.setText("Welcome to DormDrop!\n\n" + "Verify your Augie email " + "by clicking the link below::\n\n" + verificationLink + "\n\n" + "Kindly note that the password lasts for just 24 hours and expires after!");
+        message.setText("Welcome to DormDrop!\n\n" + "Verify your Augie email " + "by clicking the link below::\n\n" + verificationLink + "\n\n" + "This verification link expires after 24 hours.");
         mailSender.send(message);
     }
 

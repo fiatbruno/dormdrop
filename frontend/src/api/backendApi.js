@@ -22,5 +22,10 @@ export function registerUser(user) {
 export function loginUser(credentials) {
   return api.post("auth/login", credentials);
 }
+export function resendVerificationEmail(email) {
+  return api.post("/auth/resend-verification", {
+    email,
+  });
+}
 
 export default api;
