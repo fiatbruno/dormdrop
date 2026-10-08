@@ -36,10 +36,21 @@ export default function Signup() {
     setServerError("");
 
     try {
+      //         console.log("SIGNUP DATA:", {
+      //           name: data.displayName,
+      //           studentEmail: data.email,
+      //           password: data.password,
+      //         });
+
       await registerUser({
         name: data.displayName,
         studentEmail: data.email,
         password: data.password,
+      });
+      
+
+      navigate("/verify-email", {
+        state: { email: data.email },
       });
 
       navigate("/verify-email", {

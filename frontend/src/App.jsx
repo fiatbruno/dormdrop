@@ -20,6 +20,12 @@ const router = createBrowserRouter([
     path: "/",
     element: <Login />,
   },
+
+  {
+    path: "/verify-email",
+    element: <VerifyEmail />,
+  },
+
   {
     path: "/login",
     element: <Login />,
