@@ -56,11 +56,12 @@ export default function Signup() {
 
       if (
         status === 409 ||
-        (status === 400 &&
-          /already exists|already registered|already in use/i.test(message))
+        /already exists|already registered|already in use|already associated/i.test(
+          message,
+        )
       ) {
         setServerError(
-          "An account with this email already exists. Please log in.",
+          "An account with this email already exists. Please log in or use a different email address.",
         );
       } else {
         setServerError(
