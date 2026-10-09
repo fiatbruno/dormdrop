@@ -1,5 +1,6 @@
 package edu.augustana.csc305.project.controller;
 
+import edu.augustana.csc305.project.dto.ResendVerificationRequest;
 import edu.augustana.csc305.project.dto.SignUpRequest;
 import edu.augustana.csc305.project.dto.UserDto;
 import edu.augustana.csc305.project.model.User;
@@ -99,5 +100,17 @@ public class AuthController {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
    public String handleBadRequest(IllegalArgumentException e){
         return e.getMessage();
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<String> resendVerification(
+            @RequestBody ResendVerificationRequest request
+    ) {
+        authService.resendVerificationEmail(request.email());
+
+        return ResponseEntity.ok(
+                "If this account requires verification, " +
+                        "a new link will be sent."
+        );
     }
 }

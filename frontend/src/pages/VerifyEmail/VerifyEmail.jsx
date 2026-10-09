@@ -6,8 +6,7 @@ import AuthLeftPanel from "../../components/AuthLeftPanel/AuthLeftPanel";
 import Footer from "../../components/Footer/Footer";
 import Button from "../../components/Button/Button";
 
-// Uncomment when backend resend endpoint is ready
-// import { resendVerificationEmail } from "../../api/backendApi";
+import { resendVerificationEmail } from "../../api/backendApi";
 
 import logo from "../../assets/Logo.png";
 
@@ -48,14 +47,25 @@ export default function VerifyEmail() {
    * }
    */
 
-  // TEMPORARY FRONTEND VERSION
-  function handleResend() {
-    console.log("Resend verification email to:", email);
+async function handleResend() {
+  if (!email || isResending) return;
+
+  setResendMessage("");
+  setResendError("");
+  setIsResending(true);
+
+  try {
+    await resendVerificationEmail(email);
 
     setResendMessage(
-      "Resend button works. Backend is not connected yet."
+      "If your account needs verification, a new link will be sent.",
     );
+  } catch (error) {
+    setResendError("Unable to process the request. Please try again later.");
+  } finally {
+    setIsResending(false);
   }
+}
 
   function handleDifferentEmail() {
     navigate("/signup");

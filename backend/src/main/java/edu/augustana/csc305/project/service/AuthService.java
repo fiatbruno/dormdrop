@@ -16,6 +16,8 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private static final long VERIFICATION_TOKEN_LIFETIME_MS =
+        5L * 60 * 1000;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService){
         this.userRepository = userRepository;
@@ -45,7 +47,7 @@ public class AuthService {
         String verificationToken = generateVerificationToken();
         user.setVerificationToken(verificationToken);
 
-        long timeToExpire = System.currentTimeMillis() + (5L * 60 * 1000);
+        long timeToExpire = System.currentTimeMillis() + VERIFICATION_TOKEN_LIFETIME_MS;
         user.setVerificationTokenExpiration(timeToExpire);
         userRepository.storeUser(user);
         emailService.sendVerificationEmail(email, verificationToken);
@@ -72,5 +74,44 @@ public class AuthService {
         }
 
         userRepository.updateUserVerification(user.getId().toHexString(), true);
+    }
+
+    public void resendVerificationEmail(String email) {
+
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+
+        String normalizedEmail = email.trim().toLowerCase();
+
+        Optional<User> optionalUser =
+                userRepository.findByEmail(normalizedEmail);
+
+        if (optionalUser.isEmpty()) {
+            return;
+        }
+
+        User user = optionalUser.get();
+
+        if (user.isEmailVerified()) {
+            return;
+        }
+
+        String newToken = generateVerificationToken();
+
+        long expiration =
+                System.currentTimeMillis()
+                        + VERIFICATION_TOKEN_LIFETIME_MS;
+
+        userRepository.updateVerificationToken(
+                user.getId(),
+                newToken,
+                expiration
+        );
+
+        emailService.sendVerificationEmail(
+                user.getEmail(),
+                newToken
+        );
     }
 }
