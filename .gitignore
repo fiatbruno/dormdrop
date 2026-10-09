@@ -1,2 +1,6 @@
 .mvn
 .DS_Store
+
+
+# React/Vite build output
+frontend/dist/
