@@ -91,16 +91,5 @@ public class AuthController {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
    public String handleBadRequest(IllegalArgumentException e){
         return e.getMessage();
-    }
-
-    @GetMapping("/verify")
-    public String verify(@RequestParam String token){
-        authService.verifyEmail(token);
-        return "Your email has been verified. You can now log in";
-    }
-    @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-   public String handleBadRequest(IllegalArgumentException e){
-        return e.getMessage();
-    }
+    }gi
 }
