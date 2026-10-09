@@ -44,14 +44,10 @@ export default function Signup() {
 
       await registerUser({
         name: data.displayName,
-        studentEmail: data.email,
+        email: data.email,
         password: data.password,
       });
       
-
-      navigate("/verify-email", {
-        state: { email: data.email },
-      });
 
       navigate("/verify-email", {
         state: { email: data.email },

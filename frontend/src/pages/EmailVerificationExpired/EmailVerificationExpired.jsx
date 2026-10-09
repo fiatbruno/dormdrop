@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { CircleAlert } from "lucide-react";
 
 import { resendVerificationEmail } from "../../api/backendApi";
@@ -17,33 +16,29 @@ import "./EmailVerificationExpired.css";
 
 export default function EmailVerificationExpired() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState("");
-
-
-  const token = searchParams.get("token");
+  const [email, setEmail] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   function handleLogin() {
     navigate("/login");
   }
 
   async function handleResend() {
-    if (!token || isSending) return;
+    if (!email.trim() || isSending) return;
 
     setIsSending(true);
     setError("");
+    setSuccessMessage("");
 
     try {
-      const response = await resendVerificationEmail(token);
+      await resendVerificationEmail(email.trim());
 
-  
-      const email = response.data.email;
-
-      navigate("/verify-email", {
-        state: { email },
-      });
+      setSuccessMessage(
+        "If your account requires verification, a new link will be sent.",
+      );
     } catch (error) {
       setError("Unable to resend verification link. Please try again.");
     } finally {
@@ -53,72 +48,70 @@ export default function EmailVerificationExpired() {
 
   return (
     <div id="signupPage">
-      
       <header className="signupHeader">
-        <img
-          className="logo"
-          src={logo}
-          alt="DormDrop Logo"
-        />
+        <img className="logo" src={logo} alt="DormDrop Logo" />
 
-        <Button
-          className="loginButton"
-          onClick={handleLogin}
-        >
+        <Button className="loginButton" onClick={handleLogin}>
           Log In
         </Button>
       </header>
 
- 
       <main className="signupMain">
         <AuthLeftPanel />
 
         <div className="signupRight">
           <div className="verificationExpiredContent">
-
-
             <div className="verificationExpiredIcon">
               <CircleAlert size={20} />
             </div>
 
-            
-            <h1 className="signupTitle">
-              The link has expired
-            </h1>
+            <h1 className="signupTitle">The link has expired</h1>
 
             <p className="signupSubtitle">
-              Email verification links expire after 5 minutes
-              to protect your account. Request a new
-              verification link to try again.
+              Email verification links expire after 5 minutes to protect your
+              account. Request a new verification link to try again.
             </p>
+            <div className="input">
+              <label htmlFor="resendEmail">Campus email</label>
 
-          
+              <div className="inputField">
+                <input
+                  id="resendEmail"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@augustana.edu"
+                  className="credentialField"
+                  autoComplete="email"
+                />
+              </div>
+            </div>
+
             {error && (
               <p className="serverError" role="alert">
                 {error}
               </p>
             )}
 
-          
+            {successMessage && (
+              <p className="resendSuccess" role="status">
+                {successMessage}
+              </p>
+            )}
+
             <div className="verificationExpiredButtons">
               <Button
                 className="signupSubmitButton"
                 onClick={handleResend}
-                disabled={isSending || !token}
+                disabled={isSending || !email.trim()}
               >
-                {isSending
-                  ? "Sending..."
-                  : "Request a New Verification Link"}
+                {isSending ? "Sending..." : "Request a New Verification Link"}
               </Button>
 
-              <Button
-                className="secondaryButton"
-                onClick={handleLogin}
-              >
+              <Button className="secondaryButton" onClick={handleLogin}>
                 Back to Log In
               </Button>
             </div>
-
           </div>
         </div>
       </main>

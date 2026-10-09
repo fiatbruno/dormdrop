@@ -48,6 +48,9 @@ import java.util.List;
                         .requestMatchers("/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/auth/register").permitAll()
                         .requestMatchers("/api/v1/auth/verify").permitAll()
+                        .requestMatchers(
+                                "/api/v1/auth/resend-verification"
+                        ).permitAll()
                         .requestMatchers("/api/v1/public/**").permitAll()
                         .requestMatchers("/api/v1/healthCheck").permitAll()
                         .anyRequest().authenticated() // All other requests need a token
