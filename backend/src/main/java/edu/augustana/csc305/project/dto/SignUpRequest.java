@@ -2,14 +2,14 @@ package edu.augustana.csc305.project.dto;
 
 public class SignUpRequest {
     private String name;
-    private String studentEmail;
+    private String email;
     private String password;
 
     public SignUpRequest(){}
 
-    public SignUpRequest(String name, String studentEmail, String password){
+    public SignUpRequest(String name, String email, String password){
         this.name = name;
-        this.studentEmail = studentEmail;
+        this.email = email;
         this.password = password;
     }
 
@@ -22,11 +22,11 @@ public class SignUpRequest {
     }
 
     public String getEmail(){
-        return studentEmail;
+        return email;
     }
 
-    public void setEmail(String studentEmail){
-        this.studentEmail = studentEmail;
+    public void setEmail(String email){
+        this.email = email;
     }
 
     public String getPassword(){

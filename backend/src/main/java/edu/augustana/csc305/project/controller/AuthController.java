@@ -1,5 +1,6 @@
 package edu.augustana.csc305.project.controller;
 
+import edu.augustana.csc305.project.dto.ResendVerificationRequest;
 import edu.augustana.csc305.project.dto.SignUpRequest;
 import edu.augustana.csc305.project.dto.UserDto;
 import edu.augustana.csc305.project.model.User;
@@ -7,13 +8,13 @@ import edu.augustana.csc305.project.repository.UserRepository;
 import edu.augustana.csc305.project.security.LoginRequest;
 import edu.augustana.csc305.project.security.JwtService;
 import edu.augustana.csc305.project.security.LoginResponse;
-import edu.augustana.csc305.project.security.RegisterRequest;
 import edu.augustana.csc305.project.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 
@@ -55,6 +56,14 @@ public class AuthController {
             throw new BadCredentialsException("Invalid email or password");
         }
 
+
+        if (!user.isEmailVerified()) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Please verify your email before logging in."
+            );
+        }
+
         String token = jwtService.generateToken(user);
         return new LoginResponse(token, new UserDto(user.getId().toString(), user.getName(), user.getEmail()));
     }
@@ -93,14 +102,15 @@ public class AuthController {
         return e.getMessage();
     }
 
-    @GetMapping("/verify")
-    public String verify(@RequestParam String token){
-        authService.verifyEmail(token);
-        return "Your email has been verified. You can now log in";
-    }
-    @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-   public String handleBadRequest(IllegalArgumentException e){
-        return e.getMessage();
+    @PostMapping("/resend-verification")
+    public ResponseEntity<String> resendVerification(
+            @RequestBody ResendVerificationRequest request
+    ) {
+        authService.resendVerificationEmail(request.email());
+
+        return ResponseEntity.ok(
+                "If this account requires verification, " +
+                        "a new link will be sent."
+        );
     }
 }

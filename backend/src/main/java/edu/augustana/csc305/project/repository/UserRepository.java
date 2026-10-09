@@ -7,6 +7,7 @@ import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
 import com.mongodb.client.model.Updates;
 import edu.augustana.csc305.project.model.User;
+import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.MongoDatabaseFactory;
 import org.springframework.stereotype.Repository;
 
@@ -59,5 +60,19 @@ import java.util.Optional;
                 Updates.unset("verificationTokenExpiration")
         ));
     }
+
+    public void updateVerificationToken(
+        ObjectId userId,
+        String newToken,
+        long expiration
+) {
+    users.updateOne(
+        Filters.eq("_id", userId),
+        Updates.combine(
+            Updates.set("verificationToken", newToken),
+            Updates.set("verificationTokenExpiration", expiration)
+        )
+    );
+}
 
 }
