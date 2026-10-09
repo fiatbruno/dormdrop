@@ -7,7 +7,6 @@ import edu.augustana.csc305.project.repository.UserRepository;
 import edu.augustana.csc305.project.security.LoginRequest;
 import edu.augustana.csc305.project.security.JwtService;
 import edu.augustana.csc305.project.security.LoginResponse;
-import edu.augustana.csc305.project.security.RegisterRequest;
 import edu.augustana.csc305.project.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
