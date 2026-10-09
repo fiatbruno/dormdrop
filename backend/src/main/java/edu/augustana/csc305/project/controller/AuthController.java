@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 
@@ -52,6 +53,14 @@ public class AuthController {
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new BadCredentialsException("Invalid email or password");
+        }
+
+
+        if (!user.isEmailVerified()) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Please verify your email before logging in."
+            );
         }
 
         String token = jwtService.generateToken(user);
