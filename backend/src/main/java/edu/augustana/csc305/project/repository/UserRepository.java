@@ -10,6 +10,8 @@ import edu.augustana.csc305.project.model.User;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.MongoDatabaseFactory;
 import org.springframework.stereotype.Repository;
+import edu.augustana.csc305.project.repository.UserRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
@@ -18,7 +20,7 @@ import java.util.Optional;
 
     MongoCollection<User> users;
 
-    public UserRepository(MongoDatabaseFactory mdbFactory) {
+    public  UserRepository(MongoDatabaseFactory mdbFactory) {
         MongoDatabase mongoDb = mdbFactory.getMongoDatabase();
         users = mongoDb.getCollection("users", User.class);
 

@@ -53,11 +53,6 @@ import java.util.List;
                         ).permitAll()
                         .requestMatchers("/api/v1/public/**").permitAll()
                         .requestMatchers("/api/v1/healthCheck").permitAll()
-                        .requestMatchers("api/v1/auth/forgot-password").permitAll()
-                        .requestMatchers("api/v1/auth/reset-password").permitAll()
-
-                        .requestMatchers("/api/v1/navigation/account").authenticated()
-                        .requestMatchers("/api/v1/users/me/**").authenticated()
                         .anyRequest().authenticated() // All other requests need a token
                 )
                 /*
