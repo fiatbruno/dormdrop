@@ -10,6 +10,10 @@
   box-sizing: border-box;
 }
 
+.listing-page > .dormdrop-navbar {
+  border-bottom: 0;
+}
+
 .listing-container {
   max-width: 1120px;
   margin: 0 auto;
