@@ -3,6 +3,7 @@ import { Upload, ShieldCheck, ChevronDown } from "lucide-react";
 import api from "../../api/backendApi";
 import Footer from "../../components/Footer/Footer";
 import "./ListItem.css";
+import Navbar from "../../components/Navbar/Navbar";
 
 const emptyForm = {
   title: "",
@@ -426,6 +427,7 @@ function ListItem() {
 
   return (
     <main className="listing-page">
+      <Navbar showSearch={true} />
       <div className="listing-container">
         <header className="listing-header">
           <h1>List a campus find</h1>
