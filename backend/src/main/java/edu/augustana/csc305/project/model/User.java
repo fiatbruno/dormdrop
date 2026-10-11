@@ -1,29 +1,28 @@
+
 package edu.augustana.csc305.project.model;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-import jakarta.persistence.*;
+import org.springframework.data.mongodb.core.index.Indexed;
 
-/**
- * User object as stored in the database.
- */
 @Document(collection = "users")
-@Entity
-@Table(name = "users")
 public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
 
-    @Column(nullable = false, unique = true)
+    @Id
+    private ObjectId id;
+
+    private String name;
+
+    @Indexed(unique = true)
     private String email;
 
-    @Column(nullable = false)
     private String passwordHash;
-    private ObjectId id;
-    private String name;
+
     private boolean emailVerified;
+
     private String verificationToken;
+
     private long verificationTokenExpiration;
 
     public User() {
@@ -39,7 +38,7 @@ public class User {
         this.verificationTokenExpiration = 0;
     }
 
-    public Long getId() {
+    public ObjectId getId() {
         return id;
     }
 
@@ -94,8 +93,4 @@ public class User {
     public void setVerificationTokenExpiration(long verificationTokenExpiration) {
         this.verificationTokenExpiration = verificationTokenExpiration;
     }
-
-
-
 }
-

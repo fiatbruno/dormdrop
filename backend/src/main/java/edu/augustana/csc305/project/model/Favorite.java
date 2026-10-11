@@ -1,45 +1,55 @@
+
 package edu.augustana.csc305.project.model;
 
-import jakarta.persistence.*;
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 
-@Entity
-@Table(
-        name = "favorites",
-        uniqueConstraints = @UniqueConstraint(
-                columnNames = {"user_id", "listing_id"}
-        )
+@Document(collection = "favorites")
+@CompoundIndex(
+        name = "unique_user_listing",
+        def = "{'userId': 1, 'listingId': 1}",
+        unique = true
 )
 public class Favorite {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private ObjectId id;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id")
-    private User user;
+    private ObjectId userId;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "listing_id")
-    private Listing listing;
+    private ObjectId listingId;
 
-    public Long getId() {
+    public Favorite() {
+    }
+
+    public Favorite(ObjectId userId, ObjectId listingId) {
+        this.userId = userId;
+        this.listingId = listingId;
+    }
+
+    public ObjectId getId() {
         return id;
     }
 
-    public User getUser() {
-        return user;
+    public void setId(ObjectId id) {
+        this.id = id;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public ObjectId getUserId() {
+        return userId;
     }
 
-    public Listing getListing() {
-        return listing;
+    public void setUserId(ObjectId userId) {
+        this.userId = userId;
     }
 
-    public void setListing(Listing listing) {
-        this.listing = listing;
+    public ObjectId getListingId() {
+        return listingId;
+    }
+
+    public void setListingId(ObjectId listingId) {
+        this.listingId = listingId;
     }
 }

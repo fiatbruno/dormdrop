@@ -1,13 +1,16 @@
+
 package edu.augustana.csc305.project.service;
 
+import edu.augustana.csc305.project.model.Favorite;
+import edu.augustana.csc305.project.model.User;
 
-import edu.augustana.csc305.project.model.*;
-import edu.augustana.csc305.project.repository.*;
+import edu.augustana.csc305.project.repository.FavoriteRepository;
+import edu.augustana.csc305.project.repository.ListingRepository;
+import edu.augustana.csc305.project.repository.UserRepository;
 
 import org.bson.types.ObjectId;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -29,51 +32,65 @@ public class FavoriteService {
         this.listingRepository = listingRepository;
     }
 
+    // Get the currently logged-in user
     private User getUser(String email) {
+
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
                         new ResponseStatusException(
                                 HttpStatus.UNAUTHORIZED,
                                 "User not found"
-                        ));
+                        )
+                );
     }
 
-    public List<Long> getFavorites(String email) {
+    // Get all favorite listing IDs for a user
+    public List<ObjectId> getFavorites(String email) {
+
         User user = getUser(email);
 
         return favoriteRepository.findByUserId(user.getId())
                 .stream()
-                .map(f -> f.getListing().getId())
+                .map(Favorite::getListingId)
                 .toList();
     }
 
+    // Add a listing to favorites
     public void addFavorite(ObjectId listingId, String email) {
+
         User user = getUser(email);
 
-        Listing listing = (Listing) listingRepository.findById(listingId)
-                .orElseThrow(() ->
-                        new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Listing not found"
-                        ));
+        // Check whether the listing exists in MongoDB
+        if (!listingRepository.existsById(listingId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Listing not found"
+            );
+        }
 
+        // Prevent duplicate bookmarks
         if (favoriteRepository.existsByUserIdAndListingId(
                 user.getId(), listingId)) {
             return;
         }
 
-        Favorite favorite = new Favorite();
-        favorite.setUser(user);
-        favorite.setListing(listing);
+        // Store userId and listingId directly
+        Favorite favorite = new Favorite(
+                user.getId(),
+                listingId
+        );
 
         favoriteRepository.save(favorite);
     }
 
+    // Remove a listing from favorites
     public void removeFavorite(ObjectId listingId, String email) {
+
         User user = getUser(email);
 
         favoriteRepository.deleteByUserIdAndListingId(
-                user.getId(), listingId
+                user.getId(),
+                listingId
         );
     }
 }
