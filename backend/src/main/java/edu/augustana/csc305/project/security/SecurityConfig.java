@@ -4,6 +4,9 @@ import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.core.userdetails.*;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -13,6 +16,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import java.util.List;
+import edu.augustana.csc305.project.repository.UserRepository;
 
 /**
  * Spring Boot configuration for user authentication and secured endpoints.
@@ -31,7 +35,8 @@ import java.util.List;
  */
 @Configuration public class SecurityConfig {
 
-    @Bean public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService) {
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService) {
         http
                 /*
                  * This piece of configuration controls which endpoints are open and
@@ -53,6 +58,10 @@ import java.util.List;
                         ).permitAll()
                         .requestMatchers("/api/v1/public/**").permitAll()
                         .requestMatchers("/api/v1/healthCheck").permitAll()
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/images/*"
+                        ).permitAll()
                         .anyRequest().authenticated() // All other requests need a token
                 )
                 /*
@@ -92,8 +101,65 @@ import java.util.List;
 
         return http.build();
     }
-
-    @Bean public PasswordEncoder passwordEncoder() {
+    @Bean
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+    @Bean
+    public UserDetailsService userDetailsService(
+            UserRepository repository) {
+
+        return email -> {
+            var user = repository.findByEmail(email)
+                    .orElseThrow(() ->
+                            new UsernameNotFoundException(
+                                    "User not found"
+                            ));
+
+            return org.springframework.security.core.userdetails.User
+                    .withUsername(user.getEmail())
+                    .password(user.getPasswordHash())
+                    .roles("STUDENT")
+                    .build();
+        };
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http) throws Exception {
+
+        http
+                .cors(cors -> cors.configurationSource(request -> {
+                    CorsConfiguration config =
+                            new CorsConfiguration();
+
+                    config.setAllowedOrigins(
+                            List.of("http://localhost:5173")
+                    );
+
+                    config.setAllowedMethods(
+                            List.of("GET", "POST", "PUT",
+                                    "PATCH", "DELETE", "OPTIONS")
+                    );
+
+                    config.setAllowedHeaders(
+                            List.of("Authorization", "Content-Type")
+                    );
+
+                    return config;
+                }))
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/listings",
+                                "/api/listings/*").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .httpBasic(Customizer.withDefaults());
+
+        return http.build();
+    }
+
+
 }
