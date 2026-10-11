@@ -114,4 +114,74 @@ public class AuthService {
                 newToken
         );
     }
+
+
+    private static final long PASSWORD_RESET_TOKEN_LIFETIME_MS =
+            5L * 60 * 1000;
+
+    public void requestPasswordReset(String email) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Email is required.");
+        }
+
+        String normalizedEmail = email.trim().toLowerCase();
+
+        Optional<User> optionalUser =
+                userRepository.findByEmail(normalizedEmail);
+
+        if (optionalUser.isEmpty()) {
+            return;
+        }
+
+        User user = optionalUser.get();
+
+        if (!user.isEmailVerified()) {
+            return;
+        }
+
+        String token = generateVerificationToken();
+
+        long expiration = System.currentTimeMillis()
+                + PASSWORD_RESET_TOKEN_LIFETIME_MS;
+
+        userRepository.savePasswordResetToken(
+                user.getId(),
+                token,
+                expiration
+        );
+
+        emailService.sendPasswordResetEmail(user.getEmail(), token);
+    }
+
+    public void resetPassword(String token, String newPassword) {
+        if (token == null || token.isBlank()) {
+            throw new IllegalArgumentException("Reset token is required.");
+        }
+
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new IllegalArgumentException(
+                    "Password must be at least 8 characters long."
+            );
+        }
+
+        User user = userRepository.findByPasswordResetToken(token)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Invalid or expired password reset link."
+                ));
+
+        if (System.currentTimeMillis()
+                > user.getPasswordResetTokenExpiration()) {
+            throw new IllegalArgumentException(
+                    "Invalid or expired password reset link."
+            );
+        }
+
+        String passwordHash = passwordEncoder.encode(newPassword);
+
+        userRepository.updatePasswordAndClearResetToken(
+                user.getId(),
+                passwordHash
+        );
+    }
+
 }

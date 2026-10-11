@@ -16,6 +16,9 @@ public class User {
     private boolean emailVerified;
     private String verificationToken;
     private long verificationTokenExpiration;
+    private String aboutYou;
+    private String passwordResetToken;
+    private long passwordResetTokenExpiration;
 
     public User() { }
 
@@ -63,5 +66,31 @@ public class User {
 
     public void setVerificationTokenExpiration(long verificationTokenExpiration){
         this.verificationTokenExpiration = verificationTokenExpiration;
+    }
+
+    public String getAboutYou(){
+        return aboutYou;
+    }
+
+    public void setAboutYou(String aboutYou){
+        this.aboutYou = aboutYou;
+    }
+
+    public String getPasswordResetToken() {
+        return passwordResetToken;
+    }
+
+    public void setPasswordResetToken(String passwordResetToken) {
+        this.passwordResetToken = passwordResetToken;
+    }
+
+    public long getPasswordResetTokenExpiration() {
+        return passwordResetTokenExpiration;
+    }
+
+    public void setPasswordResetTokenExpiration(
+            long passwordResetTokenExpiration
+    ) {
+        this.passwordResetTokenExpiration = passwordResetTokenExpiration;
     }
 }

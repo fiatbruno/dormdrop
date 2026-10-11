@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
 import java.net.URI;
 
 /**
@@ -113,4 +114,46 @@ public class AuthController {
                         "a new link will be sent."
         );
     }
+
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(
+            @RequestBody Map<String, String> request
+    ) {
+        String email = request.get("email");
+
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message", "Please enter your email address."
+            ));
+        }
+
+        authService.requestPasswordReset(email);
+
+        return ResponseEntity.ok(Map.of(
+                "message",
+                "If a verified account exists for that email, a password reset link will be sent."
+        ));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(
+            @RequestBody Map<String, String> request
+    ) {
+        try {
+            authService.resetPassword(
+                    request.get("token"),
+                    request.get("newPassword")
+            );
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Your password has been reset successfully."
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
 }
