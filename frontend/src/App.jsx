@@ -5,7 +5,8 @@ import Signup from "./pages/Signup/Signup";
 import NotFound from "./pages/NotFound";
 import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
 import VerificationSuccess from "./pages/EmailVerificationSuccess/EmailVerificationSuccess";
-import EmailVerificationExpired from "./pages/EmailVerificationExpired/EmailVerificationExpired";    
+import EmailVerificationExpired from "./pages/EmailVerificationExpired/EmailVerificationExpired";
+import ListItem from "./pages/ListItem/ListItem";
 
 /*
  * We use the react-router-dom library to load pages based
@@ -34,17 +35,18 @@ const router = createBrowserRouter([
     path: "/signup",
     element: <Signup />,
   },
-  {
-    path: "/verify-email",
-    element: <VerifyEmail />,
-  },
+
   {
     path: "/verification-success",
     element: <VerificationSuccess />,
   },
   {
     path: "/verification-expired",
-    element: <EmailVerificationExpired />
+    element: <EmailVerificationExpired />,
+  },
+   {
+    path: "/list-an-item",
+    element: <ListItem />,
   },
 
   {
