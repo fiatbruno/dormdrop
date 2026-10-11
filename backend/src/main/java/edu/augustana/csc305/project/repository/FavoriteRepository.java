@@ -1,30 +1,35 @@
+
 package edu.augustana.csc305.project.repository;
 
-
 import edu.augustana.csc305.project.model.Favorite;
+
 import org.bson.types.ObjectId;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface FavoriteRepository
-        extends JpaRepository<Favorite, Long> {
+        extends MongoRepository<Favorite, ObjectId> {
 
-    List<Favorite> findByUserId(Long userId);
+    // Get all favorites belonging to a user
+    List<Favorite> findByUserId(ObjectId userId);
 
+    // Find a specific favorite
     Optional<Favorite> findByUserIdAndListingId(
-            Long userId,
-            Long listingId
-    );
-
-    void deleteByUserIdAndListingId(
-            Long userId,
+            ObjectId userId,
             ObjectId listingId
     );
 
+    // Remove a favorite
+    void deleteByUserIdAndListingId(
+            ObjectId userId,
+            ObjectId listingId
+    );
+
+    // Check whether a listing is already bookmarked
     boolean existsByUserIdAndListingId(
-            Long userId,
+            ObjectId userId,
             ObjectId listingId
     );
 }
