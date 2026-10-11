@@ -1,6 +1,7 @@
 
 package edu.augustana.csc305.project.controller;
 
+import edu.augustana.csc305.project.dto.MyListingsResponse;
 import edu.augustana.csc305.project.model.Listing;
 import edu.augustana.csc305.project.service.MyListingsService;
 import org.springframework.http.ResponseEntity;
@@ -56,4 +57,14 @@ public class MyListingsController {
                 Map.of("message", "Listing deleted successfully")
         );
     }
+
+
+    @GetMapping("/grouped")
+    public MyListingsResponse getMyListingsGrouped(
+            Authentication authentication) {
+        return myListingsService.getMyListingsGrouped(
+                authentication.getName()
+        );
+    }
+
 }
