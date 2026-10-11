@@ -7,6 +7,7 @@ import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
 import VerificationSuccess from "./pages/EmailVerificationSuccess/EmailVerificationSuccess";
 import EmailVerificationExpired from "./pages/EmailVerificationExpired/EmailVerificationExpired";
 import ListItem from "./pages/ListItem/ListItem";
+import SavedItems from "./pages/SavedItems/SavedItem";
 
 /*
  * We use the react-router-dom library to load pages based
@@ -16,6 +17,18 @@ import ListItem from "./pages/ListItem/ListItem";
  * Matching happens from top to bottom; the last path is "*",
  * which is the fall-through case when no other path matches.
  */
+
+const testItems = [
+  {
+    id: "test-1",
+    title: "Sony WH-1000XM4 Headphones",
+    category: "Electronics",
+    price: 120,
+    imageUrl: "/images/headphones.jpg",
+    available: true,
+  },
+];
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -44,10 +57,15 @@ const router = createBrowserRouter([
     path: "/verification-expired",
     element: <EmailVerificationExpired />,
   },
-   {
+  {
     path: "/list-an-item",
     element: <ListItem />,
   },
+  {
+    path: "/saved-items",
+    element: <SavedItems />,
+  },
+  
 
   {
     path: "*",
