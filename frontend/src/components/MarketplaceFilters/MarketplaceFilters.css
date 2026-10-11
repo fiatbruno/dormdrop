@@ -1,0 +1,32 @@
+.marketplace-filters {
+  min-width: 0;
+  align-self: start;
+  padding: 20px 14px;
+  border: 1px solid #ececec;
+  border-radius: 10px;
+  background: #faf9f7;
+  color: #194278;
+  font-family: var(--sans, Arial, sans-serif);
+  box-shadow: 0 2px 3px #0002;
+}
+.marketplace-filters h2 { margin: 0 0 12px; font: inherit; font-size: 16px; text-transform: uppercase; }
+.marketplace-filters > p { margin: 0 0 20px; font-size: 13px; line-height: 1.5; }
+.marketplace-filters__field { min-width: 0; margin-bottom: 16px; }
+.marketplace-filters label, .marketplace-filters legend { display: block; margin-bottom: 6px; font-size: 12px; }
+.marketplace-filters input, .marketplace-filters select {
+  display: block; width: 100%; min-width: 0; height: 40px; padding: 8px;
+  border: 1px solid #64789a; border-radius: 6px; background: #fff; color: #194278;
+  font: inherit; font-size: 12px; color-scheme: light;
+}
+.marketplace-filters__row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.marketplace-filters__presets, .marketplace-filters__types > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.marketplace-filters__presets { margin-bottom: 18px; }
+.marketplace-filters button {
+  flex: 1; min-height: 40px; padding: 8px 6px; border: 1px solid #64789a;
+  border-radius: 6px; background: transparent; color: #194278; font: inherit; font-size: 11px; cursor: pointer;
+}
+.marketplace-filters button:hover { background: #edf4fa; }
+.marketplace-filters button[aria-pressed="true"] { background: #194278; color: #fff; }
+.marketplace-filters__types { margin: 0; padding: 0; border: 0; }
+.marketplace-filters .marketplace-filters__clear { width: 100%; margin-top: 16px; }
+.marketplace-filters :is(input, select, button):focus-visible { outline: 2px solid #194278; outline-offset: 3px; }
