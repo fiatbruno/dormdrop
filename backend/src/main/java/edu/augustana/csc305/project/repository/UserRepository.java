@@ -75,4 +75,52 @@ import java.util.Optional;
     );
 }
 
+public boolean updateUserProfile(ObjectId userId, String name, String aboutYou){
+        var result = users.updateOne(Filters.eq("_id", userId),
+                Updates.combine(
+                        Updates.set("name",  name),
+                        Updates.set("aboutYou", aboutYou)
+                ));
+        return result.getMatchedCount() > 0;
+}
+
+
+
+    public void savePasswordResetToken(
+            ObjectId userId,
+            String token,
+            long expiration
+    ) {
+        users.updateOne(
+                Filters.eq("_id", userId),
+                Updates.combine(
+                        Updates.set("passwordResetToken", token),
+                        Updates.set("passwordResetTokenExpiration", expiration)
+                )
+        );
+    }
+
+    public Optional<User> findByPasswordResetToken(String token) {
+        User user = users.find(
+                Filters.eq("passwordResetToken", token)
+        ).first();
+
+        return Optional.ofNullable(user);
+    }
+
+    public void updatePasswordAndClearResetToken(
+            ObjectId userId,
+            String passwordHash
+    ) {
+        users.updateOne(
+                Filters.eq("_id", userId),
+                Updates.combine(
+                        Updates.set("passwordHash", passwordHash),
+                        Updates.unset("passwordResetToken"),
+                        Updates.unset("passwordResetTokenExpiration")
+                )
+        );
+    }
+
+
 }
