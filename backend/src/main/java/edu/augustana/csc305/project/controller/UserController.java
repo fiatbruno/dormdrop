@@ -114,13 +114,5 @@ public class UserController {
         );
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<ProfileResponse> getMyProfile(
-            Authentication authentication){
-        String email = authentication.getName();
-        return ResponseEntity.ok(
-                userService.getProgile(email);
-        )
-    }
-    )
+
 }
