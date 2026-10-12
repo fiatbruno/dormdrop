@@ -19,7 +19,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/images")
+@RequestMapping("/images")
 public class ImageController {
 
     private final ImageStorageService storage;
@@ -54,8 +54,8 @@ public class ImageController {
 
         // Check that the logged-in user owns the listing
         if (auth == null ||
-                listing.getOwner() == null ||
-                !listing.getOwner().getEmail()
+                listing.getTitle() == null ||
+                !listing.getTitle()
                         .equals(auth.getName())) {
 
             throw new ResponseStatusException(

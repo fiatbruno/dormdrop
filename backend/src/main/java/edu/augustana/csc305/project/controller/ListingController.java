@@ -20,7 +20,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/listings")
+@RequestMapping("/home")
 @CrossOrigin(origins = "http://localhost:5173")
 public class ListingController {
 

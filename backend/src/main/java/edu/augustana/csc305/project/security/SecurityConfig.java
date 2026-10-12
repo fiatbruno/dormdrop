@@ -125,41 +125,9 @@ import edu.augustana.csc305.project.repository.UserRepository;
         };
     }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http) throws Exception {
 
-        http
-                .cors(cors -> cors.configurationSource(request -> {
-                    CorsConfiguration config =
-                            new CorsConfiguration();
 
-                    config.setAllowedOrigins(
-                            List.of("http://localhost:5173")
-                    );
-
-                    config.setAllowedMethods(
-                            List.of("GET", "POST", "PUT",
-                                    "PATCH", "DELETE", "OPTIONS")
-                    );
-
-                    config.setAllowedHeaders(
-                            List.of("Authorization", "Content-Type")
-                    );
-
-                    return config;
-                }))
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/listings",
-                                "/api/listings/*").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .httpBasic(Customizer.withDefaults());
-
-        return http.build();
     }
 
 
-}
+

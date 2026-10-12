@@ -12,7 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/favorites")
+@RequestMapping("/favorites")
 public class FavoriteController {
 
     private final FavoriteService service;
