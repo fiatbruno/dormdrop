@@ -8,6 +8,7 @@ import VerificationSuccess from "./pages/EmailVerificationSuccess/EmailVerificat
 import EmailVerificationExpired from "./pages/EmailVerificationExpired/EmailVerificationExpired";
 import ListItem from "./pages/ListItem/ListItem";
 import Home from "./pages/Home/Home";
+import SavedItem from "./pages/SavedItems/SavedItem";
 
 /*
  * We use the react-router-dom library to load pages based
@@ -60,6 +61,10 @@ const router = createBrowserRouter([
   {
     path: "/list-an-item",
     element: <ListItem />,
+  },
+  { path: "/saved-item",
+    element: <SavedItem />
+
   },
   {
     path: "/home",

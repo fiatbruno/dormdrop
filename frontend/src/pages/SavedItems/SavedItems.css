@@ -507,6 +507,7 @@
 .saved-primary {
   background: #1f4277;
 }
+
 .saved-page :focus-visible,
 .saved-nav a:focus-visible {
   outline-color: #729aca;

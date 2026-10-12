@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import "./SavedItems.css";
 import Footer from "../../components/Footer/Footer";
 import useSavedItems from "../../api/useSavedItems";
-
+import Navbar from "../../components/Navbar/Navbar";
 
 const filters = ["All saved", "Available", "No longer available"];
 
@@ -49,9 +49,11 @@ function SavedItemsView({
       });
     }
   }
+  const [search, setSearch] = useState("");
 
   return (
     <div className="saved-shell">
+      <Navbar searchValue={search} onSearchChange={setSearch} />
       <main className="saved-page">
         <header className="saved-heading">
           <div>
