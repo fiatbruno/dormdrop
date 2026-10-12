@@ -7,7 +7,7 @@ import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
 import VerificationSuccess from "./pages/EmailVerificationSuccess/EmailVerificationSuccess";
 import EmailVerificationExpired from "./pages/EmailVerificationExpired/EmailVerificationExpired";
 import ListItem from "./pages/ListItem/ListItem";
-import SavedItems from "./pages/SavedItems/SavedItem";
+import Home from "./pages/Home/Home";
 
 /*
  * We use the react-router-dom library to load pages based
@@ -62,8 +62,8 @@ const router = createBrowserRouter([
     element: <ListItem />,
   },
   {
-    path: "/saved-items",
-    element: <SavedItems />,
+    path: "/home",
+    element: <Home />,
   },
   
 
