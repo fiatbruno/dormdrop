@@ -424,10 +424,10 @@ function ListItem() {
         : form.price && Number.isFinite(Number(form.price))
           ? `$${Number(form.price).toFixed(2)}`
           : "$0.00";
-
+  const [search, setSearch] = useState("");
   return (
     <main className="listing-page">
-      <Navbar showSearch={true} />
+      <Navbar searchValue={search} onSearchChange={setSearch} />
       <div className="listing-container">
         <header className="listing-header">
           <h1>List a campus find</h1>

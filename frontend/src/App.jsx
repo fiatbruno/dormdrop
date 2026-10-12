@@ -8,6 +8,7 @@ import VerificationSuccess from "./pages/EmailVerificationSuccess/EmailVerificat
 import EmailVerificationExpired from "./pages/EmailVerificationExpired/EmailVerificationExpired";
 import ListItem from "./pages/ListItem/ListItem";
 import Home from "./pages/Home/Home";
+import SavedItem from "./pages/SavedItems/SavedItem";
 
 /*
  * We use the react-router-dom library to load pages based
@@ -17,6 +18,18 @@ import Home from "./pages/Home/Home";
  * Matching happens from top to bottom; the last path is "*",
  * which is the fall-through case when no other path matches.
  */
+
+const testItems = [
+  {
+    id: "test-1",
+    title: "Sony WH-1000XM4 Headphones",
+    category: "Electronics",
+    price: 120,
+    imageUrl: "/images/headphones.jpg",
+    available: true,
+  },
+];
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -49,10 +62,15 @@ const router = createBrowserRouter([
     path: "/list-an-item",
     element: <ListItem />,
   },
+  { path: "/saved-item",
+    element: <SavedItem />
+
+  },
   {
     path: "/home",
     element: <Home />,
   },
+  
 
   {
     path: "*",

@@ -5,7 +5,7 @@ import "./Navbar.css";
 
 const defaultLinks = [
   { label: "Browse", to: "/home" },
-  { label: "Saved", to: "/saved" },
+  { label: "Saved", to: "/saved-item" },
   { label: "Messages", to: "/messages" },
   { label: "Profile", to: "/profile" },
 ];
