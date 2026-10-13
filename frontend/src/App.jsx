@@ -20,7 +20,16 @@ import Profile from "./pages/Profile/Profile";
  * which is the fall-through case when no other path matches.
  */
 
-
+const testItems = [
+  {
+    id: "test-1",
+    title: "Sony WH-1000XM4 Headphones",
+    category: "Electronics",
+    price: 120,
+    imageUrl: "/images/headphones.jpg",
+    available: true,
+  },
+];
 
 const router = createBrowserRouter([
   {

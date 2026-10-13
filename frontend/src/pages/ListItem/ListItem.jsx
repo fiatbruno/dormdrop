@@ -432,7 +432,7 @@ function ListItem() {
         : form.price && Number.isFinite(Number(form.price))
           ? `$${Number(form.price).toFixed(2)}`
           : "$0.00";
-
+  const [search, setSearch] = useState("");
   return (
     <main className="listing-page">
       <Navbar showSearch={false} />
