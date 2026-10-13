@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
  * for the POJOs in this project. It lets us transparently use our model
  * objects when interacting with MongoDB.
  */
-@Configuration public class MongoCodecConfig {
+@Configuration public class     MongoCodecConfig {
 
     @Bean public MongoClientSettingsBuilderCustomizer pojoCodecCustomizer() {
         return builder -> {
