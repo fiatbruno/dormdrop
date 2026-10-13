@@ -30,8 +30,13 @@ function ListingCards({ items, onMarkSold, onRelist, pending }) {
             <h3>{item.title}</h3>
 
             <div className="profile-price-row">
-              <strong>{item.price === 0 ? "Free" : `$${item.price}`}</strong>
-
+              <strong>
+                {item.listingType === "Trade"
+                  ? "Trade"
+                  : Number(item.price) === 0
+                    ? "Free"
+                    : `$${Number(item.price).toFixed(2)}`}
+              </strong>
               <span
                 className={
                   item.status === "SOLD"
@@ -59,7 +64,9 @@ function ListingCards({ items, onMarkSold, onRelist, pending }) {
               </>
             ) : (
               <>
-                <Link to={`/edit-listing/${item.id}`}>Edit listing</Link>
+                <Link to={`/edit-listing/${encodeURIComponent(item.id)}`}>
+                  Edit listing
+                </Link>
 
                 <button
                   type="button"

@@ -1,0 +1,47 @@
+.photo-box {
+  flex-wrap: wrap;
+}
+
+.photo-thumbnails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.photo-entry {
+  position: relative;
+}
+
+.photo-entry .photo-thumb {
+  width: 164px;
+  height: 116px;
+  object-fit: cover;
+}
+
+.photo-entry button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #d5dfed;
+  border-radius: 50%;
+  background: #fff;
+  color: #10295c;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.view-listing {
+  display: block;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid #d5dfed;
+  border-radius: 6px;
+  color: #123d73;
+  text-align: center;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+}
