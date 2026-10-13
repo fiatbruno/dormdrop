@@ -10,6 +10,7 @@ import ListItem from "./pages/ListItem/ListItem";
 import Home from "./pages/Home/Home";
 import SavedItem from "./pages/SavedItems/SavedItem";
 import Profile from "./pages/Profile/Profile";
+import EditListing from "./pages/EditListing/EditListing";
 
 /*
  * We use the react-router-dom library to load pages based
@@ -19,8 +20,6 @@ import Profile from "./pages/Profile/Profile";
  * Matching happens from top to bottom; the last path is "*",
  * which is the fall-through case when no other path matches.
  */
-
-
 
 const router = createBrowserRouter([
   {
@@ -54,19 +53,19 @@ const router = createBrowserRouter([
     path: "/list-an-item",
     element: <ListItem />,
   },
-  { path: "/saved-item",
-    element: <SavedItem />
-
-  },
+  { path: "/saved-item", element: <SavedItem /> },
   {
     path: "/profile",
-    element: <Profile />
+    element: <Profile />,
+  },
+  {
+    path: "/edit-listing/:id",
+    element: <EditListing />,
   },
   {
     path: "/home",
     element: <Home />,
   },
-  
 
   {
     path: "*",
