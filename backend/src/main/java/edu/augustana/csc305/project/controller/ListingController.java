@@ -48,6 +48,15 @@ public class ListingController {
         );
     }
 
+
+    @GetMapping("/{id}")
+    public Listing getListingById(@PathVariable String id) {
+
+        ObjectId listingId = convertToObjectId(id);
+
+        return service.getListingById(listingId);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Listing createListing(

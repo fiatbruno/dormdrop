@@ -210,11 +210,19 @@ public class ListingService {
     }
 
 
+
+
+
+
     public Listing getListingById(ObjectId id) {
+
         return repository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Listing not found"
-                ));
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Listing not found"
+                        )
+                );
     }
+
 }
