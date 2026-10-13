@@ -7,6 +7,13 @@ import Navbar from "../../components/Navbar/Navbar";
 
 const filters = ["All saved", "Available", "No longer available"];
 
+
+
+
+
+
+
+
 function SavedItemsView({
   items = [],
   loading = false,
@@ -49,11 +56,11 @@ function SavedItemsView({
       });
     }
   }
-  const [search, setSearch] = useState("");
+  
 
   return (
     <div className="saved-shell">
-      <Navbar searchValue={search} onSearchChange={setSearch} />
+      <Navbar showSearch={false} />
       <main className="saved-page">
         <header className="saved-heading">
           <div>
