@@ -3,8 +3,8 @@ package edu.augustana.csc305.project.model;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "users")
 public class User {
@@ -14,21 +14,22 @@ public class User {
 
     private String name;
 
-    @Indexed(name = "email_1",unique = true)
+    @Indexed(name = "email_1", unique = true)
     private String email;
 
     private String passwordHash;
-
     private boolean emailVerified;
-
     private String verificationToken;
-
     private long verificationTokenExpiration;
 
-    public User() {
-    }
+    public User() {}
 
-    public User(ObjectId id, String name, String email, String passwordHash) {
+    public User(
+            ObjectId id,
+            String name,
+            String email,
+            String passwordHash) {
+
         this.id = id;
         this.name = name;
         this.email = email;
@@ -90,7 +91,7 @@ public class User {
         return verificationTokenExpiration;
     }
 
-    public void setVerificationTokenExpiration(long verificationTokenExpiration) {
-        this.verificationTokenExpiration = verificationTokenExpiration;
+    public void setVerificationTokenExpiration(long expiration) {
+        this.verificationTokenExpiration = expiration;
     }
 }
