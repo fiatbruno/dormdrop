@@ -137,4 +137,25 @@ export async function uploadListingImage(id, file) {
       }),
     });
   }
+
+
+export async function getListingById(id) {
+  const token = localStorage.getItem("token");
+
+  const response = await fetch(
+    `http://localhost:8080/api/v1/home/${encodeURIComponent(id)}`,
+    {
+      headers: token
+        ? { Authorization: `Bearer ${token}` }
+        : {},
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Unable to load listing");
+  }
+
+  return response.json();
+}
+
 }

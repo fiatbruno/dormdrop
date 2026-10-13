@@ -9,8 +9,9 @@ import EmailVerificationExpired from "./pages/EmailVerificationExpired/EmailVeri
 import ListItem from "./pages/ListItem/ListItem";
 import Home from "./pages/Home/Home";
 import SavedItem from "./pages/SavedItems/SavedItem";
+import Profile from "./pages/Profile/Profile";
 import EditListing from "./pages/EditListing/EditListing";
-import { Link } from "react-router-dom";
+
 /*
  * We use the react-router-dom library to load pages based
  * on path. This object configures which paths map to which
@@ -19,17 +20,6 @@ import { Link } from "react-router-dom";
  * Matching happens from top to bottom; the last path is "*",
  * which is the fall-through case when no other path matches.
  */
-
-const testItems = [
-  {
-    id: "test-1",
-    title: "Sony WH-1000XM4 Headphones",
-    category: "Electronics",
-    price: 120,
-    imageUrl: "/images/headphones.jpg",
-    available: true,
-  },
-];
 
 const router = createBrowserRouter([
   {
@@ -63,18 +53,18 @@ const router = createBrowserRouter([
     path: "/list-an-item",
     element: <ListItem />,
   },
-  { path: "/saved-item",
-    element: <SavedItem />
-
+  { path: "/saved-item", element: <SavedItem /> },
+  {
+    path: "/profile",
+    element: <Profile />,
+  },
+  {
+    path: "/edit-listing/:id",
+    element: <EditListing />,
   },
   {
     path: "/home",
     element: <Home />,
-  },
-
-  {
-    path: "/edit-listing/:id",
-    element: <EditListing />,
   },
   
 
@@ -84,9 +74,6 @@ const router = createBrowserRouter([
   },
 ]);
 
-<Link to={`/edit-listing/${listing.id}`}>
-  Edit listing
-</Link>
 function App() {
   return (
     <>
