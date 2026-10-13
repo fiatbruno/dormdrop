@@ -195,7 +195,7 @@ function Profile({
       <Navbar showSearch={false} />
 
       <header className="profile-heading">
-        <h1>Profile & settings</h1>
+        <h1>Profile</h1>
         <p>Your campus identity, listings, and account controls.</p>
       </header>
 
