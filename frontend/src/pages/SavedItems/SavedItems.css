@@ -604,3 +604,7 @@
     padding: 28px 16px;
   }
 }
+
+.saved-image-wrap { display: block; }
+.saved-card h2 a { color: inherit; text-decoration: none; }
+.saved-card h2 a:hover { text-decoration: underline; }

@@ -82,3 +82,5 @@
   outline: 2px solid #194278;
   outline-offset: 3px;
 }
+
+.product-card__image-link { display: block; height: 100%; color: inherit; text-decoration: none; }
