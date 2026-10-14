@@ -3,6 +3,8 @@ import { Upload, ShieldCheck, ChevronDown } from "lucide-react";
 import api from "../../api/backendApi";
 import Footer from "../../components/Footer/Footer";
 import "./ListItem.css";
+import Navbar from "../../components/Navbar/Navbar";
+import { useNavigate } from "react-router-dom";
 
 const emptyForm = {
   title: "",
@@ -193,6 +195,8 @@ function Dropdown({
 }
 
 function ListItem() {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState(emptyForm);
   const [photos, setPhotos] = useState([]);
   const [photoUrl, setPhotoUrl] = useState("");
@@ -372,22 +376,27 @@ function ListItem() {
     setLoading(true);
 
     try {
+      // Send listing information to the backend
       await api.post("/listings", data, {
         headers: { "Content-Type": undefined },
       });
 
+      // Clear the form after successful publishing
       setForm(emptyForm);
       setPhotos([]);
       setPhotoError("");
-      setSuccess("Your listing has been published!");
 
-      // A draft cleanup failure must not report publishing as failed.
+      // Remove the saved draft
       try {
         localStorage.removeItem("dormdrop-listing-draft");
       } catch {
-        // Listing was already published successfully.
+        // Publishing was already successful
       }
+
+      // Redirect only after the backend successfully saves the listing
+      navigate("/profile#my-listings");
     } catch (err) {
+      // Handle backend errors
       const status = err.response?.status;
       const message = err.response?.data?.message || err.response?.data?.detail;
 
@@ -423,9 +432,10 @@ function ListItem() {
         : form.price && Number.isFinite(Number(form.price))
           ? `$${Number(form.price).toFixed(2)}`
           : "$0.00";
-
+  const [search, setSearch] = useState("");
   return (
     <main className="listing-page">
+      <Navbar showSearch={false} />
       <div className="listing-container">
         <header className="listing-header">
           <h1>List a campus find</h1>

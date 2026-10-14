@@ -1,3 +1,4 @@
+
 package edu.augustana.csc305.project.service;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -9,19 +10,24 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @Service
 public class ImageStorageService {
 
     private final Path uploadDirectory;
+    private final String apiPrefix;
 
     public ImageStorageService(
-            @Value("${app.upload-dir:uploads}")
-            String directory) {
+            @Value("${app.upload-dir:uploads}") String directory,
+            @Value("${api.prefix:/api/v1}") String apiPrefix) {
 
-        this.uploadDirectory =
-                Paths.get(directory).toAbsolutePath().normalize();
+        this.uploadDirectory = Paths.get(directory)
+                .toAbsolutePath()
+                .normalize();
+
+        this.apiPrefix = apiPrefix;
 
         try {
             Files.createDirectories(uploadDirectory);
@@ -33,7 +39,6 @@ public class ImageStorageService {
     }
 
     public String store(MultipartFile file) {
-
         if (file.isEmpty() ||
                 file.getSize() > 5 * 1024 * 1024) {
             throw new ResponseStatusException(
@@ -68,11 +73,10 @@ public class ImageStorageService {
 
         String filename = UUID.randomUUID() + extension;
 
-        try {
+        try (InputStream input = file.getInputStream()) {
             Files.copy(
-                    file.getInputStream(),
-                    uploadDirectory.resolve(filename),
-                    StandardCopyOption.REPLACE_EXISTING
+                    input,
+                    uploadDirectory.resolve(filename)
             );
         } catch (IOException e) {
             throw new ResponseStatusException(
@@ -81,7 +85,7 @@ public class ImageStorageService {
             );
         }
 
-        return "/api/images/" + filename;
+        return apiPrefix + "/images/" + filename;
     }
 
     public Path getImage(String filename) {
@@ -116,17 +120,16 @@ public class ImageStorageService {
     private boolean isPng(byte[] b) {
         return b.length >= 8 &&
                 (b[0] & 255) == 137 &&
-                b[1] == 80 && b[2] == 78 &&
+                b[1] == 80 &&
+                b[2] == 78 &&
                 b[3] == 71;
     }
 
     private boolean isWebp(byte[] b) {
         return b.length >= 12 &&
-                new String(b, 0, 4,
-                        java.nio.charset.StandardCharsets.US_ASCII)
+                new String(b, 0, 4, StandardCharsets.US_ASCII)
                         .equals("RIFF") &&
-                new String(b, 8, 4,
-                        java.nio.charset.StandardCharsets.US_ASCII)
+                new String(b, 8, 4, StandardCharsets.US_ASCII)
                         .equals("WEBP");
     }
 }

@@ -3,7 +3,6 @@ package edu.augustana.csc305.project.service;
 
 import edu.augustana.csc305.project.model.Favorite;
 import edu.augustana.csc305.project.model.User;
-
 import edu.augustana.csc305.project.repository.FavoriteRepository;
 import edu.augustana.csc305.project.repository.ListingRepository;
 import edu.augustana.csc305.project.repository.UserRepository;
@@ -32,9 +31,7 @@ public class FavoriteService {
         this.listingRepository = listingRepository;
     }
 
-    // Get the currently logged-in user
     private User getUser(String email) {
-
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
                         new ResponseStatusException(
@@ -44,9 +41,7 @@ public class FavoriteService {
                 );
     }
 
-    // Get all favorite listing IDs for a user
     public List<ObjectId> getFavorites(String email) {
-
         User user = getUser(email);
 
         return favoriteRepository.findByUserId(user.getId())
@@ -55,12 +50,9 @@ public class FavoriteService {
                 .toList();
     }
 
-    // Add a listing to favorites
     public void addFavorite(ObjectId listingId, String email) {
-
         User user = getUser(email);
 
-        // Check whether the listing exists in MongoDB
         if (!listingRepository.existsById(listingId)) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
@@ -68,29 +60,21 @@ public class FavoriteService {
             );
         }
 
-        // Prevent duplicate bookmarks
         if (favoriteRepository.existsByUserIdAndListingId(
                 user.getId(), listingId)) {
             return;
         }
 
-        // Store userId and listingId directly
-        Favorite favorite = new Favorite(
-                user.getId(),
-                listingId
+        favoriteRepository.save(
+                new Favorite(user.getId(), listingId)
         );
-
-        favoriteRepository.save(favorite);
     }
 
-    // Remove a listing from favorites
     public void removeFavorite(ObjectId listingId, String email) {
-
         User user = getUser(email);
 
         favoriteRepository.deleteByUserIdAndListingId(
-                user.getId(),
-                listingId
+                user.getId(), listingId
         );
     }
 }

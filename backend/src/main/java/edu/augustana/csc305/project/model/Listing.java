@@ -1,6 +1,8 @@
 
 package edu.augustana.csc305.project.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.CreatedDate;
@@ -18,18 +20,15 @@ public class Listing {
     private ObjectId id;
 
     private String title;
-
     private String description;
-
     private String category;
 
     @Field(targetType = FieldType.DECIMAL128)
     private BigDecimal price;
 
     private String condition;
-
     private String pickupArea;
-
+    private String listingType = "For sale";
     private String imageUrl;
 
     @CreatedDate
@@ -39,11 +38,16 @@ public class Listing {
 
     private ObjectId ownerId;
 
-    public Listing() {
-    }
+    public Listing() {}
 
+    @JsonIgnore
     public ObjectId getId() {
         return id;
+    }
+
+    @JsonProperty("id")
+    public String getIdString() {
+        return id == null ? null : id.toHexString();
     }
 
     public void setId(ObjectId id) {
@@ -96,6 +100,14 @@ public class Listing {
 
     public void setPickupArea(String pickupArea) {
         this.pickupArea = pickupArea;
+    }
+
+    public String getListingType() {
+        return listingType;
+    }
+
+    public void setListingType(String listingType) {
+        this.listingType = listingType;
     }
 
     public String getImageUrl() {
