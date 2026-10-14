@@ -24,10 +24,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtService jwtService) throws Exception {
+            JwtService jwtService
+    ) throws Exception {
 
         http
                 .authorizeHttpRequests(auth -> auth
+
                         .dispatcherTypeMatchers(
                                 DispatcherType.ERROR
                         ).permitAll()
@@ -37,6 +39,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/verify",
                                 "/api/v1/auth/resend-verification",
+                                "/api/v1/auth/forgot-password",
+                                "/api/v1/auth/reset-password",
                                 "/api/v1/public/**",
                                 "/api/v1/healthCheck"
                         ).permitAll()
@@ -45,12 +49,14 @@ public class SecurityConfig {
                 )
 
                 .addFilterBefore(
-                        new JwtAuthenticationFilter(jwtService),
+                        new JwtAuthenticationFilter(
+                                jwtService
+                        ),
                         UsernamePasswordAuthenticationFilter.class
                 )
 
-                .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint(
+                .exceptionHandling(exceptions ->
+                        exceptions.authenticationEntryPoint(
                                 new HttpStatusEntryPoint(
                                         HttpStatus.UNAUTHORIZED
                                 )
@@ -59,25 +65,36 @@ public class SecurityConfig {
 
                 .csrf(csrf -> csrf.disable())
 
-                .cors(cors -> cors.configurationSource(request -> {
-                    CorsConfiguration config =
-                            new CorsConfiguration();
+                .cors(cors ->
+                        cors.configurationSource(request -> {
 
-                    config.setAllowedOrigins(
-                            List.of("http://localhost:5173")
-                    );
+                            CorsConfiguration config =
+                                    new CorsConfiguration();
 
-                    config.setAllowedMethods(
-                            List.of(
-                                    "GET", "POST", "PUT",
-                                    "PATCH", "DELETE", "OPTIONS"
-                            )
-                    );
+                            config.setAllowedOrigins(
+                                    List.of(
+                                            "http://localhost:5173"
+                                    )
+                            );
 
-                    config.setAllowedHeaders(List.of("*"));
+                            config.setAllowedMethods(
+                                    List.of(
+                                            "GET",
+                                            "POST",
+                                            "PUT",
+                                            "PATCH",
+                                            "DELETE",
+                                            "OPTIONS"
+                                    )
+                            );
 
-                    return config;
-                }))
+                            config.setAllowedHeaders(
+                                    List.of("*")
+                            );
+
+                            return config;
+                        })
+                )
 
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
@@ -95,9 +112,10 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService(
-            UserRepository repository) {
-
+            UserRepository repository
+    ) {
         return email -> {
+
             var user = repository.findByEmail(email)
                     .orElseThrow(() ->
                             new UsernameNotFoundException(

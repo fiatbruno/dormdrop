@@ -18,27 +18,46 @@ public class User {
     private String email;
 
     private String passwordHash;
+
+    // Email verification
     private boolean emailVerified;
     private String verificationToken;
     private long verificationTokenExpiration;
 
-    public User() {}
+    // Password reset
+    private String passwordResetToken;
+    private long passwordResetTokenExpiration;
 
+    // Profile and settings
+    private String aboutYou;
+
+    // Default constructor required by MongoDB
+    public User() {
+    }
+
+    // Constructor for registering a new user
     public User(
             ObjectId id,
             String name,
             String email,
-            String passwordHash) {
-
+            String passwordHash
+    ) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.passwordHash = passwordHash;
+
         this.emailVerified = false;
         this.verificationToken = null;
         this.verificationTokenExpiration = 0;
+
+        this.passwordResetToken = null;
+        this.passwordResetTokenExpiration = 0;
+
+        this.aboutYou = "";
     }
 
+    // ID
     public ObjectId getId() {
         return id;
     }
@@ -47,6 +66,7 @@ public class User {
         this.id = id;
     }
 
+    // Name
     public String getName() {
         return name;
     }
@@ -55,6 +75,7 @@ public class User {
         this.name = name;
     }
 
+    // Email
     public String getEmail() {
         return email;
     }
@@ -63,6 +84,7 @@ public class User {
         this.email = email;
     }
 
+    // Password hash
     public String getPasswordHash() {
         return passwordHash;
     }
@@ -71,6 +93,7 @@ public class User {
         this.passwordHash = passwordHash;
     }
 
+    // Email verification status
     public boolean isEmailVerified() {
         return emailVerified;
     }
@@ -79,6 +102,7 @@ public class User {
         this.emailVerified = emailVerified;
     }
 
+    // Email verification token
     public String getVerificationToken() {
         return verificationToken;
     }
@@ -87,11 +111,39 @@ public class User {
         this.verificationToken = verificationToken;
     }
 
+    // Email verification token expiration
     public long getVerificationTokenExpiration() {
         return verificationTokenExpiration;
     }
 
     public void setVerificationTokenExpiration(long expiration) {
         this.verificationTokenExpiration = expiration;
+    }
+
+    // Password reset token
+    public String getPasswordResetToken() {
+        return passwordResetToken;
+    }
+
+    public void setPasswordResetToken(String passwordResetToken) {
+        this.passwordResetToken = passwordResetToken;
+    }
+
+    // Password reset token expiration
+    public long getPasswordResetTokenExpiration() {
+        return passwordResetTokenExpiration;
+    }
+
+    public void setPasswordResetTokenExpiration(long expiration) {
+        this.passwordResetTokenExpiration = expiration;
+    }
+
+    // About You (Profile and Settings)
+    public String getAboutYou() {
+        return aboutYou;
+    }
+
+    public void setAboutYou(String aboutYou) {
+        this.aboutYou = aboutYou;
     }
 }
