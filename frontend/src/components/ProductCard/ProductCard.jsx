@@ -1,3 +1,4 @@
+import useListingImage from "../../hooks/useListingImage";
 import { useState } from "react";
 import { Bookmark, ImageOff } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -7,6 +8,7 @@ import "./ProductCard.css";
  * Supply detailsPath when a real detail route is available.
  */
 function ProductCard({ product, saved = false, onToggleSave, detailsPath }) {
+  const image = useListingImage(product.image);
   const [failedImage, setFailedImage] = useState(null);
   const price =
     product.listingType === "Free / Donate"
@@ -20,12 +22,12 @@ function ProductCard({ product, saved = false, onToggleSave, detailsPath }) {
   return (
     <article className="product-card">
       <div className="product-card__media">
-        {product.image && failedImage !== product.image ? (
+        {image && failedImage !== image ? (
           <img
-            src={product.image}
+            src={image}
             alt={product.title}
             loading="lazy"
-            onError={() => setFailedImage(product.image)}
+            onError={() => setFailedImage(image)}
           />
         ) : (
           <div className="product-card__placeholder">

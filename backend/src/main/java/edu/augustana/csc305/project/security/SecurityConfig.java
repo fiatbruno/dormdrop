@@ -5,7 +5,6 @@ import edu.augustana.csc305.project.repository.UserRepository;
 import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -40,13 +39,6 @@ public class SecurityConfig {
                                 "/api/v1/auth/resend-verification",
                                 "/api/v1/public/**",
                                 "/api/v1/healthCheck"
-                        ).permitAll()
-
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/v1/home",
-                                "/api/v1/home/*",
-                                "/api/v1/images/*"
                         ).permitAll()
 
                         .anyRequest().authenticated()
