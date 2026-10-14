@@ -1,3 +1,4 @@
+
 package edu.augustana.csc305.project.controller;
 
 import edu.augustana.csc305.project.dto.ResendVerificationRequest;
@@ -16,10 +17,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
 import java.net.URI;
 
 /**
- * The controller for handling authentication requests. Defines our /auth routes.
+ * The controller for handling authentication requests.
+ * Defines our /auth routes.
  */
 @RestController
 @RequestMapping("/auth")
@@ -30,32 +33,42 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
 
-    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                          JwtService jwtService, AuthService authService) {
+    public AuthController(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService,
+            AuthService authService
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authService = authService;
     }
 
-    /**
-     * Login requests contain the email address and password of the user
-     * logging in. This endpoint checks the hashed password against the
-     * password stored for this user's email.
-     *
-     * Fails if no user exists with the given email or the password hashes
-     * don't match. Otherwise, creates and returns a fresh JWT authentication
-     * token.
-     */
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            throw new BadCredentialsException("Invalid email or password");
+        User user = userRepository.findByEmail(
+                request.email() == null
+                        ? ""
+                        : request.email()
+                        .trim()
+                        .toLowerCase(java.util.Locale.ROOT)
+        ).orElseThrow(() ->
+                new BadCredentialsException(
+                        "Invalid email or password"
+                )
+        );
+
+        if (request.password() == null ||
+                !passwordEncoder.matches(
+                        request.password(),
+                        user.getPasswordHash()
+                )) {
+            throw new BadCredentialsException(
+                    "Invalid email or password"
+            );
         }
-
 
         if (!user.isEmailVerified()) {
             throw new ResponseStatusException(
@@ -65,40 +78,68 @@ public class AuthController {
         }
 
         String token = jwtService.generateToken(user);
-        return new LoginResponse(token, new UserDto(user.getId().toString(), user.getName(), user.getEmail()));
+
+        return new LoginResponse(
+                token,
+                new UserDto(
+                        user.getId().toString(),
+                        user.getName(),
+                        user.getEmail()
+                )
+        );
     }
 
     @PostMapping("/register")
-    public UserDto register(@RequestBody SignUpRequest request){
+    public UserDto register(
+            @RequestBody SignUpRequest request
+    ) {
         User user = authService.signUp(request);
-        return new UserDto(user.getId().toString(), user.getName(), user.getEmail());
+
+        return new UserDto(
+                user.getId().toString(),
+                user.getName(),
+                user.getEmail()
+        );
     }
 
     @GetMapping("/verify")
-    public ResponseEntity<Void> verify(@RequestParam String token) {
-
+    public ResponseEntity<Void> verify(
+            @RequestParam String token
+    ) {
         try {
             authService.verifyEmail(token);
 
-            return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create("http://localhost:5173/verification-success"))
+            return ResponseEntity
+                    .status(HttpStatus.FOUND)
+                    .location(
+                            URI.create(
+                                    "http://localhost:5173/verification-success"
+                            )
+                    )
                     .build();
 
         } catch (IllegalArgumentException e) {
 
-            return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create(
-                            "http://localhost:5173/verification-expired?token=" +
-                                    java.net.URLEncoder.encode(
-                                            token, java.nio.charset.StandardCharsets.UTF_8
+            return ResponseEntity
+                    .status(HttpStatus.FOUND)
+                    .location(
+                            URI.create(
+                                    "http://localhost:5173/verification-expired?token="
+                                            + java.net.URLEncoder.encode(
+                                            token,
+                                            java.nio.charset.StandardCharsets.UTF_8
                                     )
-                    ))
+                            )
+                    )
                     .build();
         }
     }
+
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-   public String handleBadRequest(IllegalArgumentException e){
+    public String handleBadRequest(
+            IllegalArgumentException e
+    ) {
         return e.getMessage();
     }
 
@@ -106,11 +147,66 @@ public class AuthController {
     public ResponseEntity<String> resendVerification(
             @RequestBody ResendVerificationRequest request
     ) {
-        authService.resendVerificationEmail(request.email());
+        authService.resendVerificationEmail(
+                request.email()
+        );
 
         return ResponseEntity.ok(
-                "If this account requires verification, " +
-                        "a new link will be sent."
+                "If this account requires verification, "
+                        + "a new link will be sent."
         );
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(
+            @RequestBody Map<String, String> request
+    ) {
+        String email = request.get("email");
+
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body(
+                    Map.of(
+                            "message",
+                            "Please enter your email address."
+                    )
+            );
+        }
+
+        authService.requestPasswordReset(email);
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "message",
+                        "If a verified account exists for that email, a password reset link will be sent."
+                )
+        );
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(
+            @RequestBody Map<String, String> request
+    ) {
+        try {
+            authService.resetPassword(
+                    request.get("token"),
+                    request.get("newPassword")
+            );
+
+            return ResponseEntity.ok(
+                    Map.of(
+                            "message",
+                            "Your password has been reset successfully."
+                    )
+            );
+
+        } catch (IllegalArgumentException e) {
+
+            return ResponseEntity.badRequest().body(
+                    Map.of(
+                            "message",
+                            e.getMessage()
+                    )
+            );
+        }
     }
 }
