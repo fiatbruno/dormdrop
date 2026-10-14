@@ -56,7 +56,7 @@ function ListingCards({ items, onMarkSold, onRelist, pending }) {
           <div className="profile-card-actions">
             {item.status === "SOLD" ? (
               <>
-                <Link to={`/Item-listing/${item.id}`}>View listing</Link>
+                <Link to={`/items/${item.id}`}>View listing</Link>
 
                 <button
                   type="button"
