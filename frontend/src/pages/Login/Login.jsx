@@ -1,3 +1,4 @@
+import useAuth from "../../hooks/useAuth";
 import React, { useState } from "react";
 import "./Login.css";
 import Button from "../../components/Button/Button.jsx";
@@ -40,6 +41,7 @@ function Login() {
 
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
   // This is a function that gets called whenever the email or password
@@ -51,9 +53,9 @@ function Login() {
       // Make a POST request to the backend with the user's credentials.
 
     const response = await loginUser(data);
-    localStorage.setItem("token", response.data.token);
+    login(response.data.token);
 
-      navigate("/home");
+      navigate("/home", { replace: true });
 
     } catch (err) {
       // On failure, set an error message.

@@ -1,8 +1,9 @@
+import ListingImage from "../../components/ListingImage";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import "./SavedItems.css";
 import Footer from "../../components/Footer/Footer";
-import useSavedItems from "../../api/useSavedItems";
+import useSavedItems from "../../hooks/useSavedItems";
 import Navbar from "../../components/Navbar/Navbar";
 
 const filters = ["All saved", "Available", "No longer available"];
@@ -134,13 +135,10 @@ function SavedItemsView({
                 <article className="saved-card" key={item.id}>
                   <div className="saved-image-wrap">
                     {item.imageUrl ? (
-                      <img
+                      <ListingImage
                         src={item.imageUrl}
                         alt={item.title}
                         loading="lazy"
-                        onError={(event) => {
-                          event.currentTarget.style.display = "none";
-                        }}
                       />
                     ) : null}
                     <span
