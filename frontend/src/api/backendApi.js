@@ -1,26 +1,11 @@
-import axios from "axios";
-
-const api = axios.create({
-  baseURL: "http://localhost:8080/api/v1",
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import api from "./client";
 
 export function registerUser(user) {
-  return api.post("auth/register", user);
+  return api.post("/auth/register", user);
 }
 
 export function loginUser(credentials) {
-  return api.post("auth/login", credentials);
+  return api.post("/auth/login", credentials);
 }
 export function resendVerificationEmail(email) {
   return api.post("/auth/resend-verification", {
