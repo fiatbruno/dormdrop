@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Upload, ShieldCheck } from "lucide-react";
 
-import { getListingById, updateListing, uploadListingImage } from "../../api/marketplaceApi";
+import {
+  getListingById,
+  updateListing,
+  uploadListingImage,
+} from "../../api/marketplaceApi";
 import ListingImage from "../../components/ListingImage";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
@@ -63,8 +67,11 @@ function Photo({ photo, className, alt }) {
     setUrl(objectUrl);
     return () => URL.revokeObjectURL(objectUrl);
   }, [photo]);
-  return photo.file ? <img src={url} className={className} alt={alt} />
-    : <ListingImage src={photo.url} className={className} alt={alt} />;
+  return photo.file ? (
+    <img src={url} className={className} alt={alt} />
+  ) : (
+    <ListingImage src={photo.url} className={className} alt={alt} />
+  );
 }
 
 export default function EditListing() {
@@ -148,7 +155,9 @@ export default function EditListing() {
     if (!selected.length) return;
 
     if (photos.length + selected.length > 1) {
-      setPhotoError("Replace the existing photo before adding a new one. One photo is supported.");
+      setPhotoError(
+        "Replace the existing photo before adding a new one. One photo is supported.",
+      );
       return;
     }
 
@@ -214,12 +223,18 @@ export default function EditListing() {
     }
 
     if (photos.length === 0) {
-      setPhotoError("Please add a photo before saving. To replace a photo, remove it and select a new one.");
+      setPhotoError(
+        "Please add a photo before saving. To replace a photo, remove it and select a new one.",
+      );
       return;
     }
     const data = {
-      title: form.title.trim(), description: form.description.trim(), category,
-      condition: form.condition, listingType: form.listingType, price,
+      title: form.title.trim(),
+      description: form.description.trim(),
+      category,
+      condition: form.condition,
+      listingType: form.listingType,
+      price,
       pickupLocation: form.pickupLocation.trim(),
     };
 
@@ -232,7 +247,9 @@ export default function EditListing() {
         try {
           await uploadListingImage(id, photos[0].file);
         } catch {
-          setError("Your listing details were saved, but the photo upload failed. Save again to retry the photo upload.");
+          setError(
+            "Your listing details were saved, but the photo upload failed. Save again to retry the photo upload.",
+          );
           return;
         }
       }
@@ -334,8 +351,8 @@ export default function EditListing() {
                     </button>
 
                     <p>
-                      {photos.length} of 1 photo added · JPG or PNG · Up to 5
-                      MB each
+                      {photos.length} of 1 photo added · JPG or PNG · Up to 5 MB
+                      each
                     </p>
                   </div>
 
@@ -548,13 +565,6 @@ export default function EditListing() {
                   </div>
                 </div>
               </article>
-
-              <Link
-                className="view-listing"
-                to={`/item-detail/${encodeURIComponent(id)}`}
-              >
-                View listing
-              </Link>
 
               <div className="campus-note">
                 <ShieldCheck size={18} aria-hidden="true" />
