@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Upload, ShieldCheck } from "lucide-react";
 
-import api from "../../api/backendApi";
+import { getListingById, updateListing, uploadListingImage } from "../../api/marketplaceApi";
+import ListingImage from "../../components/ListingImage";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import "../ListItem/ListItem.css";
@@ -54,49 +55,16 @@ const emptyForm = {
   pickupLocation: "",
 };
 
-// Existing photos require the same authentication as other API requests.
 function Photo({ photo, className, alt }) {
   const [url, setUrl] = useState("");
-
   useEffect(() => {
-    let active = true;
-    let objectUrl;
-    const controller = new AbortController();
-
-    setUrl("");
-
-    if (photo.file) {
-      objectUrl = URL.createObjectURL(photo.file);
-      setUrl(objectUrl);
-    } else {
-      api
-        .get(`/listings/images/${encodeURIComponent(photo.id)}`, {
-          responseType: "blob",
-          signal: controller.signal,
-        })
-        .then(({ data }) => {
-          if (!active) return;
-
-          objectUrl = URL.createObjectURL(data);
-          setUrl(objectUrl);
-        })
-        .catch(() => {
-          // Keep the photo entry visible if its image cannot load.
-        });
-    }
-
-    return () => {
-      active = false;
-      controller.abort();
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
+    if (!photo.file) return;
+    const objectUrl = URL.createObjectURL(photo.file);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
   }, [photo]);
-
-  return url ? (
-    <img src={url} className={className} alt={alt} />
-  ) : (
-    <div className={className} role="img" aria-label="Photo unavailable" />
-  );
+  return photo.file ? <img src={url} className={className} alt={alt} />
+    : <ListingImage src={photo.url} className={className} alt={alt} />;
 }
 
 export default function EditListing() {
@@ -112,7 +80,7 @@ export default function EditListing() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [photoError, setPhotoError] = useState("");
-  const [status, setStatus] = useState("ACTIVE");
+  const [status, setStatus] = useState("AVAILABLE");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -124,11 +92,9 @@ export default function EditListing() {
     setForm(emptyForm);
     setPhotos([]);
 
-    api
-      .get(`/listings/${encodeURIComponent(id)}/edit`, {
-        signal: controller.signal,
-      })
-      .then(({ data }) => {
+    getListingById(id)
+      .then((data) => {
+        if (controller.signal.aborted) return;
         const knownCategory = categories.includes(data.category);
 
         setForm({
@@ -142,14 +108,8 @@ export default function EditListing() {
           pickupLocation: data.pickupLocation || "",
         });
 
-        setPhotos(
-          (data.imageIds || []).map((photoId) => ({
-            key: photoId,
-            id: photoId,
-          })),
-        );
-
-        setStatus(data.status || "ACTIVE");
+        setPhotos(data.image ? [{ key: "existing", url: data.image }] : []);
+        setStatus(data.status || "AVAILABLE");
         setLoaded(true);
       })
       .catch((err) => {
@@ -187,8 +147,8 @@ export default function EditListing() {
 
     if (!selected.length) return;
 
-    if (photos.length + selected.length > 5) {
-      setPhotoError("You can add up to 5 photos in total.");
+    if (photos.length + selected.length > 1) {
+      setPhotoError("Replace the existing photo before adding a new one. One photo is supported.");
       return;
     }
 
@@ -253,36 +213,29 @@ export default function EditListing() {
       return;
     }
 
-    const data = new FormData();
-
-    data.append("title", form.title.trim());
-    data.append("description", form.description.trim());
-    data.append("category", category);
-    data.append("condition", form.condition);
-    data.append("listingType", form.listingType);
-    data.append("price", price);
-    data.append("pickupLocation", form.pickupLocation.trim());
-
-    // Existing photos that remain on the listing.
-    data.append(
-      "retainedImageIds",
-      JSON.stringify(
-        photos.filter((photo) => photo.id).map((photo) => photo.id),
-      ),
-    );
-
-    // Newly selected photos.
-    photos
-      .filter((photo) => photo.file)
-      .forEach((photo) => data.append("images", photo.file));
+    if (photos.length === 0) {
+      setPhotoError("Please add a photo before saving. To replace a photo, remove it and select a new one.");
+      return;
+    }
+    const data = {
+      title: form.title.trim(), description: form.description.trim(), category,
+      condition: form.condition, listingType: form.listingType, price,
+      pickupLocation: form.pickupLocation.trim(),
+    };
 
     submitting.current = true;
     setSaving(true);
 
     try {
-      await api.put(`/listings/${encodeURIComponent(id)}`, data, {
-        headers: { "Content-Type": undefined },
-      });
+      await updateListing(id, data);
+      if (photos[0]?.file) {
+        try {
+          await uploadListingImage(id, photos[0].file);
+        } catch {
+          setError("Your listing details were saved, but the photo upload failed. Save again to retry the photo upload.");
+          return;
+        }
+      }
 
       navigate("/profile#my-listings");
     } catch (err) {
@@ -372,7 +325,7 @@ export default function EditListing() {
                       type="button"
                       className="photo-button"
                       onClick={() => fileInput.current?.click()}
-                      disabled={photos.length >= 5}
+                      disabled={photos.length >= 1}
                     >
                       <span className="upload-icon">
                         <Upload size={18} aria-hidden="true" />
@@ -381,7 +334,7 @@ export default function EditListing() {
                     </button>
 
                     <p>
-                      {photos.length} of 5 photos added · JPG or PNG · Up to 5
+                      {photos.length} of 1 photo added · JPG or PNG · Up to 5
                       MB each
                     </p>
                   </div>
@@ -390,7 +343,6 @@ export default function EditListing() {
                     ref={fileInput}
                     type="file"
                     accept="image/jpeg,image/png"
-                    multiple
                     hidden
                     onChange={addPhotos}
                   />
