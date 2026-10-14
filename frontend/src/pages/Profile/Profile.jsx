@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import "./Profile.css";
+import useProfile from "../../hooks/useProfile";
 
 // Listing cards for active and sold items
 function ListingCards({ items, onMarkSold, onRelist, pending }) {
@@ -379,4 +380,9 @@ function Profile({
   );
 }
 
-export default Profile;
+//export default Profile;
+function ProfilePage(){
+    const profileData = useProfile();
+    return <Profile {...profileData}/>;
+    }
+export default ProfilePage;
