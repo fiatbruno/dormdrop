@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import api from "./backendApi";
+import api from "./client";
 import config from "./savedItemsConfig";
 
 export default function useSavedItems() {
