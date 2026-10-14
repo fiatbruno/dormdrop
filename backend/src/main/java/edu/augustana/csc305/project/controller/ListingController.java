@@ -2,6 +2,7 @@
 package edu.augustana.csc305.project.controller;
 
 import edu.augustana.csc305.project.dto.CreateListingRequest;
+import edu.augustana.csc305.project.dto.ListingDetailsResponse;
 import edu.augustana.csc305.project.model.Listing;
 import edu.augustana.csc305.project.model.ListingStatus;
 import edu.augustana.csc305.project.service.ListingService;
@@ -50,7 +51,7 @@ public class ListingController {
 
 
     @GetMapping("/{id}")
-    public Listing getListingById(@PathVariable String id) {
+    public ListingDetailsResponse getListingById(@PathVariable String id) {
 
         ObjectId listingId = convertToObjectId(id);
 
