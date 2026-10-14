@@ -13,7 +13,6 @@ function Footer({ links = [] }) {
           <Link className="dormdrop-footer__logo" to="/home">
             <img src={logo} alt="DormDrop home" />
           </Link>
-          <p>© {new Date().getFullYear()} DormDrop</p>
         </div>
         {links.length > 0 && (
           <nav className="dormdrop-footer__links" aria-label="Policies">
@@ -22,6 +21,7 @@ function Footer({ links = [] }) {
             ))}
           </nav>
         )}
+        <p className="dormdrop-footer__copyright">© {new Date().getFullYear()} DormDrop</p>
       </div>
     </footer>
   );

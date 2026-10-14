@@ -6,7 +6,7 @@ import {
   saveProfile,
   updateListingStatus,
   resetPassword,
-} from "./profileApi";
+} from "../api/profileApi";
 
 export default function useProfile() {
   const [user, setUser] = useState(null);
