@@ -44,6 +44,11 @@
   line-height: 1.5;
 }
 
+.dormdrop-footer .dormdrop-footer__copyright {
+  margin-left: auto;
+  text-align: right;
+}
+
 .dormdrop-footer .dormdrop-footer__links {
   display: flex;
   flex-wrap: wrap;
