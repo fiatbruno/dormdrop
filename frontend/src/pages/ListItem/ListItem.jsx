@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Upload, ShieldCheck, ChevronDown } from "lucide-react";
-import api from "../../api/backendApi";
+import { createListing, uploadListingImage } from "../../api/marketplaceApi";
 import Footer from "../../components/Footer/Footer";
 import "./ListItem.css";
 import Navbar from "../../components/Navbar/Navbar";
@@ -208,6 +208,7 @@ function ListItem() {
 
   const fileInput = useRef(null);
   const submitting = useRef(false);
+  const [createdListingId, setCreatedListingId] = useState(null);
 
   useEffect(() => {
     if (!photos.length) {
@@ -275,8 +276,8 @@ function ListItem() {
 
     if (!selected.length) return;
 
-    if (photos.length + selected.length > 5) {
-      setPhotoError("You can upload up to 5 photos.");
+    if (photos.length + selected.length > 1) {
+      setPhotoError("The current backend supports one photo per listing.");
       return;
     }
 
@@ -320,6 +321,12 @@ function ListItem() {
 
   async function publishListing(event) {
     event.preventDefault();
+    if (photos.length === 0) {
+      setPhotoError("Add a photo before publishing your item.");
+      return;
+    }
+
+    setPhotoError("");
     if (!form.description.trim()) {
       setDescriptionError("A description is required to list your item.");
       document.getElementById("description")?.focus();
@@ -362,24 +369,30 @@ function ListItem() {
       return;
     }
 
-    const data = new FormData();
-    data.append("title", form.title.trim());
-    data.append("description", form.description.trim());
-    data.append("category", category);
-    data.append("condition", form.condition);
-    data.append("listingType", form.listingType);
-    data.append("price", price);
-    data.append("pickupLocation", form.pickupLocation);
-    photos.forEach((photo) => data.append("images", photo));
+    const listing = {
+      title: form.title.trim(),
+      description: form.description.trim(),
+      category,
+      condition: form.condition,
+      listingType: form.listingType,
+      price,
+      pickupArea: form.pickupLocation,
+    };
 
     submitting.current = true;
     setLoading(true);
 
     try {
-      // Send listing information to the backend
-      await api.post("/listings", data, {
-        headers: { "Content-Type": undefined },
-      });
+      let id = createdListingId;
+      if (!id) {
+        const saved = await createListing(listing);
+        id = saved.id;
+        setCreatedListingId(id);
+      }
+
+      if (photos[0]) {
+        await uploadListingImage(id, photos[0]);
+      }
 
       // Clear the form after successful publishing
       setForm(emptyForm);
@@ -394,7 +407,7 @@ function ListItem() {
       }
 
       // Redirect only after the backend successfully saves the listing
-      navigate("/profile#my-listings");
+      navigate(`/items/${encodeURIComponent(id)}`);
     } catch (err) {
       // Handle backend errors
       const status = err.response?.status;
@@ -432,7 +445,6 @@ function ListItem() {
         : form.price && Number.isFinite(Number(form.price))
           ? `$${Number(form.price).toFixed(2)}`
           : "$0.00";
-  const [search, setSearch] = useState("");
   return (
     <main className="listing-page">
       <Navbar showSearch={false} />
@@ -446,7 +458,7 @@ function ListItem() {
 
         <div className="listing-layout">
           <form className="listing-form" onSubmit={publishListing} noValidate>
-            <fieldset disabled={loading}>
+            <fieldset disabled={loading || Boolean(createdListingId)}>
               <h2>Photos</h2>
 
               <div className="photo-box">
@@ -463,7 +475,7 @@ function ListItem() {
                     type="button"
                     className="photo-button"
                     onClick={() => fileInput.current?.click()}
-                    disabled={photos.length >= 5}
+                    disabled={photos.length >= 1}
                   >
                     <span className="upload-icon">
                       <Upload size={18} aria-hidden="true" />
@@ -472,7 +484,7 @@ function ListItem() {
                   </button>
 
                   <p>
-                    {photos.length} of 5 photos added · JPG or PNG · Up to 5 MB
+                    {photos.length} of 1 photo added · JPG or PNG · Up to 5 MB
                     each
                   </p>
 
@@ -494,7 +506,6 @@ function ListItem() {
                   ref={fileInput}
                   type="file"
                   accept="image/jpeg,image/png"
-                  multiple
                   hidden
                   onChange={choosePhotos}
                 />
@@ -539,6 +550,7 @@ function ListItem() {
                     onChange={updateField}
                     required
                   >
+                    <option value="">Choose a condition</option>
                     <option value="New">New</option>
                     <option value="Like new">Used (Like new)</option>
                     <option value="Good">Used (Good)</option>
@@ -659,6 +671,37 @@ function ListItem() {
                 </button>
               </div>
             </fieldset>
+
+            {createdListingId && (
+              <div className="form-buttons">
+                <p role="status">
+                  Your listing is saved. The photo upload did not finish. Retry
+                  here without creating another listing, or view it now.
+                </p>
+                <button
+                  className="publish-button"
+                  type="submit"
+                  disabled={loading}
+                >
+                  {loading ? "Uploading..." : "Retry photo upload"}
+                </button>
+                <button
+                  className="draft-button"
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    try {
+                      localStorage.removeItem("dormdrop-listing-draft");
+                    } catch {
+                      /* Optional local draft. */
+                    }
+                    navigate(`/items/${encodeURIComponent(createdListingId)}`);
+                  }}
+                >
+                  View saved listing
+                </button>
+              </div>
+            )}
 
             {error && (
               <p className="listing-error" role="alert">
