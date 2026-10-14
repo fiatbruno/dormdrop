@@ -39,6 +39,9 @@ public class UserRepository {
         return Optional.ofNullable(user);
     }
 
+    public Optional<User> findById(ObjectId id) {
+        return Optional.ofNullable(mongoTemplate.findById(id, User.class));
+    }
 
     public boolean emailExists(String email) {
         return mongoTemplate.exists(

@@ -2,6 +2,7 @@
 package edu.augustana.csc305.project.service;
 
 import edu.augustana.csc305.project.dto.CreateListingRequest;
+import edu.augustana.csc305.project.dto.ListingDetailsResponse;
 import edu.augustana.csc305.project.model.Listing;
 import edu.augustana.csc305.project.model.ListingStatus;
 import edu.augustana.csc305.project.model.User;
@@ -214,15 +215,19 @@ public class ListingService {
 
 
 
-    public Listing getListingById(ObjectId id) {
+    public ListingDetailsResponse getListingById(ObjectId id) {
+        Listing listing = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Listing not found"
+                ));
 
-        return repository.findById(id)
-                .orElseThrow(() ->
-                        new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Listing not found"
-                        )
-                );
+        String sellerName = listing.getOwnerId() == null
+                ? null
+                : userRepository.findById(listing.getOwnerId())
+                    .map(User::getName)
+                    .orElse(null);
+
+        return ListingDetailsResponse.from(listing, sellerName);
     }
 
 }
