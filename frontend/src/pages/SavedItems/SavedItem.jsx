@@ -133,7 +133,7 @@ function SavedItemsView({
               const path = getListingPath?.(item.id);
               return (
                 <article className="saved-card" key={item.id}>
-                  <div className="saved-image-wrap">
+                  <PageLink to={path} className="saved-image-wrap">
                     {item.imageUrl ? (
                       <ListingImage
                         src={item.imageUrl}
@@ -147,12 +147,12 @@ function SavedItemsView({
                     >
                       DormDrop
                     </span>
-                  </div>
+                  </PageLink>
                   <div className="saved-card-body">
                     <p className="saved-category">
                       {item.category || "Uncategorized"}
                     </p>
-                    <h2>{item.title}</h2>
+                    <h2><PageLink to={path}>{item.title}</PageLink></h2>
                     <div className="saved-card-meta">
                       <strong>
                         {typeof item.price === "number"
