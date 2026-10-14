@@ -321,6 +321,12 @@ function ListItem() {
 
   async function publishListing(event) {
     event.preventDefault();
+    if (photos.length === 0) {
+      setPhotoError("Add a photo before publishing your item.");
+      return;
+    }
+
+    setPhotoError("");
     if (!form.description.trim()) {
       setDescriptionError("A description is required to list your item.");
       document.getElementById("description")?.focus();
