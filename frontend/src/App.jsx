@@ -1,3 +1,5 @@
+import AuthProvider from "./auth/AuthProvider";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import Login from "./pages/Login/Login";
@@ -51,20 +53,20 @@ const router = createBrowserRouter([
   },
   {
     path: "/list-an-item",
-    element: <ListItem />,
+    element: <ProtectedRoute><ListItem /></ProtectedRoute>,
   },
-  { path: "/saved-item", element: <SavedItem /> },
+  { path: "/saved-item", element: <ProtectedRoute><SavedItem /></ProtectedRoute> },
   {
     path: "/profile",
-    element: <Profile />,
+    element: <ProtectedRoute><Profile /></ProtectedRoute>,
   },
   {
     path: "/edit-listing/:id",
-    element: <EditListing />,
+    element: <ProtectedRoute><EditListing /></ProtectedRoute>,
   },
   {
     path: "/home",
-    element: <Home />,
+    element: <ProtectedRoute><Home /></ProtectedRoute>,
   },
   
 
@@ -76,9 +78,9 @@ const router = createBrowserRouter([
 
 function App() {
   return (
-    <>
+    <AuthProvider>
       <RouterProvider router={router} />
-    </>
+    </AuthProvider>
   );
 }
 
