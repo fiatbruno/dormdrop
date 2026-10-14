@@ -19,7 +19,7 @@ import {
   getFavorites,
   addFavorite,
   removeFavorite
-} from "../../services/marketplaceApi";
+} from "../../api/marketplaceApi";
 
 import marketplaceImage from "../../assets/marketplace.png";
 

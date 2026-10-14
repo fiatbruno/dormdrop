@@ -123,9 +123,4 @@ public class ListingController {
         }
         return new ObjectId(id);
     }
-
-    @GetMapping("/{id}")
-    public Listing getListing(@PathVariable String id) {
-        return service.getListingById(convertToObjectId(id));
-    }
 }

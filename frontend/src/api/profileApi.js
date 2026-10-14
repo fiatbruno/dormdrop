@@ -1,71 +1,49 @@
 
-const API_URL = "/api";
+import api from "./client";
 
-// Change these paths to match the Spring Boot controllers.
+// Profile, password-reset, and logout routes still need backend implementation.
 const endpoints = {
   profile: "/users/me",
   myListings: "/users/me/listings",
-  listingStatus: (id) => `/listings/${id}/status`,
+  listingStatus: (id) => `/home/${encodeURIComponent(id)}/status`,
   resetPassword: "/auth/forgot-password",
   logout: "/auth/logout",
 };
 
-async function request(path, options = {}) {
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
-  }
-
-  if (response.status === 204) return null;
-
-  return response.json();
-}
-
 // Get logged-in user's profile
-export function getProfile() {
-  return request(endpoints.profile);
+export async function getProfile() {
+  const { data } = await api.get(endpoints.profile);
+  return data;
 }
 
 // Update display name and bio
-export function saveProfile(data) {
-  return request(endpoints.profile, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
+export async function saveProfile(profile) {
+  const { data, status } = await api.put(endpoints.profile, profile);
+  return status === 204 ? null : data;
 }
 
 // Get the logged-in user's listings
-export function getMyListings() {
-  return request(endpoints.myListings);
+export async function getMyListings() {
+  const { data } = await api.get(endpoints.myListings);
+  return data;
 }
 
 // Mark an item as sold or available
-export function updateListingStatus(id, status) {
-  return request(endpoints.listingStatus(id), {
-    method: "PATCH",
-    body: JSON.stringify({ status }),
+export async function updateListingStatus(id, status) {
+  const { data } = await api.patch(endpoints.listingStatus(id), null, {
+    params: { status },
   });
+  return data;
 }
 
 // Request a password reset
-export function resetPassword(email) {
-  return request(endpoints.resetPassword, {
-    method: "POST",
-    body: JSON.stringify({ email }),
-  });
+export async function resetPassword(email) {
+  const { data, status } = await api.post(endpoints.resetPassword, { email });
+  return status === 204 ? null : data;
 }
 
 // Log out
-export function logout() {
-  return request(endpoints.logout, {
-    method: "POST",
-  });
+export async function logout() {
+  const { data, status } = await api.post(endpoints.logout);
+  return status === 204 ? null : data;
 }
