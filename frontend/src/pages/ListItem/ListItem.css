@@ -10,10 +10,15 @@
   box-sizing: border-box;
 }
 
+.listing-page > .dormdrop-navbar {
+  border-bottom: 0;
+}
+
 .listing-container {
-  max-width: 1120px;
+  width: 100%;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 34px 28px 60px;
+  padding: 48px 24px 72px;
 }
 
 .listing-header {
