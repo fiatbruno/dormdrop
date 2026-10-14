@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import api from "../api/client";
 import config from "../api/savedItemsConfig";
+import { getFavorites, getListingById, removeFavorite } from "../api/marketplaceApi";
 
 export default function useSavedItems() {
   const [items, setItems] = useState([]);
@@ -12,17 +12,18 @@ export default function useSavedItems() {
     setError("");
 
     try {
-      if (!config.listPath || !config.selectItems) {
-        setItems([]);
-        return;
-      }
-
-      const response = await api.get(config.listPath, { signal });
-      const savedItems = config.selectItems(response.data);
-
-      if (!Array.isArray(savedItems)) {
-        throw new Error("Could not read the saved items response.");
-      }
+      const ids = await getFavorites();
+      const results = await Promise.allSettled(ids.map(getListingById));
+      const failed = results.find(result => result.status === "rejected" &&
+        ![400, 404].includes(result.reason.response?.status));
+      if (failed) throw failed.reason;
+      const savedItems = results.filter(result => result.status === "fulfilled")
+        .map(({ value: item }) => ({
+          ...item,
+          imageUrl: item.image,
+          available: item.status === "AVAILABLE",
+          price: item.listingType === "Free / Donate" ? "Free" : item.listingType === "Trade" ? "Trade" : item.price,
+        }));
 
       if (!signal?.aborted) setItems(savedItems);
     } catch (err) {
@@ -46,14 +47,7 @@ export default function useSavedItems() {
   }, [loadItems]);
 
   async function unsave(id) {
-    const item = items.find((item) => item.id === id);
-    const request = config.unsaveRequest?.(item);
-
-    if (!request?.url || !request.method) {
-      throw new Error("Unsave is not connected yet.");
-    }
-
-    await api.request(request);
+    await removeFavorite(id);
     setItems((previous) => previous.filter((item) => item.id !== id));
   }
 
@@ -62,7 +56,7 @@ export default function useSavedItems() {
     loading,
     error,
     onRetry: () => loadItems(),
-    onUnsave: config.unsaveRequest ? unsave : undefined,
+    onUnsave: unsave,
     getListingPath: config.detailPath,
   };
 }

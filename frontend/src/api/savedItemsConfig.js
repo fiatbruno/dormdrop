@@ -5,7 +5,7 @@ const savedItemsConfig = {
   unsaveRequest: null,
 
   detailPath: (id) =>
-    `/item-detail/${encodeURIComponent(id)}`,
+    `/items/${encodeURIComponent(id)}`,
 };
 
 export default savedItemsConfig;
