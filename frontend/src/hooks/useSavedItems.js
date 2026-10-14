@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import api from "./client";
-import config from "./savedItemsConfig";
+import api from "../api/client";
+import config from "../api/savedItemsConfig";
 
 export default function useSavedItems() {
   const [items, setItems] = useState([]);

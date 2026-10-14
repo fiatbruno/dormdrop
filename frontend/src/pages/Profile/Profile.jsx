@@ -1,3 +1,5 @@
+import ListingImage from "../../components/ListingImage";
+import useAuth from "../../hooks/useAuth";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
@@ -15,7 +17,8 @@ function ListingCards({ items, onMarkSold, onRelist, pending }) {
         <article className="profile-listing-card" key={item.id}>
           <Link to={`/listing/${item.id}`} className="profile-listing-image">
             {item.imageUrl || item.image ? (
-              <img
+              <ListingImage
+                fallback={<span>No image available</span>}
                 src={item.imageUrl || item.image}
                 alt={item.title}
                 loading="lazy"
@@ -96,6 +99,7 @@ function Profile({
   onLogout,
 }) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
   const [message, setMessage] = useState("");
@@ -115,11 +119,7 @@ function Profile({
   );
 
   function handleLogout() {
-    // Remove the authentication token
-    localStorage.removeItem("token");
-
-    // Remove saved user information
-    localStorage.removeItem("user");
+    logout();
 
     // Redirect to the login page
     navigate("/login", { replace: true });
