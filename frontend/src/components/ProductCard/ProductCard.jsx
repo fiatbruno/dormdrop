@@ -7,7 +7,7 @@ import "./ProductCard.css";
 /** product: { id, title, category, description, image, price, listingType }.
  * Supply detailsPath when a real detail route is available.
  */
-function ProductCard({ product, saved = false, onToggleSave, detailsPath }) {
+function ProductCard({ product, saved = false, onToggleSave, detailsPath = `/items/${encodeURIComponent(product.id)}` }) {
   const image = useListingImage(product.image);
   const [failedImage, setFailedImage] = useState(null);
   const price =
@@ -22,6 +22,7 @@ function ProductCard({ product, saved = false, onToggleSave, detailsPath }) {
   return (
     <article className="product-card">
       <div className="product-card__media">
+        <Link className="product-card__image-link" to={detailsPath} aria-label={`View ${product.title}`}>
         {image && failedImage !== image ? (
           <img
             src={image}
@@ -35,6 +36,7 @@ function ProductCard({ product, saved = false, onToggleSave, detailsPath }) {
             <span>Photo coming soon</span>
           </div>
         )}
+        </Link>
         {onToggleSave && (
           <button
             className="product-card__save"

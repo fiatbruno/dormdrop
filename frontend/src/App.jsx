@@ -9,6 +9,7 @@ import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
 import VerificationSuccess from "./pages/EmailVerificationSuccess/EmailVerificationSuccess";
 import EmailVerificationExpired from "./pages/EmailVerificationExpired/EmailVerificationExpired";
 import ListItem from "./pages/ListItem/ListItem";
+import ItemDetails from "./pages/ItemDetails/ItemDetails";
 import Home from "./pages/Home/Home";
 import SavedItem from "./pages/SavedItems/SavedItem";
 import Profile from "./pages/Profile/Profile";
@@ -53,22 +54,52 @@ const router = createBrowserRouter([
   },
   {
     path: "/list-an-item",
-    element: <ProtectedRoute><ListItem /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute>
+        <ListItem />
+      </ProtectedRoute>
+    ),
   },
-  { path: "/saved-item", element: <ProtectedRoute><SavedItem /></ProtectedRoute> },
+  {
+    path: "/saved-item",
+    element: (
+      <ProtectedRoute>
+        <SavedItem />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: "/profile",
-    element: <ProtectedRoute><Profile /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute>
+        <Profile />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/edit-listing/:id",
-    element: <ProtectedRoute><EditListing /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute>
+        <EditListing />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/items/:id",
+    element: (
+      <ProtectedRoute>
+        <ItemDetails />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/home",
-    element: <ProtectedRoute><Home /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute>
+        <Home />
+      </ProtectedRoute>
+    ),
   },
-  
 
   {
     path: "*",
