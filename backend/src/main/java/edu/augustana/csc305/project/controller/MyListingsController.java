@@ -12,19 +12,21 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/users/me/listings")
+@RequestMapping("/users/me/listings")
 public class MyListingsController {
 
     private final MyListingsService myListingsService;
 
-    public MyListingsController(MyListingsService myListingsService) {
+    public MyListingsController(
+            MyListingsService myListingsService
+    ) {
         this.myListingsService = myListingsService;
     }
 
     @GetMapping
     public ResponseEntity<List<Listing>> getMyListings(
-            Authentication authentication) {
-
+            Authentication authentication
+    ) {
         String email = authentication.getName();
 
         return ResponseEntity.ok(
@@ -35,11 +37,12 @@ public class MyListingsController {
     @GetMapping("/{id}")
     public ResponseEntity<Listing> getMyListing(
             @PathVariable String id,
-            Authentication authentication) {
-
+            Authentication authentication
+    ) {
         return ResponseEntity.ok(
                 myListingsService.getMyListing(
-                        authentication.getName(), id
+                        id,
+                        authentication.getName()
                 )
         );
     }
@@ -47,24 +50,27 @@ public class MyListingsController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> deleteMyListing(
             @PathVariable String id,
-            Authentication authentication) {
-
+            Authentication authentication
+    ) {
         myListingsService.deleteMyListing(
-                authentication.getName(), id
+                id,
+                authentication.getName()
         );
 
         return ResponseEntity.ok(
-                Map.of("message", "Listing deleted successfully")
+                Map.of(
+                        "message",
+                        "Listing deleted successfully"
+                )
         );
     }
 
-
     @GetMapping("/grouped")
     public MyListingsResponse getMyListingsGrouped(
-            Authentication authentication) {
+            Authentication authentication
+    ) {
         return myListingsService.getMyListingsGrouped(
                 authentication.getName()
         );
     }
-
 }

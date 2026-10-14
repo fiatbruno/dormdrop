@@ -5,7 +5,6 @@ import edu.augustana.csc305.project.dto.ProfileResponse;
 import edu.augustana.csc305.project.dto.UpdateProfileRequest;
 import edu.augustana.csc305.project.model.User;
 import edu.augustana.csc305.project.repository.UserRepository;
-import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,7 +18,9 @@ public class UserController {
 
     private final UserRepository userRepository;
 
-    public UserController(UserRepository userRepository) {
+    public UserController(
+            UserRepository userRepository
+    ) {
         this.userRepository = userRepository;
     }
 
@@ -27,21 +28,30 @@ public class UserController {
     public ResponseEntity<?> getMyProfile(
             Authentication authentication
     ) {
-        if (authentication == null
-                || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("You need to log in to view your profile.");
+        if (authentication == null ||
+                !authentication.isAuthenticated()) {
+
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(
+                            "You need to log in to view your profile."
+                    );
         }
 
         Optional<User> optionalUser =
-                userRepository.findByEmail(authentication.getName());
+                userRepository.findByEmail(
+                        authentication.getName()
+                );
 
         if (optionalUser.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
                     .body("This account is not found.");
         }
 
-        return ResponseEntity.ok(toProfileResponse(optionalUser.get()));
+        return ResponseEntity.ok(
+                toProfileResponse(optionalUser.get())
+        );
     }
 
     @PutMapping("/me")
@@ -49,70 +59,95 @@ public class UserController {
             @RequestBody UpdateProfileRequest request,
             Authentication authentication
     ) {
-        if (authentication == null
-                || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("You need to log in to update your profile.");
+        if (authentication == null ||
+                !authentication.isAuthenticated()) {
+
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(
+                            "You need to log in to update your profile."
+                    );
         }
 
-        if (request.name() == null
-                || request.name().isBlank()) {
+        if (request == null ||
+                request.name() == null ||
+                request.name().isBlank()) {
+
             return ResponseEntity.badRequest()
-                    .body("Display name cannot be empty.");
+                    .body(
+                            "Display name cannot be empty."
+                    );
         }
 
         String name = request.name().trim();
-        String aboutYou = request.aboutYou() == null
-                ? ""
-                : request.aboutYou().trim();
+
+        String aboutYou =
+                request.aboutYou() == null
+                        ? ""
+                        : request.aboutYou().trim();
 
         if (name.length() > 120) {
             return ResponseEntity.badRequest()
-                    .body("Display name cannot exceed 120 characters.");
+                    .body(
+                            "Display name cannot exceed 120 characters."
+                    );
         }
 
         if (aboutYou.length() > 500) {
             return ResponseEntity.badRequest()
-                    .body("About you cannot exceed 500 characters.");
+                    .body(
+                            "About you cannot exceed 500 characters."
+                    );
         }
 
         Optional<User> optionalUser =
-                userRepository.findByEmail(authentication.getName());
+                userRepository.findByEmail(
+                        authentication.getName()
+                );
 
         if (optionalUser.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
                     .body("User account not found.");
         }
 
         User user = optionalUser.get();
 
-        boolean updated = userRepository.updateUserProfile(
-                user.getId(),
-                name,
-                aboutYou
-        );
+        boolean updated =
+                userRepository.updateUserProfile(
+                        user.getId(),
+                        name,
+                        aboutYou
+                );
 
         if (!updated) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Could not update the profile.");
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(
+                            "Could not update the profile."
+                    );
         }
 
         user.setName(name);
         user.setAboutYou(aboutYou);
 
-        return ResponseEntity.ok(toProfileResponse(user));
+        return ResponseEntity.ok(
+                toProfileResponse(user)
+        );
     }
 
-    private ProfileResponse toProfileResponse(User user) {
+    private ProfileResponse toProfileResponse(
+            User user
+    ) {
         return new ProfileResponse(
                 user.getId().toHexString(),
                 user.getName(),
                 user.getEmail(),
                 user.isEmailVerified(),
                 "Augustana College",
-                user.getAboutYou() == null ? "" : user.getAboutYou()
+                user.getAboutYou() == null
+                        ? ""
+                        : user.getAboutYou()
         );
     }
-
-
 }
