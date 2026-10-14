@@ -24,17 +24,21 @@ public class UserRepository {
         return mongoTemplate.count(new Query(), User.class);
     }
 
+
     public void storeUser(User user) {
         mongoTemplate.insert(user);
     }
+
 
     public Optional<User> findByEmail(String email) {
         User user = mongoTemplate.findOne(
                 Query.query(Criteria.where("email").is(email)),
                 User.class
         );
+
         return Optional.ofNullable(user);
     }
+
 
     public boolean emailExists(String email) {
         return mongoTemplate.exists(
@@ -43,20 +47,27 @@ public class UserRepository {
         );
     }
 
+
     public Optional<User> findByVerificationToken(String token) {
+        if (token == null || token.isBlank()) {
+            return Optional.empty();
+        }
+
         User user = mongoTemplate.findOne(
                 Query.query(
                         Criteria.where("verificationToken").is(token)
                 ),
                 User.class
         );
+
         return Optional.ofNullable(user);
     }
 
+
     public void updateUserVerification(
             String userId,
-            boolean emailVerified) {
-
+            boolean emailVerified
+    ) {
         Query query = Query.query(
                 Criteria.where("_id").is(new ObjectId(userId))
         );
@@ -69,11 +80,12 @@ public class UserRepository {
         mongoTemplate.updateFirst(query, update, User.class);
     }
 
+
     public void updateVerificationToken(
             ObjectId userId,
             String newToken,
-            long expiration) {
-
+            long expiration
+    ) {
         Query query = Query.query(
                 Criteria.where("_id").is(userId)
         );
@@ -84,4 +96,83 @@ public class UserRepository {
 
         mongoTemplate.updateFirst(query, update, User.class);
     }
+
+
+    public void savePasswordResetToken(
+            ObjectId userId,
+            String token,
+            long expiration
+    ) {
+        Query query = Query.query(
+                Criteria.where("_id").is(userId)
+        );
+
+        Update update = new Update()
+                .set("passwordResetToken", token)
+                .set("passwordResetTokenExpiration", expiration);
+
+        mongoTemplate.updateFirst(query, update, User.class);
+    }
+
+
+    public Optional<User> findByPasswordResetToken(String token) {
+        if (token == null || token.isBlank()) {
+            return Optional.empty();
+        }
+
+        User user = mongoTemplate.findOne(
+                Query.query(
+                        Criteria.where("passwordResetToken").is(token)
+                ),
+                User.class
+        );
+
+        return Optional.ofNullable(user);
+    }
+
+
+    public boolean updatePasswordAndClearResetToken(
+            ObjectId userId,
+            String token,
+            String passwordHash,
+            long currentTime
+    ) {
+        Query query = Query.query(
+                Criteria.where("_id").is(userId)
+                        .and("passwordResetToken").is(token)
+                        .and("passwordResetTokenExpiration")
+                        .gt(currentTime)
+        );
+
+        Update update = new Update()
+                .set("passwordHash", passwordHash)
+                .unset("passwordResetToken")
+                .unset("passwordResetTokenExpiration");
+
+        return mongoTemplate.updateFirst(
+                query, update, User.class
+        ).getModifiedCount() > 0;
+    }
+
+
+    public boolean updateUserProfile(
+            ObjectId userId,
+            String name,
+            String aboutYou
+    ) {
+        Query query = Query.query(
+                Criteria.where("_id").is(userId)
+        );
+
+        Update update = new Update()
+                .set("name", name)
+                .set("aboutYou", aboutYou);
+
+        return mongoTemplate.updateFirst(
+                query,
+                update,
+                User.class
+        ).getMatchedCount() > 0;
+    }
+
 }
