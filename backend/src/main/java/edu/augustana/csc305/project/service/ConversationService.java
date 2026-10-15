@@ -2,6 +2,8 @@
 package edu.augustana.csc305.project.service;
 
 import edu.augustana.csc305.project.model.Conversation;
+import edu.augustana.csc305.project.dto.ConversationResponse;
+import edu.augustana.csc305.project.repository.MessageRepository;
 import edu.augustana.csc305.project.model.Listing;
 import edu.augustana.csc305.project.model.User;
 import edu.augustana.csc305.project.repository.ConversationRepository;
@@ -22,15 +24,18 @@ public class ConversationService {
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
     private final MongoTemplate mongoTemplate;
+    private final MessageRepository messageRepository;
 
     public ConversationService(
             ConversationRepository conversationRepository,
             UserRepository userRepository,
-            MongoTemplate mongoTemplate
+            MongoTemplate mongoTemplate,
+            MessageRepository messageRepository
     ) {
         this.conversationRepository = conversationRepository;
         this.userRepository = userRepository;
         this.mongoTemplate = mongoTemplate;
+        this.messageRepository = messageRepository;
     }
 
     public Conversation startConversation(
@@ -143,6 +148,26 @@ public class ConversationService {
         }
 
         return conversation;
+    }
+
+    public ConversationResponse toResponse(Conversation conversation, String email) {
+        User current = getUserByEmail(email);
+        boolean buyer = current.getId().equals(conversation.getBuyerId());
+        if (!buyer && !current.getId().equals(conversation.getSellerId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot access this conversation.");
+        }
+        User other = userRepository.findById(buyer ? conversation.getSellerId() : conversation.getBuyerId()).orElse(null);
+        Listing listing = mongoTemplate.findById(conversation.getListingId(), Listing.class);
+        var summary = listing == null ? null : new ConversationResponse.ListingSummary(
+                listing.getIdString(), listing.getTitle(), listing.getPrice(), listing.getListingType(),
+                listing.getStatus().name(), listing.getImageUrl());
+        String preview = messageRepository.findFirstByConversationIdOrderBySentAtDesc(conversation.getId())
+                .map(message -> message.getContent()).orElse("");
+        long unread = messageRepository.countByConversationIdAndSenderIdNotAndReadAtIsNull(conversation.getId(), current.getId());
+        return new ConversationResponse(conversation.getId().toHexString(), current.getId().toHexString(),
+                new ConversationResponse.Participant(other == null ? "Member unavailable" : other.getName(),
+                        other != null && other.isEmailVerified()), summary, preview,
+                conversation.getCreatedAt(), conversation.getLastMessageAt(), unread);
     }
 
     private User getUserByEmail(String email) {

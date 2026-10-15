@@ -9,14 +9,23 @@ import edu.augustana.csc305.project.repository.MessageRepository;
 import edu.augustana.csc305.project.repository.UserRepository;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.MessagingException;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import org.bson.types.ObjectId;
 
 @Service
 public class MessageService {
+
+    private static final Logger log = LoggerFactory.getLogger(MessageService.class);
+    private final SimpMessagingTemplate messagingTemplate;
 
     private final MessageRepository messageRepository;
     private final ConversationRepository conversationRepository;
@@ -27,12 +36,14 @@ public class MessageService {
             MessageRepository messageRepository,
             ConversationRepository conversationRepository,
             ConversationService conversationService,
-            UserRepository userRepository
+            UserRepository userRepository,
+            SimpMessagingTemplate messagingTemplate
     ) {
         this.messageRepository = messageRepository;
         this.conversationRepository = conversationRepository;
         this.conversationService = conversationService;
         this.userRepository = userRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     public Message sendMessage(
@@ -60,6 +71,8 @@ public class MessageService {
         }
 
         User sender = getUserByEmail(userEmail);
+        User buyer = getParticipant(conversation.getBuyerId());
+        User seller = getParticipant(conversation.getSellerId());
 
         Message message = new Message(
                 conversation.getId(),
@@ -71,6 +84,14 @@ public class MessageService {
 
         conversation.setLastMessageAt(savedMessage.getSentAt());
         conversationRepository.save(conversation);
+
+        Map<String, String> event = Map.of(
+                "type", "MESSAGE_CREATED",
+                "conversationId", conversation.getId().toHexString(),
+                "messageId", savedMessage.getId().toHexString()
+        );
+        notifyParticipant(buyer, event);
+        notifyParticipant(seller, event);
 
         return savedMessage;
     }
@@ -135,6 +156,24 @@ public class MessageService {
         }
 
         messageRepository.saveAll(unreadMessages);
+    }
+
+    private User getParticipant(ObjectId id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Conversation participant not found."
+                ));
+    }
+
+    private void notifyParticipant(User participant, Map<String, String> event) {
+        try {
+            messagingTemplate.convertAndSendToUser(
+                    participant.getEmail(), "/queue/messages", event
+            );
+        } catch (MessagingException ex) {
+            // Persistence succeeded; clients can recover the message through REST.
+            log.warn("Live notification failed for message {}", event.get("messageId"), ex);
+        }
     }
 
     private User getUserByEmail(String email) {

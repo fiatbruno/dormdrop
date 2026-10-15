@@ -672,37 +672,6 @@ function ListItem() {
               </div>
             </fieldset>
 
-            {createdListingId && (
-              <div className="form-buttons">
-                <p role="status">
-                  Your listing is saved. The photo upload did not finish. Retry
-                  here without creating another listing, or view it now.
-                </p>
-                <button
-                  className="publish-button"
-                  type="submit"
-                  disabled={loading}
-                >
-                  {loading ? "Uploading..." : "Retry photo upload"}
-                </button>
-                <button
-                  className="draft-button"
-                  type="button"
-                  disabled={loading}
-                  onClick={() => {
-                    try {
-                      localStorage.removeItem("dormdrop-listing-draft");
-                    } catch {
-                      /* Optional local draft. */
-                    }
-                    navigate(`/items/${encodeURIComponent(createdListingId)}`);
-                  }}
-                >
-                  View saved listing
-                </button>
-              </div>
-            )}
-
             {error && (
               <p className="listing-error" role="alert">
                 {error}
