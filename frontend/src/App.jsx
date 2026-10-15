@@ -10,6 +10,7 @@ import VerificationSuccess from "./pages/EmailVerificationSuccess/EmailVerificat
 import EmailVerificationExpired from "./pages/EmailVerificationExpired/EmailVerificationExpired";
 import ListItem from "./pages/ListItem/ListItem";
 import ItemDetails from "./pages/ItemDetails/ItemDetails";
+import Messages from "./pages/Messages/Messages";
 import Home from "./pages/Home/Home";
 import SavedItem from "./pages/SavedItems/SavedItem";
 import Profile from "./pages/Profile/Profile";
@@ -25,6 +26,8 @@ import EditListing from "./pages/EditListing/EditListing";
  */
 
 const router = createBrowserRouter([
+  { path: "/messages", element: <ProtectedRoute><Messages /></ProtectedRoute> },
+  { path: "/messages/:conversationId", element: <ProtectedRoute><Messages /></ProtectedRoute> },
   {
     path: "/",
     element: <Login />,
