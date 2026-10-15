@@ -2,7 +2,6 @@ package edu.augustana.csc305.project.dto;
 
 import edu.augustana.csc305.project.model.Listing;
 import edu.augustana.csc305.project.model.ListingStatus;
-import org.bson.types.ObjectId;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,7 +18,7 @@ public record ListingDetailsResponse(
         String imageUrl,
         LocalDateTime listedOn,
         ListingStatus status,
-        ObjectId ownerId,
+        String ownerId,
         String sellerName
 ) {
     public static ListingDetailsResponse from(Listing listing, String sellerName) {
@@ -27,7 +26,7 @@ public record ListingDetailsResponse(
                 listing.getIdString(), listing.getTitle(), listing.getDescription(),
                 listing.getCategory(), listing.getPrice(), listing.getCondition(),
                 listing.getPickupArea(), listing.getListingType(), listing.getImageUrl(),
-                listing.getListedOn(), listing.getStatus(), listing.getOwnerId(), sellerName
+                listing.getListedOn(), listing.getStatus(), listing.getOwnerId() == null ? null : listing.getOwnerId().toHexString(), sellerName
         );
     }
 }
