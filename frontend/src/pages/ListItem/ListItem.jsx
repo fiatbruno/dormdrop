@@ -277,7 +277,7 @@ function ListItem() {
     if (!selected.length) return;
 
     if (photos.length + selected.length > 1) {
-      setPhotoError("The current backend supports one photo per listing.");
+      setPhotoError("You can upload one photo per listing.");
       return;
     }
 
@@ -480,7 +480,7 @@ function ListItem() {
                     <span className="upload-icon">
                       <Upload size={18} aria-hidden="true" />
                     </span>
-                    {photos.length ? "Add another photo" : "Upload a photo"}
+                    {photos.length ? "Photo added" : "Upload a photo"}
                   </button>
 
                   <p>
