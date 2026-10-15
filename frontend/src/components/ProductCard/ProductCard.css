@@ -84,3 +84,9 @@
 }
 
 .product-card__image-link { display: block; height: 100%; color: inherit; text-decoration: none; }
+
+/* Extend the title link across the card while keeping Save independent. */
+.product-card { position: relative; }
+.product-card h3 a::after { content: ""; position: absolute; inset: 0; z-index: 1; }
+.product-card .product-card__save { z-index: 2; }
+.product-card:has(a:focus-visible) { outline: 2px solid #194278; outline-offset: 3px; }
