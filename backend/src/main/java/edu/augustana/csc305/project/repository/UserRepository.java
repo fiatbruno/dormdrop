@@ -39,12 +39,10 @@ public class UserRepository {
         return Optional.ofNullable(user);
     }
 
-<<<<<<< HEAD
-=======
+
     public Optional<User> findById(ObjectId id) {
         return Optional.ofNullable(mongoTemplate.findById(id, User.class));
     }
->>>>>>> e6fda1118bc38ccbb4026e61442cd2899aeef69d
 
     public boolean emailExists(String email) {
         return mongoTemplate.exists(
