@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Upload, ShieldCheck } from "lucide-react";
 
 import {
@@ -64,6 +64,7 @@ function Photo({ photo, className, alt }) {
   useEffect(() => {
     if (!photo.file) return;
     const objectUrl = URL.createObjectURL(photo.file);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Publish the object URL created by this effect so cleanup can revoke it.
     setUrl(objectUrl);
     return () => URL.revokeObjectURL(objectUrl);
   }, [photo]);
@@ -92,6 +93,7 @@ export default function EditListing() {
   useEffect(() => {
     const controller = new AbortController();
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset the editor before fetching a different route listing.
     setLoading(true);
     setLoaded(false);
     setError("");

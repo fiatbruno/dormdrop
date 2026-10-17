@@ -41,6 +41,7 @@ export default function useSavedItems() {
 
   useEffect(() => {
     const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- The shared fetch routine initializes loading for both mount and manual retries.
     loadItems(controller.signal);
 
     return () => controller.abort();
