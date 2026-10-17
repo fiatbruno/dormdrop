@@ -7,66 +7,11 @@
 }
 
 
-.signupHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  width: 100%;
-  padding: 20px clamp(24px, 3vw, 40px);
-}
-
-.logo {
-  display: block;
-  width: clamp(115px, 10vw, 150px);
-  height: auto;
-}
-
-.loginButton {
-  padding: 8px 28px;
-
-  background: white;
-  color: #29497a;
-
-  border: 1.5px solid #d5dce8;
-  border-radius: 6px;
-
-  font-size: 14px;
-  font-weight: 500;
-
-  cursor: pointer;
-}
-
-
-.signupMain {
-  width: 100%;
-
-  display: grid;
-  grid-template-columns:
-    minmax(320px, 38%)
-    minmax(0, 62%);
-
-  align-items: center;
-}
-
-
-
-.signupRight {
-  width: min(calc(100% - 64px), 450px);
-
-  justify-self: center;
-  align-self: center;
-
-  padding: 20px 0;
-
-  min-width: 0;
-}
-
-.signupTitle {
+#signupPage .signupTitle {
   margin: 0 0 12px;
 
   font-family: "Bricolage Grotesque", sans-serif;
-  font-size: clamp(34px, 3vw, 46px);
+  font-size: clamp(32px, 1.5rem + 1.4vw, 40px);
   font-weight: 700;
   line-height: 1.05;
 
@@ -74,7 +19,7 @@
   text-align: left;
 }
 
-.signupSubtitle {
+#signupPage .signupSubtitle {
   margin: 0 0 24px;
 
   color: #596b82;
@@ -86,11 +31,11 @@
 }
 
 
-.input {
+#signupPage .input {
   margin-bottom: 16px;
 }
 
-.input label {
+#signupPage .input label {
   display: block;
 
   margin-bottom: 6px;
@@ -103,7 +48,7 @@
   text-align: left;
 }
 
-.inputField {
+#signupPage .inputField {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -115,7 +60,7 @@
   border-radius: 6px;
 }
 
-.credentialField {
+#signupPage .credentialField {
   flex: 1;
   min-width: 0;
 
@@ -128,23 +73,23 @@
   font-size: 14px;
 }
 
-.inputicon,
-.eyeIcon {
+#signupPage .inputicon,
+#signupPage .eyeIcon {
   width: 18px;
   height: 18px;
 
   flex-shrink: 0;
 }
 
-.eyeIcon {
+#signupPage .eyeIcon {
   cursor: pointer;
 }
 
-.inputField.inputError {
+#signupPage .inputField.inputError {
   border-color: #d32f2f;
 }
 
-.signupRight .fieldError {
+#signupPage .signupRight .fieldError {
   margin: 4px 0 0;
 
   color: #d32f2f;
@@ -155,7 +100,7 @@
   text-align: left;
 }
 
-.signupRight .inputHelp {
+#signupPage .signupRight .inputHelp {
   margin: 4px 0 0;
 
   color: #596b82;
@@ -166,7 +111,7 @@
   text-align: left;
 }
 
-.serverError {
+#signupPage .serverError {
   margin: 8px 0;
 
   color: #d32f2f;
@@ -177,7 +122,7 @@
 
 /* SUBMIT */
 
-.submit {
+#signupPage .submit {
   width: 100%;
   padding: 14px;
 
@@ -193,53 +138,25 @@
   cursor: pointer;
 }
 
-.submit:disabled {
+#signupPage .submit:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
-.loginAccount {
+#signupPage .loginAccount {
   margin-top: 20px;
 }
 
-.loginAccount p {
+#signupPage .loginAccount p {
   color: #718096;
 
   font-size: 14px;
   text-align: center;
 }
 
-.loginAccount a {
+#signupPage .loginAccount a {
   color: #29497a;
 
   font-weight: 500;
   text-decoration: none;
-}
-
-
-@media (max-width: 1050px) {
-  .signupMain {
-    grid-template-columns:
-      minmax(300px, 42%)
-      minmax(0, 58%);
-  }
-}
-
-@media (max-width: 800px) {
-  .signupMain {
-    grid-template-columns: 1fr;
-  }
-
-  .signupMain .authLeftPanel {
-    display: none;
-  }
-
-  .signupRight {
-    width: min(calc(100% - 40px), 450px);
-    padding: 40px 0;
-  }
-
-  .signupHeader {
-    padding: 16px 20px;
-  }
 }
