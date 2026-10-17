@@ -1,13 +1,16 @@
 import { z } from "zod";
 
+const campusEmailSchema = z
+  .string()
+  .trim()
+  .pipe(z.email("Enter a valid email address"))
+  .refine(
+    (email) => email.toLowerCase().endsWith(".edu"),
+    "Campus email must end with .edu",
+  );
+
 export const loginSchema = z.object({
-  email: z
-    .string()
-    .email("Enter a valid email address")
-    .refine(
-      (email) => email.toLowerCase().endsWith(".edu"),
-      "Campus email must end with .edu",
-    ),
+  email: campusEmailSchema,
   password: z.string().min(1, "Password is required"),
 });
 
@@ -15,14 +18,7 @@ export const signupSchema = z
   .object({
     displayName: z.string().min(1, "Display name is required"),
 
-    email: z
-      .string()
-      .trim()
-      .email("Enter a valid email address")
-      .refine(
-        (email) => email.toLowerCase().endsWith(".edu"),
-        "Campus email must end with .edu",
-      ),
+    email: campusEmailSchema,
 
     password: z.string().min(8, "Password must be at least 8 characters long"),
 
