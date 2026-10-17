@@ -44,6 +44,7 @@ function ItemDetailsContent({ id }) {
       atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
     ).id;
   } catch {
+    // An unreadable token leaves the current user unknown.
   }
   async function contactSeller() {
     if (contactPending) return;
@@ -81,6 +82,7 @@ function ItemDetailsContent({ id }) {
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset loading before fetching the newly selected listing.
     setLoading(true);
     setError("");
     getListingById(id)
@@ -117,6 +119,7 @@ function ItemDetailsContent({ id }) {
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset favorite actions while synchronizing with the backend.
     setFavoritesReady(false);
     setActionError("");
     getFavorites()

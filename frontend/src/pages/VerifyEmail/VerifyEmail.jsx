@@ -60,7 +60,7 @@ async function handleResend() {
     setResendMessage(
       "If your account needs verification, a new link will be sent.",
     );
-  } catch (error) {
+  } catch {
     setResendError("Unable to process the request. Please try again later.");
   } finally {
     setIsResending(false);

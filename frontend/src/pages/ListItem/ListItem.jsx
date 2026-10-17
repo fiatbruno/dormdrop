@@ -89,6 +89,7 @@ function Dropdown({
   }, [open, options, value]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Close the active dropdown when its parent disables it.
     if (disabled) setOpen(false);
   }, [disabled]);
 
@@ -212,6 +213,7 @@ function ListItem() {
 
   useEffect(() => {
     if (!photos.length) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Clear the preview when there is no file to create an object URL for.
       setPhotoUrl("");
       return;
     }
@@ -255,6 +257,7 @@ function ListItem() {
         restored.listingType = "For sale";
       }
 
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore the persisted draft after mounting.
       setForm(restored);
     } catch {
       setError("Could not restore your saved draft.");
