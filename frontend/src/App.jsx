@@ -26,8 +26,22 @@ import EditListing from "./pages/EditListing/EditListing";
  */
 
 const router = createBrowserRouter([
-  { path: "/messages", element: <ProtectedRoute><Messages /></ProtectedRoute> },
-  { path: "/messages/:conversationId", element: <ProtectedRoute><Messages /></ProtectedRoute> },
+  {
+    path: "/messages",
+    element: (
+      <ProtectedRoute>
+        <Messages />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/messages/:conversationId",
+    element: (
+      <ProtectedRoute>
+        <Messages />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: "/",
     element: <Login />,

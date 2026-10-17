@@ -39,7 +39,7 @@ export default function EmailVerificationExpired() {
       setSuccessMessage(
         "If your account requires verification, a new link will be sent.",
       );
-    } catch (error) {
+    } catch {
       setError("Unable to resend verification link. Please try again.");
     } finally {
       setIsSending(false);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import useAuth from './useAuth';
 import { tokenExpiresAt } from '../auth/session';
@@ -7,7 +7,9 @@ import { websocketUrl } from '../api/messagingApi';
 export default function useMessageSocket(onEvent, onReconnect) {
   const { token } = useAuth();
   const callbacks = useRef({ onEvent, onReconnect });
-  callbacks.current = { onEvent, onReconnect };
+  useLayoutEffect(() => {
+    callbacks.current = { onEvent, onReconnect };
+  }, [onEvent, onReconnect]);
   const [status, setStatus] = useState('Connecting…');
   useEffect(() => {
     if (!token) return;

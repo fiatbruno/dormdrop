@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../api/backendApi.js';
 
 import augustanaLogo from '../assets/augustana-logo.png'
@@ -14,10 +14,10 @@ function BackendConnection() {
 
   useEffect(() => {
     api.get('/healthCheck')
-      .then(response => {
+      .then(() => {
         setHealthy(true);
       })
-      .catch(error => {
+      .catch(() => {
         setHealthy(false);
       });
   }, []);

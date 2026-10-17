@@ -22,10 +22,6 @@ function SavedItemsView({
   onRetry,
   onUnsave,
   getListingPath,
-  navigation,
-  links = {},
-  initials = "AM",
-  onSearch,
 }) {
   const [filter, setFilter] = useState("All saved");
   const [removedIds, setRemovedIds] = useState(new Set());

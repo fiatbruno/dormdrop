@@ -1,5 +1,5 @@
 import useAuth from "../../hooks/useAuth";
-import React, { useState } from "react";
+import { useState } from "react";
 import "./Login.css";
 import Button from "../../components/Button/Button.jsx";
 import AuthLeftPanel from "../../components/AuthLeftPanel/AuthLeftPanel.jsx";
@@ -57,7 +57,7 @@ function Login() {
 
       navigate("/home", { replace: true });
 
-    } catch (err) {
+    } catch {
       // On failure, set an error message.
       setError("Invalid email or password.");
     }

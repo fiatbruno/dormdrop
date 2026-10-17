@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as api from '../api/messagingApi';
 import useMessageSocket from './useMessageSocket';
 
@@ -20,7 +20,7 @@ export default function useMessaging(id) {
   const [sentVersion, setSentVersion] = useState(0);
   const mounted = useRef(false);
   const selected = useRef(id);
-  selected.current = id;
+  useLayoutEffect(() => { selected.current = id; }, [id]);
   const revision = useRef(0);
   const sendingRef = useRef(false);
   const listWork = useRef(null);
@@ -76,11 +76,13 @@ export default function useMessaging(id) {
   useEffect(() => {
     mounted.current = true;
     void refreshList();
-    return () => { mounted.current = false; revision.current++; };
+    const invalidateRequests = () => { revision.current++; };
+    return () => { mounted.current = false; invalidateRequests(); };
   }, [refreshList]);
 
   useEffect(() => {
     revision.current++;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset thread feedback before fetching the newly selected conversation.
     setLoading(Boolean(id)); setError(''); setSendError('');
     if (id) void refreshThread();
   }, [id, refreshThread]);

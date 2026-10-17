@@ -97,7 +97,6 @@ function Profile({
   onMarkSold,
   onRelist,
   onResetPassword,
-  onLogout,
 }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -110,6 +109,7 @@ function Profile({
   // Fill the form when user data arrives from the backend
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Populate editable fields when the backend supplies updated profile data.
       setName(user.name || "");
       setBio(user.about || "");
     }
