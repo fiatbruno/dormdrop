@@ -44,7 +44,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/",
-    element: <Login />,
+    element: (
+      <ProtectedRoute>
+        <Home />
+      </ProtectedRoute>
+    ),
   },
 
   {
@@ -128,7 +132,7 @@ function App() {
   return (
     <AuthProvider>
       <RouterProvider router={router} />
-    </AuthProvider> 
+    </AuthProvider>
   );
 }
 
