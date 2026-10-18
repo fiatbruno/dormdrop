@@ -3,3 +3,10 @@ node_modules/
 
 # React/Vite build output
 frontend/dist/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
