@@ -138,7 +138,7 @@ function Login() {
                 <Link to="/login/forgotpassword">Forgot password?</Link>
               </div>
             </div>
-            {error && <p className="error">{error}</p>}
+            {error && <p className="error" role="alert">{error}</p>}
             <button type="submit" className="submit" disabled={isSubmitting}>
               {isSubmitting ? "Logging in..." : "Log In"}
             </button>
