@@ -50,14 +50,14 @@
 }
 
 
-.verificationExpiredButtons {
+.verificationSuccessButtons {
   display: flex;
   flex-direction: column;
   width: 100%;
   gap: 12px;
 }
 
-.verificationExpiredButtons button {
+.verificationSuccessButtons button {
   width: 100%;
   min-height: 44px;
   border-radius: 7px;
@@ -67,14 +67,14 @@
 }
 
 
-.verificationExpiredButtons .signupSubmitButton {
+.verificationSuccessButtons .signupSubmitButton {
   background-color: #173e73;
   color: white;
   border: 1px solid #173e73;
 }
 
 
-.verificationExpiredButtons .secondaryButton {
+.verificationSuccessButtons .secondaryButton {
   background-color: white;
   color: #173e73;
   border: 1px solid #d5dce5;
