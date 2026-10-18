@@ -9,9 +9,9 @@ import { registerUser } from "../../api/backendApi";
 
 import AuthLeftPanel from "../../components/AuthLeftPanel/AuthLeftPanel";
 import Footer from "../../components/Footer/Footer";
-import Button from "../../components/Button/Button";
+import Navbar from "../../components/Navbar/Navbar";
 
-import logo from "../../assets/Logo.png";
+import "../../components/AuthLeftPanel/AuthPage.css";
 
 import "./Signup.css";
 
@@ -77,19 +77,13 @@ export default function Signup() {
     }
   }
   return (
-    <div id="signupPage">
-      <header className="signupHeader">
-        <img className="logo" src={logo} alt="DormDrop Logo" />
+    <div id="signupPage" className="authPage">
+      <Navbar variant="auth" authAction="login" />
 
-        <Button className="loginButton" onClick={() => navigate("/login")}>
-          Log In
-        </Button>
-      </header>
-
-      <main className="signupMain">
+      <main className="signupMain authPage__main">
         <AuthLeftPanel />
 
-        <div className="signupRight">
+        <div className="signupRight authPage__form">
           <h1 className="signupTitle">Create your account</h1>
 
           <p className="signupSubtitle">

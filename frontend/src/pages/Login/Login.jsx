@@ -1,11 +1,11 @@
 import "./Login.css";
-import logo from "../../assets/Logo.png";
+import "../../components/AuthLeftPanel/AuthPage.css";
 
 
 import { useState } from "react";
 import useAuth from "../../hooks/useAuth";
 
-import Button from "../../components/Button/Button.jsx";
+
 import AuthLeftPanel from "../../components/AuthLeftPanel/AuthLeftPanel.jsx";
 import Footer from "../../components/Footer/Footer.jsx";
 
@@ -15,6 +15,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema } from "../../schemas/authSchemas.js";
 import { loginUser } from "../../api/backendApi.js";
+import Navbar from "../../components/Navbar/Navbar.jsx";
 
 /*
  * A simple login page to help you get started with authenticating
@@ -69,23 +70,13 @@ function Login() {
 
   // We are now ready to construct and return the login page HTML.
   return (
-    <div id="loginPage">
-      <header className="loginHeader">
-        <div className="headerLeft">
-          <img className="logo" src={logo} alt="DormDrop Logo" />
-        </div>
+    <div id="loginPage" className="authPage">
+      <Navbar variant="auth" />
 
-        <div className="headerRight">
-          <Button className="signupButton" onClick={() => navigate("/signup")}>
-            Sign Up
-          </Button>
-        </div>
-      </header>
-
-      <main className="loginMain">
+      <main className="loginMain authPage__main">
         <AuthLeftPanel />
 
-        <div className="loginRight">
+        <div className="loginRight authPage__form">
           <h1 className="loginFormTitle">Welcome back</h1>
 
           <p>Your next campus find is waiting.</p>
