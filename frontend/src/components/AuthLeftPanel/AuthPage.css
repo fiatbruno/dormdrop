@@ -1,0 +1,60 @@
+/* Shared sizing keeps login and signup consistent as the viewport changes. */
+.authPage {
+  --auth-gutter: clamp(20px, 3vw, 40px);
+}
+
+.authPage .dormdrop-navbar--auth .dormdrop-navbar__inner {
+  flex-wrap: nowrap;
+  gap: 16px;
+  padding: 8px var(--auth-gutter);
+}
+
+.authPage .dormdrop-navbar--auth .dormdrop-navbar__brand img {
+  width: clamp(112px, 10vw, 140px);
+  height: 44px;
+}
+
+.authPage .authPage__main {
+  display: grid;
+  grid-template-columns: minmax(280px, 39%) minmax(0, 1fr);
+  align-items: stretch;
+  width: 100%;
+  max-width: 1200px;
+  min-width: 0;
+  margin: 0 auto;
+}
+
+.authPage .authPage__form {
+  width: min(100% - 2 * var(--auth-gutter), 430px);
+  min-width: 0;
+  justify-self: center;
+  align-self: center;
+  padding: clamp(24px, 3vw, 40px) 0;
+}
+
+.authPage .authLeftPanel {
+  min-width: 0;
+  aspect-ratio: auto;
+  padding: clamp(24px, 2.7vw, 32px);
+}
+
+.authPage .authTitle {
+  font-size: clamp(30px, 2.7vw, 38px);
+  margin-top: clamp(20px, 2vw, 24px);
+}
+
+.authPage .authDescription { font-size: 14px; }
+.authPage .marketplaceImage {
+  width: min(68%, 280px);
+  margin: clamp(20px, 2.5vw, 28px) auto 16px;
+}
+.authPage .communityInfo { width: 100%; }
+.authPage .communityInfo h3 { font-size: clamp(17px, 1.7vw, 20px); }
+.authPage .communityInfo p { font-size: 14px; }
+#loginPage .credentialField,
+#signupPage .credentialField { font-size: 16px; }
+
+@media (max-width: 760px) {
+  .authPage .authPage__main { grid-template-columns: minmax(0, 1fr); }
+  .authPage .authLeftPanel { display: none; }
+}
