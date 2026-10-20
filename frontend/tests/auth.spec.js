@@ -123,7 +123,6 @@ test.describe("Authentication", () => {
         await route.fulfill({ status: 201 });
       });
 
-
       await fillSignupForm(page);
 
       const requestPromise = page.waitForRequest("**/api/v1/auth/register");
@@ -145,7 +144,6 @@ test.describe("Authentication", () => {
       await page.route("**/api/v1/auth/register", async (route) => {
         await route.fulfill({ status: 409 });
       });
-
 
       await fillSignupForm(page);
 
@@ -176,44 +174,64 @@ test.describe("Authentication", () => {
 });
 
 // These tokens exercise client-side session handling only; the API is mocked.
+/** @param {number} expiresAt */
 const makeSessionToken = (expiresAt) => {
-  const payload = Buffer.from(JSON.stringify({ exp: expiresAt })).toString("base64url");
+  const payload = Buffer.from(JSON.stringify({ exp: expiresAt })).toString(
+    "base64url",
+  );
   return `test.${payload}.signature`;
 };
 
 /** @param {import('@playwright/test').Page} page */
 const mockMarketplace = async (page) => {
-  await page.route("**/api/v1/home", route => route.fulfill({ json: [] }));
-  await page.route("**/api/v1/favorites", route => route.fulfill({ json: [] }));
+  await page.route("**/api/v1/home", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/v1/favorites", (route) =>
+    route.fulfill({ json: [] }),
+  );
 };
 
 /** @param {import('@playwright/test').Page} page */
 const openVerificationAfterSignup = async (page) => {
-  await page.route("**/api/v1/auth/register", route => route.fulfill({ status: 201 }));
+  await page.route("**/api/v1/auth/register", (route) =>
+    route.fulfill({ status: 201 }),
+  );
   await page.goto("/signup");
   await fillSignupForm(page);
-  await page.getByRole("button", { name: "Create account", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Create account", exact: true })
+    .click();
   await expect(page).toHaveURL("/verify-email");
 };
 
 test.describe("Authentication gaps", () => {
-  test("empty login is rejected without sending credentials", async ({ page }) => {
+  test("empty login is rejected without sending credentials", async ({
+    page,
+  }) => {
+    /** @type {import('@playwright/test').Request[]} */
     const requests = [];
-    await page.route("**/api/v1/auth/login", route => {
+    await page.route("**/api/v1/auth/login", (route) => {
       requests.push(route.request());
       return route.fulfill({ status: 401 });
     });
     await page.goto("/login");
     await page.getByRole("button", { name: "Log In", exact: true }).click();
-    await expect(page.getByText("Enter a valid email address", { exact: true })).toBeVisible();
-    await expect(page.getByText("Password is required", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Enter a valid email address", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Password is required", { exact: true }),
+    ).toBeVisible();
     expect(requests).toHaveLength(0);
   });
 
-  test("login sends trimmed credentials, persists its session, and survives reload", async ({ page }) => {
+  test("login sends trimmed credentials, persists its session, and survives reload", async ({
+    page,
+  }) => {
     const token = makeSessionToken(Math.floor(Date.now() / 1000) + 3600);
     await mockMarketplace(page);
-    await page.route("**/api/v1/auth/login", route => route.fulfill({ json: { token } }));
+    await page.route("**/api/v1/auth/login", (route) =>
+      route.fulfill({ json: { token } }),
+    );
     await page.goto("/login");
     await page.getByLabel("email").fill("  sample@augustana.edu  ");
     await page.getByLabel("Password", { exact: true }).fill("passwordsample");
@@ -221,20 +239,31 @@ test.describe("Authentication gaps", () => {
     await page.getByRole("button", { name: "Log In", exact: true }).click();
     const request = await requestPromise;
     expect(request.method()).toBe("POST");
-    expect(request.postDataJSON()).toEqual({ email: "sample@augustana.edu", password: "passwordsample" });
+    expect(request.postDataJSON()).toEqual({
+      email: "sample@augustana.edu",
+      password: "passwordsample",
+    });
     await expect(page).toHaveURL("/home");
-    await expect(page.getByRole("searchbox", { name: "Search the marketplace" })).toBeVisible();
-    expect(await page.evaluate(() => localStorage.getItem("token"))).toBe(token);
+    await expect(
+      page.getByRole("searchbox", { name: "Search the marketplace" }),
+    ).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem("token"))).toBe(
+      token,
+    );
     await page.reload();
-    await expect(page.getByRole("searchbox", { name: "Search the marketplace" })).toBeVisible();
+    await expect(
+      page.getByRole("searchbox", { name: "Search the marketplace" }),
+    ).toBeVisible();
     await expect(page).toHaveURL("/home");
   });
 
-  test("a failed login can be corrected and retried successfully", async ({ page }) => {
+  test("a failed login can be corrected and retried successfully", async ({
+    page,
+  }) => {
     const token = makeSessionToken(Math.floor(Date.now() / 1000) + 3600);
     await mockMarketplace(page);
     let attempts = 0;
-    await page.route("**/api/v1/auth/login", route => {
+    await page.route("**/api/v1/auth/login", (route) => {
       attempts += 1;
       return attempts === 1
         ? route.fulfill({ status: 401 })
@@ -244,7 +273,9 @@ test.describe("Authentication gaps", () => {
     await page.getByLabel("email").fill("sample@augustana.edu");
     await page.getByLabel("Password", { exact: true }).fill("wrong-password");
     await page.getByRole("button", { name: "Log In", exact: true }).click();
-    await expect(page.getByRole("alert")).toHaveText("Invalid email or password.");
+    await expect(page.getByRole("alert")).toHaveText(
+      "Invalid email or password.",
+    );
     await expect(page.getByLabel("email")).toHaveValue("sample@augustana.edu");
     await page.getByLabel("Password", { exact: true }).fill("passwordsample");
     await page.getByRole("button", { name: "Log In", exact: true }).click();
@@ -256,33 +287,59 @@ test.describe("Authentication gaps", () => {
     ["malformed", "not-a-token"],
     ["expired", makeSessionToken(1)],
   ]) {
-    test(`${label} login tokens do not establish a session`, async ({ page }) => {
-      await page.route("**/api/v1/auth/login", route => route.fulfill({ json: { token } }));
+    test(`${label} login tokens do not establish a session`, async ({
+      page,
+    }) => {
+      await page.route("**/api/v1/auth/login", (route) =>
+        route.fulfill({ json: { token } }),
+      );
       await page.goto("/login");
       await page.getByLabel("email").fill("sample@augustana.edu");
       await page.getByLabel("Password", { exact: true }).fill("passwordsample");
       await page.getByRole("button", { name: "Log In", exact: true }).click();
       await expect(page.getByRole("alert")).toBeVisible();
       await expect(page).toHaveURL("/login");
-      expect(await page.evaluate(() => localStorage.getItem("token"))).toBeNull();
+      expect(
+        await page.evaluate(() => localStorage.getItem("token")),
+      ).toBeNull();
     });
 
-    test(`${label} stored sessions are cleared before opening protected pages`, async ({ page }) => {
-      await page.addInitScript(value => {
+    test(`${label} stored sessions are cleared before opening protected pages`, async ({
+      page,
+    }) => {
+      await page.addInitScript((value) => {
         localStorage.setItem("token", value);
         localStorage.setItem("user", JSON.stringify({ name: "Old user" }));
       }, token);
       await page.goto("/home");
       await expect(page).toHaveURL("/login");
-      expect(await page.evaluate(() => [localStorage.getItem("token"), localStorage.getItem("user")])).toEqual([null, null]);
+      expect(
+        await page.evaluate(() => [
+          localStorage.getItem("token"),
+          localStorage.getItem("user"),
+        ]),
+      ).toEqual([null, null]);
     });
   }
 
-  for (const path of ["/", "/profile", "/saved-item", "/list-an-item", "/items/sample", "/edit-listing/sample", "/messages", "/messages/sample"]) {
-    test(`logged-out access to ${path} redirects to login`, async ({ page }) => {
+  for (const path of [
+    "/",
+    "/profile",
+    "/saved-item",
+    "/list-an-item",
+    "/items/sample",
+    "/edit-listing/sample",
+    "/messages",
+    "/messages/sample",
+  ]) {
+    test(`logged-out access to ${path} redirects to login`, async ({
+      page,
+    }) => {
       await page.goto(path);
       await expect(page).toHaveURL("/login");
-      await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Welcome back" }),
+      ).toBeVisible();
     });
   }
 
@@ -291,97 +348,157 @@ test.describe("Authentication gaps", () => {
     ["email", "sample@gmail.com", "Campus email must end with .edu"],
     ["Password", "1234567", "Password must be at least 8 characters long"],
   ]) {
-    test(`signup rejects ${value} without a registration request`, async ({ page }) => {
+    test(`signup rejects ${value} without a registration request`, async ({
+      page,
+    }) => {
+      /** @type {import('@playwright/test').Request[]} */
       const requests = [];
-      await page.route("**/api/v1/auth/register", route => {
+      await page.route("**/api/v1/auth/register", (route) => {
         requests.push(route.request());
         return route.fulfill({ status: 201 });
       });
       await page.goto("/signup");
       await fillSignupForm(page);
       await page.getByLabel(field, { exact: field === "Password" }).fill(value);
-      if (field === "Password") await page.getByLabel("Confirm password").fill(value);
-      await page.getByRole("button", { name: "Create account", exact: true }).click();
+      if (field === "Password")
+        await page.getByLabel("Confirm password").fill(value);
+      await page
+        .getByRole("button", { name: "Create account", exact: true })
+        .click();
       await expect(page.getByText(message, { exact: true })).toBeVisible();
       await expect(page).toHaveURL("/signup");
       expect(requests).toHaveLength(0);
     });
   }
 
-  test("signup accepts the eight-character password boundary and trims email", async ({ page }) => {
-    await page.route("**/api/v1/auth/register", route => route.fulfill({ status: 201 }));
+  test("signup accepts the eight-character password boundary and trims email", async ({
+    page,
+  }) => {
+    await page.route("**/api/v1/auth/register", (route) =>
+      route.fulfill({ status: 201 }),
+    );
     await page.goto("/signup");
     await fillSignupForm(page);
     await page.getByLabel("email").fill("  sample@augustana.edu  ");
     await page.getByLabel("Password", { exact: true }).fill("12345678");
     await page.getByLabel("Confirm password").fill("12345678");
     const requestPromise = page.waitForRequest("**/api/v1/auth/register");
-    await page.getByRole("button", { name: "Create account", exact: true }).click();
-    expect((await requestPromise).postDataJSON()).toEqual({ name: "Sample User", email: "sample@augustana.edu", password: "12345678" });
+    await page
+      .getByRole("button", { name: "Create account", exact: true })
+      .click();
+    expect((await requestPromise).postDataJSON()).toEqual({
+      name: "Sample User",
+      email: "sample@augustana.edu",
+      password: "12345678",
+    });
     await expect(page).toHaveURL("/verify-email");
-    await expect(page.getByText("sample@augustana.edu", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("sample@augustana.edu", { exact: true }),
+    ).toBeVisible();
   });
 
   for (const failure of ["server", "network"]) {
-    test(`signup recovers from a ${failure} failure and allows retry`, async ({ page }) => {
+    test(`signup recovers from a ${failure} failure and allows retry`, async ({
+      page,
+    }) => {
       let attempts = 0;
-      await page.route("**/api/v1/auth/register", route => {
+      await page.route("**/api/v1/auth/register", (route) => {
         attempts += 1;
         if (attempts > 1) return route.fulfill({ status: 201 });
-        return failure === "network" ? route.abort() : route.fulfill({ status: 500 });
+        return failure === "network"
+          ? route.abort()
+          : route.fulfill({ status: 500 });
       });
       await page.goto("/signup");
       await fillSignupForm(page);
-      await page.getByRole("button", { name: "Create account", exact: true }).click();
-      await expect(page.getByRole("alert")).toHaveText("Unable to create your account. Please try again.");
-      await expect(page.getByLabel("email")).toHaveValue("sample@augustana.edu");
-      await expect(page.getByRole("button", { name: "Create account", exact: true })).toBeEnabled();
-      await page.getByRole("button", { name: "Create account", exact: true }).click();
+      await page
+        .getByRole("button", { name: "Create account", exact: true })
+        .click();
+      await expect(page.getByRole("alert")).toHaveText(
+        "Unable to create your account. Please try again.",
+      );
+      await expect(page.getByLabel("email")).toHaveValue(
+        "sample@augustana.edu",
+      );
+      await expect(
+        page.getByRole("button", { name: "Create account", exact: true }),
+      ).toBeEnabled();
+      await page
+        .getByRole("button", { name: "Create account", exact: true })
+        .click();
       await expect(page).toHaveURL("/verify-email");
       expect(attempts).toBe(2);
     });
   }
 
-  test("verification without signup state disables resend and offers navigation", async ({ page }) => {
+  test("verification without signup state disables resend and offers navigation", async ({
+    page,
+  }) => {
     await page.goto("/verify-email");
-    await expect(page.getByRole("button", { name: "Resend verification email" })).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: "Resend verification email" }),
+    ).toBeDisabled();
     await page.getByRole("button", { name: "Use a different email" }).click();
     await expect(page).toHaveURL("/signup");
     await page.goto("/verify-email");
-    await page.getByRole("button", { name: "Already verified? Continue" }).click();
+    await page
+      .getByRole("button", { name: "Already verified? Continue" })
+      .click();
     await expect(page).toHaveURL("/login");
   });
 
-  test("resend uses the signup email and recovers from failure", async ({ page }) => {
+  test("resend uses the signup email and recovers from failure", async ({
+    page,
+  }) => {
     let attempts = 0;
-    await page.route("**/api/v1/auth/resend-verification", route => {
+    await page.route("**/api/v1/auth/resend-verification", (route) => {
       expect(route.request().method()).toBe("POST");
-      expect(route.request().postDataJSON()).toEqual({ email: "sample@augustana.edu" });
+      expect(route.request().postDataJSON()).toEqual({
+        email: "sample@augustana.edu",
+      });
       attempts += 1;
       return route.fulfill({ status: attempts === 1 ? 500 : 200 });
     });
     await openVerificationAfterSignup(page);
-    const resend = page.getByRole("button", { name: "Resend verification email" });
+    const resend = page.getByRole("button", {
+      name: "Resend verification email",
+    });
     await resend.click();
-    await expect(page.getByRole("alert")).toHaveText("Unable to process the request. Please try again later.");
+    await expect(page.getByRole("alert")).toHaveText(
+      "Unable to process the request. Please try again later.",
+    );
     await expect(resend).toBeEnabled();
     await resend.click();
-    await expect(page.getByRole("status")).toHaveText("If your account needs verification, a new link will be sent.");
+    await expect(page.getByRole("status")).toHaveText(
+      "If your account needs verification, a new link will be sent.",
+    );
     await expect(page.getByRole("alert")).toHaveCount(0);
     await expect(resend).toBeEnabled();
     expect(attempts).toBe(2);
   });
 
-  test("expired verification links allow requesting a replacement", async ({ page }) => {
-    await page.route("**/api/v1/auth/resend-verification", route => route.fulfill({ status: 200 }));
+  test("expired verification links allow requesting a replacement", async ({
+    page,
+  }) => {
+    await page.route("**/api/v1/auth/resend-verification", (route) =>
+      route.fulfill({ status: 200 }),
+    );
     await page.goto("/verification-expired");
-    const resend = page.getByRole("button", { name: "Request a New Verification Link" });
+    const resend = page.getByRole("button", {
+      name: "Request a New Verification Link",
+    });
     await expect(resend).toBeDisabled();
     await page.getByLabel("Campus email").fill("sample@augustana.edu");
-    const requestPromise = page.waitForRequest("**/api/v1/auth/resend-verification");
+    const requestPromise = page.waitForRequest(
+      "**/api/v1/auth/resend-verification",
+    );
     await resend.click();
-    expect((await requestPromise).postDataJSON()).toEqual({ email: "sample@augustana.edu" });
-    await expect(page.getByRole("status")).toHaveText("If your account requires verification, a new link will be sent.");
+    expect((await requestPromise).postDataJSON()).toEqual({
+      email: "sample@augustana.edu",
+    });
+    await expect(page.getByRole("status")).toHaveText(
+      "If your account requires verification, a new link will be sent.",
+    );
     await page.getByRole("button", { name: "Back to Log In" }).click();
     await expect(page).toHaveURL("/login");
   });
