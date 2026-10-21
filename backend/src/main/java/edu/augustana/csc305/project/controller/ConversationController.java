@@ -2,6 +2,8 @@
 package edu.augustana.csc305.project.controller;
 
 import edu.augustana.csc305.project.dto.StartConversationRequest;
+import edu.augustana.csc305.project.dto.ConversationResponse;
+import edu.augustana.csc305.project.dto.MessageResponse;
 import edu.augustana.csc305.project.model.Conversation;
 import edu.augustana.csc305.project.service.ConversationService;
 
@@ -34,40 +36,35 @@ public class ConversationController {
     }
 
     @PostMapping
-    public Conversation startConversation(
+    public ConversationResponse startConversation(
             @Valid @RequestBody StartConversationRequest request,
             Authentication authentication
     ) {
-        return conversationService.startConversation(
-                request.listingId(),
-                authentication.getName()
-        );
+        return conversationService.toResponse(conversationService.startConversation(
+                request.listingId(), authentication.getName()), authentication.getName());
     }
 
     @GetMapping
-    public List<Conversation> getMyConversations(
+    public List<ConversationResponse> getMyConversations(
             Authentication authentication
     ) {
-        return conversationService.getMyConversations(
-                authentication.getName()
-        );
+        return conversationService.getMyConversations(authentication.getName()).stream()
+                .map(conversation -> conversationService.toResponse(conversation, authentication.getName())).toList();
     }
 
     @GetMapping("/{id}")
-    public Conversation getConversation(
+    public ConversationResponse getConversation(
             @PathVariable String id,
             Authentication authentication
     ) {
-        return conversationService.getConversation(
-                id,
-                authentication.getName()
-        );
+        return conversationService.toResponse(conversationService.getConversation(
+                id, authentication.getName()), authentication.getName());
     }
 
 
 
     @PostMapping("/{id}/messages")
-    public ResponseEntity<Message> sendMessage(
+    public ResponseEntity<MessageResponse> sendMessage(
             @PathVariable String id,
             @Valid @RequestBody SendMessageRequest request,
             Authentication authentication
@@ -80,19 +77,17 @@ public class ConversationController {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(message);
+                .body(MessageResponse.from(message));
     }
 
 
     @GetMapping("/{id}/messages")
-    public List<Message> getMessages(
+    public List<MessageResponse> getMessages(
             @PathVariable String id,
             Authentication authentication
     ) {
-        return messageService.getMessages(
-                id,
-                authentication.getName()
-        );
+        return messageService.getMessages(id, authentication.getName()).stream()
+                .map(MessageResponse::from).toList();
     }
 
 

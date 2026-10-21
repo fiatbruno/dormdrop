@@ -4,11 +4,11 @@ import { Mail } from "lucide-react";
 
 import AuthLeftPanel from "../../components/AuthLeftPanel/AuthLeftPanel";
 import Footer from "../../components/Footer/Footer";
-import Button from "../../components/Button/Button";
 
 import { resendVerificationEmail } from "../../api/backendApi";
 
-import logo from "../../assets/Logo.png";
+import Navbar from "../../components/Navbar/Navbar";
+import "../../components/AuthLeftPanel/AuthPage.css";
 
 import "../Signup/Signup.css";
 import "./VerifyEmail.css";
@@ -24,29 +24,6 @@ export default function VerifyEmail() {
   const [resendError, setResendError] = useState("");
   const [isResending, setIsResending] = useState(false);
 
-  /*
-   * BACKEND VERSION: * Replace the temporary handleResend below with this when
-   * the resend-verification endpoint is ready.
-   *
-   * async function handleResend() {
-   *   setResendMessage("");
-   *   setResendError("");
-   *   setIsResending(true);
-   *
-   *   try {
-   *     await resendVerificationEmail(email);
-   *     setResendMessage("Verification email resent successfully.");
-   *   } catch (error) {
-   *     setResendError(
-   *       error.response?.data?.message ||
-   *       "Unable to resend verification email."
-   *     );
-   *   } finally {
-   *     setIsResending(false);
-   *   }
-   * }
-   */
-
 async function handleResend() {
   if (!email || isResending) return;
 
@@ -60,7 +37,7 @@ async function handleResend() {
     setResendMessage(
       "If your account needs verification, a new link will be sent.",
     );
-  } catch (error) {
+  } catch {
     setResendError("Unable to process the request. Please try again later.");
   } finally {
     setIsResending(false);
@@ -76,22 +53,13 @@ async function handleResend() {
   }
 
   return (
-    <div id="signupPage">
-      <header className="signupHeader">
-        <img className="logo" src={logo} alt="DormDrop Logo" />
+    <div id="signupPage" className="authPage verificationPage">
+      <Navbar variant="auth" authAction="login" />
 
-        <Button
-          className="loginButton"
-          onClick={() => navigate("/login")}
-        >
-          Log In
-        </Button>
-      </header>
-
-      <main className="signupMain">
+      <main className="signupMain authPage__main">
         <AuthLeftPanel />
 
-        <div className="signupRight">
+        <div className="signupRight authPage__form">
           <div id="verifyEmailPage">
             <div className="verifyEmailContainer">
 
@@ -99,7 +67,7 @@ async function handleResend() {
                 <Mail size={21} />
               </div>
 
-              <h1>Check your campus inbox</h1>
+              <h1 className="signupTitle">Check your campus inbox</h1>
 
               <p className="verifySubtitle">
                 Verify your email to unlock your campus marketplace.
@@ -132,13 +100,13 @@ async function handleResend() {
               </button>
 
               {resendMessage && (
-                <p className="resendSuccess">
+                <p className="resendSuccess" role="status">
                   {resendMessage}
                 </p>
               )}
 
               {resendError && (
-                <p className="resendError">
+                <p className="resendError" role="alert">
                   {resendError}
                 </p>
               )}

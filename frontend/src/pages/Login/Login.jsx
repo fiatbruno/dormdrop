@@ -1,16 +1,21 @@
-import useAuth from "../../hooks/useAuth";
-import React, { useState } from "react";
 import "./Login.css";
-import Button from "../../components/Button/Button.jsx";
+import "../../components/AuthLeftPanel/AuthPage.css";
+
+
+import { useState } from "react";
+import useAuth from "../../hooks/useAuth";
+
+
 import AuthLeftPanel from "../../components/AuthLeftPanel/AuthLeftPanel.jsx";
 import Footer from "../../components/Footer/Footer.jsx";
+
 import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema } from "../../schemas/authSchemas.js";
-import logo from "../../assets/Logo.png";
 import { loginUser } from "../../api/backendApi.js";
+import Navbar from "../../components/Navbar/Navbar.jsx";
 
 /*
  * A simple login page to help you get started with authenticating
@@ -57,7 +62,7 @@ function Login() {
 
       navigate("/home", { replace: true });
 
-    } catch (err) {
+    } catch {
       // On failure, set an error message.
       setError("Invalid email or password.");
     }
@@ -65,23 +70,13 @@ function Login() {
 
   // We are now ready to construct and return the login page HTML.
   return (
-    <div id="loginPage">
-      <header className="loginHeader">
-        <div className="headerLeft">
-          <img className="logo" src={logo} alt="DormDrop Logo" />
-        </div>
+    <div id="loginPage" className="authPage">
+      <Navbar variant="auth" />
 
-        <div className="headerRight">
-          <Button className="signupButton" onClick={() => navigate("/signup")}>
-            Sign Up
-          </Button>
-        </div>
-      </header>
-
-      <main className="loginMain">
+      <main className="loginMain authPage__main">
         <AuthLeftPanel />
 
-        <div className="loginRight">
+        <div className="loginRight authPage__form">
           <h1 className="loginFormTitle">Welcome back</h1>
 
           <p>Your next campus find is waiting.</p>
@@ -143,7 +138,7 @@ function Login() {
                 <Link to="/login/forgotpassword">Forgot password?</Link>
               </div>
             </div>
-            {error && <p className="error">{error}</p>}
+            {error && <p className="error" role="alert">{error}</p>}
             <button type="submit" className="submit" disabled={isSubmitting}>
               {isSubmitting ? "Logging in..." : "Log In"}
             </button>

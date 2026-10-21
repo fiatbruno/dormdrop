@@ -1,4 +1,4 @@
-.verificationSuccessContent {
+.verificationExpiredContent {
   width: 100%;
   max-width: 420px;
   margin: 0 auto;
@@ -40,14 +40,14 @@
   margin: 0;
 }
 
-.verificationSuccessButtons {
+.verificationExpiredButtons {
   display: flex;
   flex-direction: column;
   width: 100%;
   gap: 12px;
 }
 
-.verificationSuccessButtons button {
+.verificationExpiredButtons button {
   width: 100%;
   min-height: 44px;
   border-radius: 7px;
@@ -56,20 +56,20 @@
   font-weight: 600;
 }
 
-.verificationSuccessButtons .signupSubmitButton {
+.verificationExpiredButtons .signupSubmitButton {
   background-color: #173e73;
   color: white;
   border: 1px solid #173e73;
 }
 
-.verificationSuccessButtons .secondaryButton {
+.verificationExpiredButtons .secondaryButton {
   background-color: white;
   color: #173e73;
   border: 1px solid #d5dce5;
 }
 
 @media (max-width: 800px) {
-  .verificationSuccessContent {
+  .verificationExpiredContent {
     max-width: 100%;
     padding: 10px 0;
   }

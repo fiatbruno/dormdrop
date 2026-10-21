@@ -89,6 +89,7 @@ function Dropdown({
   }, [open, options, value]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Close the active dropdown when its parent disables it.
     if (disabled) setOpen(false);
   }, [disabled]);
 
@@ -212,6 +213,7 @@ function ListItem() {
 
   useEffect(() => {
     if (!photos.length) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Clear the preview when there is no file to create an object URL for.
       setPhotoUrl("");
       return;
     }
@@ -255,6 +257,7 @@ function ListItem() {
         restored.listingType = "For sale";
       }
 
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore the persisted draft after mounting.
       setForm(restored);
     } catch {
       setError("Could not restore your saved draft.");
@@ -671,37 +674,6 @@ function ListItem() {
                 </button>
               </div>
             </fieldset>
-
-            {createdListingId && (
-              <div className="form-buttons">
-                <p role="status">
-                  Your listing is saved. The photo upload did not finish. Retry
-                  here without creating another listing, or view it now.
-                </p>
-                <button
-                  className="publish-button"
-                  type="submit"
-                  disabled={loading}
-                >
-                  {loading ? "Uploading..." : "Retry photo upload"}
-                </button>
-                <button
-                  className="draft-button"
-                  type="button"
-                  disabled={loading}
-                  onClick={() => {
-                    try {
-                      localStorage.removeItem("dormdrop-listing-draft");
-                    } catch {
-                      /* Optional local draft. */
-                    }
-                    navigate(`/items/${encodeURIComponent(createdListingId)}`);
-                  }}
-                >
-                  View saved listing
-                </button>
-              </div>
-            )}
 
             {error && (
               <p className="listing-error" role="alert">
