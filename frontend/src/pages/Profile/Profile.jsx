@@ -3,6 +3,7 @@ import useAuth from "../../hooks/useAuth";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
+import Footer from "../../components/Footer/Footer";
 import "./Profile.css";
 import useProfile from "../../hooks/useProfile";
 
@@ -199,6 +200,7 @@ function Profile({
   }
 
   return (
+    <>
     <main className="profile-page">
       <Navbar showSearch={false} />
 
@@ -377,6 +379,8 @@ function Profile({
         </div>
       </div>
     </main>
+    <Footer />
+    </>
   );
 }
 
