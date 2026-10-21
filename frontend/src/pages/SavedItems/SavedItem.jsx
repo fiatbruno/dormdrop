@@ -110,7 +110,6 @@ function SavedItemsView({
           </div>
         ) : visible.length === 0 ? (
           <div className="saved-state">
-            <Bookmark />
             <h2>
               {saved.length === 0
                 ? "No saved items yet"

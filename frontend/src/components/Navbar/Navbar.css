@@ -24,8 +24,8 @@
 
 .dormdrop-navbar__brand img {
   display: block;
-  width: 140px;
-  height: 48px;
+  width: 175px;
+  height: 60px;
   object-fit: contain;
 }
 
@@ -192,7 +192,7 @@
 
 @media (max-width: 600px) {
   .dormdrop-navbar__inner { padding: 8px 16px; gap: 10px 8px; }
-  .dormdrop-navbar__brand img { width: 112px; height: 44px; }
+  .dormdrop-navbar__brand img { width: 140px; height: 55px; }
   .dormdrop-navbar__list-item { min-height: 44px; padding: 8px; }
   .dormdrop-navbar__actions { gap: 8px; }
 }
