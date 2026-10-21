@@ -22,10 +22,6 @@ function SavedItemsView({
   onRetry,
   onUnsave,
   getListingPath,
-  navigation,
-  links = {},
-  initials = "AM",
-  onSearch,
 }) {
   const [filter, setFilter] = useState("All saved");
   const [removedIds, setRemovedIds] = useState(new Set());
@@ -114,7 +110,6 @@ function SavedItemsView({
           </div>
         ) : visible.length === 0 ? (
           <div className="saved-state">
-            <Bookmark />
             <h2>
               {saved.length === 0
                 ? "No saved items yet"

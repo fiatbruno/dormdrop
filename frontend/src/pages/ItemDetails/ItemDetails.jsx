@@ -1,5 +1,7 @@
+import { startConversation } from "../../api/messagingApi";
+import useAuth from "../../hooks/useAuth";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { ImageOff, UserRound } from "lucide-react";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
@@ -33,6 +35,35 @@ export default function ItemDetails() {
 }
 
 function ItemDetailsContent({ id }) {
+  const navigate = useNavigate();
+  const { token } = useAuth();
+  const [contactPending, setContactPending] = useState(false);
+  let currentUserId = null;
+  try {
+    currentUserId = JSON.parse(
+      atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
+    ).id;
+  } catch {
+    // An unreadable token leaves the current user unknown.
+  }
+  async function contactSeller() {
+    if (contactPending) return;
+    setContactPending(true);
+    setActionError("");
+    try {
+      const conversation = await startConversation(id);
+      navigate(`/messages/${conversation.id}`);
+    } catch (err) {
+      setActionError(
+        err.response?.status === 409
+          ? "This listing has no seller to contact."
+          : "Could not start the conversation. Please try again.",
+      );
+    } finally {
+      setContactPending(false);
+    }
+  }
+
   const [listing, setListing] = useState(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +82,7 @@ function ItemDetailsContent({ id }) {
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset loading before fetching the newly selected listing.
     setLoading(true);
     setError("");
     getListingById(id)
@@ -87,6 +119,7 @@ function ItemDetailsContent({ id }) {
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset favorite actions while synchronizing with the backend.
     setFavoritesReady(false);
     setActionError("");
     getFavorites()
@@ -236,9 +269,22 @@ function ItemDetailsContent({ id }) {
                       Agree on a public meeting spot before pickup.
                     </p>
                   </div>
-                  <button className="item-primary" type="button" disabled>
-                    Contact seller · Coming soon
-                  </button>
+                  {currentUserId !==
+                    (typeof listing.ownerId === "string"
+                      ? listing.ownerId
+                      : listing.ownerId?.$oid ||
+                        listing.ownerId?.hexString) && (
+                    <button
+                      className="item-primary"
+                      type="button"
+                      onClick={contactSeller}
+                      disabled={contactPending}
+                    >
+                      {contactPending
+                        ? "Opening conversation…"
+                        : "Contact seller"}
+                    </button>
+                  )}
                   <div className="item-actions">
                     <button
                       type="button"
@@ -285,10 +331,7 @@ function ItemDetailsContent({ id }) {
                         <p className="item-muted">Verified Student</p>
                       </div>
                     </div>
-                    <p>
-                      Ask about the item or arrange a pickup once messaging is
-                      available.
-                    </p>
+                    <p>Ask about the item or arrange a pickup in messages.</p>
                   </div>
                   <p className="item-safety">
                     Meet on campus, in a public place. Inspect the item before

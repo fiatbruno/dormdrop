@@ -6,72 +6,11 @@
   background: white;
 }
 
-.loginHeader {
-  width: 100%;
-  padding: 20px clamp(24px, 3vw, 40px);
-
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  box-sizing: border-box;
-}
-
-.headerRight {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-}
-
-.logo {
-  display: block;
-  width: clamp(115px, 10vw, 150px);
-  height: auto;
-}
-
-.signupButton {
-  background-color: white;
-  color: #29497a;
-
-  border: 1.5px solid #d5dce8;
-  border-radius: 6px;
-
-  padding: 8px 28px;
-
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-
-.loginMain {
-  width: 100%;
-  min-width: 0;
-
-  display: grid;
-
-  /* Matches your Figma proportions much more closely */
-  grid-template-columns: minmax(320px, 39%) minmax(0, 61%);
-
-  align-items: stretch;
-}
-
-.loginRight {
-  width: min(calc(100% - 64px), 430px);
-
-  justify-self: center;
-  align-self: center;
-
-  padding: 20px 0;
-
-  min-width: 0;
-}
-
-.loginFormTitle {
+#loginPage .loginFormTitle {
   margin: 0 0 14px;
 
   font-family: "Bricolage Grotesque", sans-serif;
-  font-size: clamp(36px, 3vw, 48px);
+  font-size: clamp(32px, 1.5rem + 1.4vw, 40px);
   font-weight: 700;
   line-height: 1.05;
 
@@ -79,7 +18,7 @@
   color: #194278;
 }
 
-.loginRight > p {
+#loginPage .loginRight > p {
   margin: 0 0 24px;
 
   font-family: "Inter", sans-serif;
@@ -92,11 +31,11 @@
 
 
 
-.input {
+#loginPage .input {
   margin-bottom: 18px;
 }
 
-.input label {
+#loginPage .input label {
   display: block;
 
   margin-bottom: 6px;
@@ -108,7 +47,7 @@
   color: #0b2255;
 }
 
-.inputField {
+#loginPage .inputField {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -122,7 +61,7 @@
   box-sizing: border-box;
 }
 
-.credentialField {
+#loginPage .credentialField {
   flex: 1;
 
   min-width: 0;
@@ -137,22 +76,22 @@
   font-size: 14px;
 }
 
-.inputicon,
-.eyeIcon {
+#loginPage .inputicon,
+#loginPage .eyeIcon {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
 }
 
-.eyeIcon {
+#loginPage .eyeIcon {
   cursor: pointer;
 }
 
-.inputField.inputError {
+#loginPage .inputField.inputError {
   border-color: #d32f2f;
 }
 
-.loginRight .fieldError {
+#loginPage .loginRight .fieldError {
   margin: 4px 0 0;
 
   color: #d32f2f;
@@ -162,7 +101,7 @@
   text-align: left;
 }
 
-.loginRight .inputHelp {
+#loginPage .loginRight .inputHelp {
   margin: 4px 0 0;
 
   font-size: 13px;
@@ -173,18 +112,18 @@
 }
 
 
-.forgotPassword {
+#loginPage .forgotPassword {
   margin-top: 10px;
   text-align: right;
 }
 
-.forgotPassword a {
+#loginPage .forgotPassword a {
   color: #29497a;
   font-size: 14px;
   text-decoration: none;
 }
 
-.loginRight .error {
+#loginPage .loginRight .error {
   margin: 8px 0;
 
   color: #d32f2f;
@@ -194,7 +133,7 @@
 }
 
 
-.submit {
+#loginPage .submit {
   width: 100%;
   padding: 14px;
 
@@ -210,19 +149,19 @@
   cursor: pointer;
 }
 
-.submit:disabled {
+#loginPage .submit:disabled {
   cursor: not-allowed;
   opacity: 0.7;
 }
 
 
 
-.createAccount {
+#loginPage .createAccount {
   width: 100%;
   margin-top: 20px;
 }
 
-.createAccount p {
+#loginPage .createAccount p {
   margin: 0;
 
   color: #718096;
@@ -231,7 +170,7 @@
   text-align: center;
 }
 
-.createAccount a {
+#loginPage .createAccount a {
   color: #29497a;
 
   text-decoration: none;
@@ -240,7 +179,7 @@
 
 
 
-.campusInfoBox {
+#loginPage .campusInfoBox {
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -256,7 +195,7 @@
   box-sizing: border-box;
 }
 
-.campusInfoIcon {
+#loginPage .campusInfoIcon {
   width: 20px;
   height: 20px;
 
@@ -264,12 +203,12 @@
   flex-shrink: 0;
 }
 
-.campusInfoText {
+#loginPage .campusInfoText {
   flex: 1;
   min-width: 0;
 }
 
-.campusInfoText h3 {
+#loginPage .campusInfoText h3 {
   margin: 0 0 5px;
 
   color: #0b2255;
@@ -281,7 +220,7 @@
   text-align: left;
 }
 
-.loginRight .campusInfoText p {
+#loginPage .loginRight .campusInfoText p {
   width: 100%;
 
   margin: 0;
@@ -297,45 +236,12 @@
 
 
 
-.credentialField:-webkit-autofill,
-.credentialField:-webkit-autofill:hover,
-.credentialField:-webkit-autofill:focus,
-.credentialField:-webkit-autofill:active {
+#loginPage .credentialField:-webkit-autofill,
+#loginPage .credentialField:-webkit-autofill:hover,
+#loginPage .credentialField:-webkit-autofill:focus,
+#loginPage .credentialField:-webkit-autofill:active {
   -webkit-text-fill-color: #29497a;
   -webkit-box-shadow: 0 0 0 1000px white inset;
   box-shadow: 0 0 0 1000px white inset;
   transition: background-color 5000s ease-in-out 0s;
-}
-
-
-
-@media (max-width: 1050px) {
-  .loginMain {
-    grid-template-columns: minmax(300px, 42%) minmax(0, 58%);
-  }
-
-  .loginRight {
-    width: min(calc(100% - 48px), 420px);
-  }
-}
-
-
-
-@media (max-width: 800px) {
-  .loginMain {
-    grid-template-columns: 1fr;
-  }
-
-  .authLeftPanel {
-    display: none;
-  }
-
-  .loginRight {
-    width: min(calc(100% - 40px), 450px);
-    padding: 48px 0;
-  }
-
-  .loginHeader {
-    padding: 16px 20px;
-  }
 }

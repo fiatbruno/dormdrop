@@ -3,6 +3,7 @@ import useAuth from "../../hooks/useAuth";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
+import Footer from "../../components/Footer/Footer";
 import "./Profile.css";
 import useProfile from "../../hooks/useProfile";
 
@@ -97,7 +98,6 @@ function Profile({
   onMarkSold,
   onRelist,
   onResetPassword,
-  onLogout,
 }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -110,6 +110,7 @@ function Profile({
   // Fill the form when user data arrives from the backend
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Populate editable fields when the backend supplies updated profile data.
       setName(user.name || "");
       setBio(user.about || "");
     }
@@ -199,6 +200,7 @@ function Profile({
   }
 
   return (
+    <>
     <main className="profile-page">
       <Navbar showSearch={false} />
 
@@ -377,6 +379,8 @@ function Profile({
         </div>
       </div>
     </main>
+    <Footer />
+    </>
   );
 }
 

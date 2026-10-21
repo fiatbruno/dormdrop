@@ -8,7 +8,8 @@ import AuthLeftPanel from "../../components/AuthLeftPanel/AuthLeftPanel";
 import Footer from "../../components/Footer/Footer";
 import Button from "../../components/Button/Button";
 
-import logo from "../../assets/Logo.png";
+import Navbar from "../../components/Navbar/Navbar";
+import "../../components/AuthLeftPanel/AuthPage.css";
 
 import "../Signup/Signup.css";
 import "../VerifyEmail/VerifyEmail.css";
@@ -39,7 +40,7 @@ export default function EmailVerificationExpired() {
       setSuccessMessage(
         "If your account requires verification, a new link will be sent.",
       );
-    } catch (error) {
+    } catch {
       setError("Unable to resend verification link. Please try again.");
     } finally {
       setIsSending(false);
@@ -47,19 +48,13 @@ export default function EmailVerificationExpired() {
   }
 
   return (
-    <div id="signupPage">
-      <header className="signupHeader">
-        <img className="logo" src={logo} alt="DormDrop Logo" />
+    <div id="signupPage" className="authPage verificationPage">
+      <Navbar variant="auth" authAction="login" />
 
-        <Button className="loginButton" onClick={handleLogin}>
-          Log In
-        </Button>
-      </header>
-
-      <main className="signupMain">
+      <main className="signupMain authPage__main">
         <AuthLeftPanel />
 
-        <div className="signupRight">
+        <div className="signupRight authPage__form">
           <div className="verificationExpiredContent">
             <div className="verificationExpiredIcon">
               <CircleAlert size={20} />
