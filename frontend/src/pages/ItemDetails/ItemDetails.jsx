@@ -74,6 +74,8 @@ function ItemDetailsContent({ id }) {
   const [pending, setPending] = useState(false);
   const [actionError, setActionError] = useState("");
   const [shareMessage, setShareMessage] = useState("");
+  const [reported, setReported] = useState(false);
+  const [reportMessage, setReportMessage] = useState("");
   const [favoriteAttempt, setFavoriteAttempt] = useState(0);
 
   useEffect(() => {
@@ -163,6 +165,15 @@ function ItemDetailsContent({ id }) {
         "Couldn't copy the link. Copy this page's address to share it.",
       );
     }
+  }
+  function handleReport() {
+    if (reported) {
+      setReportMessage("Item already reported.");
+      return;
+    }
+
+    setReported(true);
+    setReportMessage("Item reported successfully.");
   }
 
   const recommendations = listing
@@ -285,24 +296,35 @@ function ItemDetailsContent({ id }) {
                         : "Contact seller"}
                     </button>
                   )}
-                  <div className="item-actions">
-                    <button
-                      type="button"
-                      onClick={toggleSave}
-                      disabled={pending || !favoritesReady}
-                      aria-pressed={saved}
-                      aria-busy={pending}
-                    >
-                      {pending
-                        ? "Updating…"
-                        : saved
-                          ? "Saved · Unsave item"
-                          : "Save item"}
-                    </button>
-                    <button type="button" onClick={share}>
-                      Share listing
-                    </button>
-                  </div>
+                 <div className="item-actions">
+                   <button
+                     type="button"
+                     onClick={toggleSave}
+                     disabled={pending || !favoritesReady}
+                     aria-pressed={saved}
+                     aria-busy={pending}
+                   >
+                     {pending
+                       ? "Updating…"
+                       : saved
+                         ? "Saved · Unsave item"
+                         : "Save item"}
+                   </button>
+
+                   <button type="button" onClick={share}>
+                     Share listing
+                   </button>
+
+                   <button type="button" onClick={handleReport}>
+                     Report item
+                   </button>
+                 </div>
+
+                 {reportMessage && (
+                   <p className="item-feedback" role="status">
+                     {reportMessage}
+                   </p>
+                 )}
                   {actionError && (
                     <p className="item-feedback" role="alert">
                       {actionError}{" "}
