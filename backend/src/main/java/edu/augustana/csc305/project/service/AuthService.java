@@ -246,6 +246,13 @@ public class AuthService {
     }
 
     // Reset a user's password
+    public void resetPassword(String token, String newPassword, String confirmPassword) {
+        if (confirmPassword == null || !confirmPassword.equals(newPassword)) {
+            throw new IllegalArgumentException("Passwords do not match.");
+        }
+        resetPassword(token, newPassword);
+    }
+
     public void resetPassword(
             String token,
             String newPassword
@@ -258,10 +265,14 @@ public class AuthService {
         }
 
         if (newPassword == null ||
-                newPassword.length() < 8) {
+                newPassword.isBlank() || newPassword.length() < 12) {
             throw new IllegalArgumentException(
-                    "Password must be at least 8 characters long."
+                    "Password must be at least 12 characters long."
             );
+        }
+
+        if (newPassword.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72) {
+            throw new IllegalArgumentException("Password must be at most 72 UTF-8 bytes long.");
         }
 
         User user = userRepository
