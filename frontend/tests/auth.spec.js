@@ -10,6 +10,34 @@ const fillSignupForm = async (page) => {
   await page.getByLabel("Password", { exact: true }).fill("passwordsample");
   await page.getByLabel("Confirm password").fill("passwordsample");
 };
+/** @param {number} expiresAt */
+const makeSessionToken = (expiresAt) => {
+  const payload = Buffer.from(JSON.stringify({ exp: expiresAt })).toString(
+    "base64url",
+  );
+  return `test.${payload}.signature`;
+};
+
+/** @param {import('@playwright/test').Page} page */
+const mockMarketplace = async (page) => {
+  await page.route("**/api/v1/home", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/v1/favorites", (route) =>
+    route.fulfill({ json: [] }),
+  );
+};
+
+/** @param {import('@playwright/test').Page} page */
+const openVerificationAfterSignup = async (page) => {
+  await page.route("**/api/v1/auth/register", (route) =>
+    route.fulfill({ status: 201 }),
+  );
+  await page.goto("/signup");
+  await fillSignupForm(page);
+  await page
+    .getByRole("button", { name: "Create account", exact: true })
+    .click();
+  await expect(page).toHaveURL("/verify-email");
+};
 
 test.describe("Authentication", () => {
   test.describe("Login", () => {
@@ -174,34 +202,6 @@ test.describe("Authentication", () => {
 });
 
 // These tokens exercise client-side session handling only; the API is mocked.
-/** @param {number} expiresAt */
-const makeSessionToken = (expiresAt) => {
-  const payload = Buffer.from(JSON.stringify({ exp: expiresAt })).toString(
-    "base64url",
-  );
-  return `test.${payload}.signature`;
-};
-
-/** @param {import('@playwright/test').Page} page */
-const mockMarketplace = async (page) => {
-  await page.route("**/api/v1/home", (route) => route.fulfill({ json: [] }));
-  await page.route("**/api/v1/favorites", (route) =>
-    route.fulfill({ json: [] }),
-  );
-};
-
-/** @param {import('@playwright/test').Page} page */
-const openVerificationAfterSignup = async (page) => {
-  await page.route("**/api/v1/auth/register", (route) =>
-    route.fulfill({ status: 201 }),
-  );
-  await page.goto("/signup");
-  await fillSignupForm(page);
-  await page
-    .getByRole("button", { name: "Create account", exact: true })
-    .click();
-  await expect(page).toHaveURL("/verify-email");
-};
 
 test.describe("Authentication gaps", () => {
   test("empty login is rejected without sending credentials", async ({
