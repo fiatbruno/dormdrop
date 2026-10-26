@@ -15,6 +15,9 @@ import Home from "./pages/Home/Home";
 import SavedItem from "./pages/SavedItems/SavedItem";
 import Profile from "./pages/Profile/Profile";
 import EditListing from "./pages/EditListing/EditListing";
+import AdminUserDetails from "./pages/Admin/AdminUserDetails";
+import AdminLogin from "./pages/Admin/AdminLogin";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 /*
  * We use the react-router-dom library to load pages based
@@ -126,6 +129,22 @@ const router = createBrowserRouter([
     path: "*",
     element: <NotFound />,
   },
+
+{
+  path: "/admin/login",
+  element: <AdminLogin />,
+},
+{
+  element: <AdminProtectedRoute />,
+  children: [
+    {
+      path: "/admin/users/:userId",
+      element: <AdminUserDetails />,
+    },
+  ],
+},
+
+
 ]);
 
 function App() {
