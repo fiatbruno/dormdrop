@@ -291,6 +291,12 @@ public class AuthService {
             );
         }
 
+        if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException(
+                    "Your new password must be different from your current password."
+            );
+        }
+
         String passwordHash =
                 passwordEncoder.encode(newPassword);
 
