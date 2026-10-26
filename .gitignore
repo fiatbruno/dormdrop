@@ -4,3 +4,7 @@
 
 # React/Vite build output
 frontend/dist/
+# Environment variables
+.env
+.env.*
+!.env.example
