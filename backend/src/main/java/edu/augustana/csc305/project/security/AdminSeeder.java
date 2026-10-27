@@ -1,6 +1,7 @@
 package edu.augustana.csc305.project.security;
 
 import edu.augustana.csc305.project.model.User;
+import edu.augustana.csc305.project.model.UserRole;
 import edu.augustana.csc305.project.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
@@ -45,6 +46,7 @@ import org.springframework.stereotype.Component;
             return;
         }
         User admin = new User(null, adminName, adminEmail, passwordEncoder.encode(adminPassword));
+        admin.setRole(UserRole.ADMIN);
         userRepository.storeUser(admin);
     }
 }
