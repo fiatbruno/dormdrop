@@ -1,14 +1,12 @@
 
 package edu.augustana.csc305.project.security;
 
-import edu.augustana.csc305.project.repository.UserRepository;
 import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -24,7 +22,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtService jwtService
+            JwtService jwtService,
+            PersistedUserDetailsService users
     ) throws Exception {
 
         http
@@ -51,7 +50,7 @@ public class SecurityConfig {
 
                 .addFilterBefore(
                         new JwtAuthenticationFilter(
-                                jwtService
+                                jwtService, users
                         ),
                         UsernamePasswordAuthenticationFilter.class
                 )
@@ -111,24 +110,4 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public UserDetailsService userDetailsService(
-            UserRepository repository
-    ) {
-        return email -> {
-
-            var user = repository.findByEmail(email)
-                    .orElseThrow(() ->
-                            new UsernameNotFoundException(
-                                    "User not found"
-                            )
-                    );
-
-            return org.springframework.security.core.userdetails.User
-                    .withUsername(user.getEmail())
-                    .password(user.getPasswordHash())
-                    .roles("STUDENT")
-                    .build();
-        };
-    }
 }
