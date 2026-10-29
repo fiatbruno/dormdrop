@@ -5,6 +5,7 @@ import Footer from "../../components/Footer/Footer";
 import ListingImage from "../../components/ListingImage";
 import useMessaging from "../../hooks/useMessaging";
 import "./Messages.css";
+import OfferCard from "../../components/OfferCard/OfferCard";
 
 const initials = (name) =>
   (name || "Member")
@@ -82,6 +83,23 @@ export default function Messages() {
     <div className="messages-shell">
       <Navbar showSearch={false} />
       <main className="messages-page">
+          <div className="offer-preview-controls">
+            <span>Preview offer status:</span>
+
+            <button
+              type="button"
+              onClick={() => setOfferStatus("ACCEPTED")}
+            >
+              Offer Accepted
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setOfferStatus("DECLINED")}
+            >
+              Offer Declined
+            </button>
+          </div>
         <header className="messages-heading">
           <div>
             <h1>Messages</h1>
@@ -292,6 +310,21 @@ export default function Messages() {
                             </div>
                           );
                         })}
+
+                    <OfferCard
+                      offer={offer}
+                      onArrangePickup={() => {
+                        chat.setDraft(
+                          "Hi! When and where would you like to meet for pickup?"
+                        );
+                      }}
+                      onMakeAnotherOffer={() => {
+                        // Connect this to the actual offer submission flow later.
+                        chat.setDraft(
+                          "Hi! I'd like to make another offer. Would you consider a different price?"
+                        );
+                      }}
+                    />
                       </div>
                       {newMessages && (
                         <button

@@ -1,0 +1,220 @@
+
+.dd-notifications {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--sans, Arial, sans-serif);
+  color: #10295c;
+}
+
+.dd-notifications-bell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  background: #edf4fa;
+  border: 0;
+  border-radius: 9px;
+  color: #194278;
+  cursor: pointer;
+}
+
+.dd-notifications-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  background: #194278;
+  color: #fff;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.dd-notifications-panel {
+  position: absolute;
+  z-index: 1000;
+  top: calc(100% + 12px);
+  right: -48px;
+  width: 380px;
+  max-width: calc(100vw - 24px);
+  background: #fff;
+  border: 1px solid #e5ebf2;
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(16, 41, 92, 0.15);
+  overflow: hidden;
+}
+
+.dd-notifications-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 14px;
+}
+
+.dd-notifications-header h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #10295c;
+}
+
+.dd-notifications-mark-all {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #194278;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.dd-notifications-close {
+  display: grid;
+  place-items: center;
+  padding: 5px;
+  border: 0;
+  background: none;
+  color: #194278;
+  cursor: pointer;
+}
+
+.dd-notifications-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 0 14px;
+  border-bottom: 1px solid #e5ebf2;
+}
+
+.dd-notifications-tabs button {
+  flex: 1;
+  padding: 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #194278;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dd-notifications-tabs button.active {
+  border-color: #194278;
+  background: #f5f8fc;
+}
+
+.dd-notifications-list {
+  max-height: 440px;
+  overflow-y: auto;
+}
+
+.dd-notification-item {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  gap: 12px;
+  padding: 16px 14px;
+  border: 0;
+  background: #fff;
+  color: #10295c;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dd-notification-item:hover {
+  background: #f4f8fc;
+}
+
+.dd-notification-item.unread {
+  background: #edf4fa;
+}
+
+.dd-notification-icon {
+  flex-shrink: 0;
+  margin-top: 4px;
+  color: #194278;
+}
+
+.dd-notification-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  gap: 5px;
+}
+
+.dd-notification-content strong {
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.dd-notification-content > span {
+  color: #657b9b;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.dd-notification-content small {
+  color: #657b9b;
+  font-size: 10px;
+}
+
+.dd-notification-dot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  margin-top: 7px;
+  background: #194278;
+  border-radius: 50%;
+}
+
+.dd-notifications-empty {
+  padding: 42px 16px;
+  text-align: center;
+  color: #657b9b;
+  font-size: 13px;
+}
+
+.dd-notifications-footer {
+  padding: 14px;
+  background: #f9f8f6;
+  color: #657b9b;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .dd-notifications-panel {
+    position: fixed;
+    top: 70px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+  }
+  .dd-notifications-error {
+    padding: 12px 14px;
+    color: #b42318;
+    background: #fff4f2;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .dd-notifications-error button {
+    border: 0;
+    background: transparent;
+    color: #194278;
+    cursor: pointer;
+    font-weight: 600;
+  }
+}

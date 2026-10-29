@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { Menu, Plus, Search, UserRound, X } from "lucide-react";
 import logo from "../../assets/Logo.png";
 import "./Navbar.css";
+import Notifications from "../Notifications/Notifications";
 
 const defaultLinks = [
   { label: "Browse", to: "/home" },
@@ -102,6 +103,10 @@ function NavbarContent({
             <Plus size={18} aria-hidden="true" />
             List item
           </Link>
+
+          {/* Notification bell and dropdown */}
+          <Notifications />
+
           <Link
             className="dormdrop-navbar__profile"
             to={profilePath}
@@ -109,11 +114,21 @@ function NavbarContent({
           >
             <UserRound size={18} aria-hidden="true" />
           </Link>
-          <button ref={toggleRef} type="button" className="dormdrop-navbar__toggle"
+
+          <button
+            ref={toggleRef}
+            type="button"
+            className="dormdrop-navbar__toggle"
             aria-label={menuOpen ? "Close navigation" : "Open navigation"}
-            aria-expanded={menuOpen} aria-controls={menuId}
-            onClick={() => setMenuOpen((open) => !open)}>
-            {menuOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
+            aria-expanded={menuOpen}
+            aria-controls={menuId}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? (
+              <X size={22} aria-hidden="true" />
+            ) : (
+              <Menu size={22} aria-hidden="true" />
+            )}
           </button>
         </div>
       </div>

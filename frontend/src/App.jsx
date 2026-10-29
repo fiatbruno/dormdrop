@@ -22,6 +22,7 @@ import CheckYourInbox from "./pages/CheckYourInbox/CheckYourInbox";
 import ResetPassword from "./pages/ResetPassword/ResetPassword";
 import PasswordUpdated from "./pages/PasswordUpdated/PasswordUpdated";
 
+
 /*
  * We use the react-router-dom library to load pages based
  * on path. This object configures which paths map to which
@@ -146,6 +147,7 @@ const router = createBrowserRouter([
     path: "/password-updated",
     element: <PasswordUpdated />,
   },
+
 
   {
       path: "*",

@@ -446,4 +446,34 @@
     min-width: 70px;
     padding: 12px;
   }
+
+  .messages-thread .offer-card {
+    margin-top: 18px;
+  }
+
+  .messages-thread .offer-card h3 {
+    color: #10295c;
+  }
+
+  .offer-preview-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .offer-preview-controls span {
+    color: #657b9b;
+    font-size: 13px;
+  }
+
+  .messages-page .offer-preview-controls button {
+    padding: 9px 15px;
+    border: 1px solid #dce4ed;
+    border-radius: 6px;
+    background: #edf4fa;
+    color: #194278;
+    font-size: 12px;
+  }
 }
