@@ -12,7 +12,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import org.springframework.security.core.AuthenticationException;
 
 @Component
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
@@ -20,9 +20,13 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     private final JwtService jwtService;
     private final WebSocketSessions sessions;
 
-    public WebSocketAuthInterceptor(JwtService jwtService, WebSocketSessions sessions) {
+    private final PersistedUserDetailsService users;
+
+    public WebSocketAuthInterceptor(JwtService jwtService, WebSocketSessions sessions,
+                                    PersistedUserDetailsService users) {
         this.jwtService = jwtService;
         this.sessions = sessions;
+        this.users = users;
     }
 
     @Override
@@ -57,13 +61,14 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                 if (claims.getExpiration() == null || claims.getExpiration().getTime() <= System.currentTimeMillis()) {
                     throw new AccessDeniedException("Expired token.");
                 }
+                var user = users.loadUserByUsername(email);
                 sessions.expireAt(accessor.getSessionId(), claims.getExpiration().getTime());
                 accessor.setUser(
                         new UsernamePasswordAuthenticationToken(
-                                email, null, List.of()
+                                user.getUsername(), null, user.getAuthorities()
                         )
                 );
-            } catch (JwtException | IllegalArgumentException ex) {
+            } catch (JwtException | IllegalArgumentException | AuthenticationException ex) {
                 throw new AccessDeniedException(
                         "Invalid or expired token.", ex
                 );
