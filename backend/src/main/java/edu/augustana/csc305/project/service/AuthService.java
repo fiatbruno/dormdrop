@@ -265,9 +265,9 @@ public class AuthService {
         }
 
         if (newPassword == null ||
-                newPassword.isBlank() || newPassword.length() < 12) {
+                newPassword.isBlank() || newPassword.length() < 8) {
             throw new IllegalArgumentException(
-                    "Password must be at least 12 characters long."
+                    "Password must be at least 8 characters long."
             );
         }
 
