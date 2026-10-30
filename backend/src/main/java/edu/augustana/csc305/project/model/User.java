@@ -19,6 +19,8 @@ public class User {
 
     private String passwordHash;
 
+    private UserRole role = UserRole.STUDENT;
+
     // Email verification
     private boolean emailVerified;
     private String verificationToken;
@@ -82,6 +84,14 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public UserRole getRole() {
+        return role == null ? UserRole.STUDENT : role;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
     }
 
     // Password hash
