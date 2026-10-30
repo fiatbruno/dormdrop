@@ -11,7 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
+import org.springframework.security.core.AuthenticationException;
 
 /**
  * Checks every incoming request for a JWT token in its Authorization header
@@ -33,8 +33,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    private final PersistedUserDetailsService users;
+
+    public JwtAuthenticationFilter(JwtService jwtService, PersistedUserDetailsService users) {
         this.jwtService = jwtService;
+        this.users = users;
     }
 
     @Override protected void doFilterInternal(HttpServletRequest request,
@@ -44,10 +47,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith(BEARER_PREFIX)) {
             try {
                 Claims claims = jwtService.parseToken(header.substring(BEARER_PREFIX.length()));
+                var user = users.loadUserByUsername(claims.getSubject());
                 UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(claims.getSubject(), null, List.of());
+                        new UsernamePasswordAuthenticationToken(user.getUsername(), null, user.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(auth);
-            } catch (JwtException | IllegalArgumentException e) {
+            } catch (JwtException | IllegalArgumentException | AuthenticationException e) {
+                SecurityContextHolder.clearContext();
                 // Bad or expired token: leave the request unauthenticated.
             }
         }
