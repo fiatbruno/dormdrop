@@ -16,7 +16,6 @@ import SavedItem from "./pages/SavedItems/SavedItem";
 import Profile from "./pages/Profile/Profile";
 import EditListing from "./pages/EditListing/EditListing";
 
-import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
 /*
  * We use the react-router-dom library to load pages based
  * on path. This object configures which paths map to which
@@ -124,10 +123,6 @@ const router = createBrowserRouter([
   },
 
 
-  {
-    path: "/forgot-password",
-    element: <ForgotPassword />,
-  },
   {
       path: "*",
       element: <NotFound />,
