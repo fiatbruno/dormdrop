@@ -2,6 +2,7 @@
 package edu.augustana.csc305.project.controller;
 
 import edu.augustana.csc305.project.dto.ResendVerificationRequest;
+import edu.augustana.csc305.project.dto.ResetPasswordRequest;
 import edu.augustana.csc305.project.dto.SignUpRequest;
 import edu.augustana.csc305.project.dto.UserDto;
 import edu.augustana.csc305.project.model.User;
@@ -183,19 +184,21 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<Map<String, String>> resetPassword(
-            @RequestBody Map<String, String> request
+    public ResponseEntity<Map<String, Object>> resetPassword(
+            @RequestBody ResetPasswordRequest request
     ) {
         try {
             authService.resetPassword(
-                    request.get("token"),
-                    request.get("newPassword")
+                    request.token(),
+                    request.newPassword(),
+                    request.confirmPassword()
             );
 
             return ResponseEntity.ok(
                     Map.of(
                             "message",
-                            "Your password has been reset successfully."
+                            "Your password has been reset successfully.",
+                            "success", true
                     )
             );
 
@@ -204,7 +207,8 @@ public class AuthController {
             return ResponseEntity.badRequest().body(
                     Map.of(
                             "message",
-                            e.getMessage()
+                            e.getMessage(),
+                            "success", false
                     )
             );
         }
