@@ -7,6 +7,7 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ListingImage from "../../components/ListingImage";
 import ProductCard from "../../components/ProductCard/ProductCard";
+import { Share2 } from "lucide-react";
 import {
   getListingById,
   getListings,
@@ -311,13 +312,19 @@ function ItemDetailsContent({ id }) {
                          : "Save item"}
                    </button>
 
-                   <button type="button" onClick={share}>
+                   <button
+                     type="button"
+                     className="item-share-button"
+                     onClick={share}
+                   >
+                     <Share2 size={18} aria-hidden="true" />
                      Share listing
                    </button>
 
                    <button type="button" onClick={handleReport}>
                      Report item
                    </button>
+
                  </div>
 
                  {reportMessage && (
@@ -404,4 +411,6 @@ function ItemDetailsContent({ id }) {
       <Footer />
     </div>
   );
+
+
 }
