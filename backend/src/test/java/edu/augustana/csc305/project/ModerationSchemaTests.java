@@ -123,7 +123,8 @@ class ModerationSchemaTests {
         @BeforeEach
         void connect() {
             database = "moderation_test_"
-                    + UUID.randomUUID().toString().replace("-", "");
+                    // 15-byte prefix + 20 ASCII characters stays under Atlas's 38-byte limit.
+                    + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
 
             client = MongoClients.create(
                     System.getenv("MODERATION_TEST_MONGODB_URI")
@@ -140,7 +141,12 @@ class ModerationSchemaTests {
                 try {
                     if (database != null
                             && database.startsWith("moderation_test_")) {
-                        client.getDatabase(database).drop();
+                        // Atlas test users may delete records without permission to drop databases.
+                        // Only touch collections inside this test's randomly generated database.
+                        for (String collection : client.getDatabase(database).listCollectionNames()) {
+                            client.getDatabase(database).getCollection(collection)
+                                    .deleteMany(new Document());
+                        }
                     }
                 } finally {
                     client.close();
