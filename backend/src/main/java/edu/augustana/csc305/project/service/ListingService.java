@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -47,9 +48,27 @@ public class ListingService {
             String condition,
             String pickupArea,
             LocalDate startDate,
-            LocalDate endDate) {
+            LocalDate endDate,
+            String q) {
 
         Query query = new Query();
+
+        String search = q == null ? "" : q.trim();
+        if (search.length() > 200) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Search must be at most 200 characters");
+        }
+        if (!search.isEmpty()) {
+            List<Criteria> wordFilters = new ArrayList<>();
+            for (String word : search.split("\\s+")) {
+                String pattern = Pattern.quote(word);
+                wordFilters.add(new Criteria().orOperator(
+                        Criteria.where("title").regex(pattern, "i"),
+                        Criteria.where("description").regex(pattern, "i"),
+                        Criteria.where("category").regex(pattern, "i")
+                ));
+            }
+            query.addCriteria(new Criteria().andOperator(wordFilters.toArray(new Criteria[0])));
+        }
 
         if (category != null &&
                 !category.isBlank() &&
