@@ -278,6 +278,111 @@ class PrivateNotificationMongoTest {
         assertTrue(json.contains(event.offerId().toHexString()));
     }
 
+    private OfferReceivedEventAppender.Submission submittedOffer() {
+        return new OfferReceivedEventAppender.Submission(new ObjectId(), new ObjectId(), other.getId(), owner.getId(),
+                "Buyer Display", new BigDecimal("12.50"), Instant.parse("2026-11-01T18:00:00.123456Z"));
+    }
+
+    /** Fixture only: #60 must insert its actual offer and call the appender in its command transaction. */
+    private NotificationOutboxEvent commitOfferFixture(OfferReceivedEventAppender.Submission offer) {
+        var transactions = new TransactionTemplate(new MongoTransactionManager(mongo.getMongoDatabaseFactory()));
+        return transactions.execute(tx -> {
+            if (mongo.getCollection("fixtureCommands").countDocuments(new Document("_id", offer.offerId())) == 0)
+                mongo.getCollection("fixtureCommands").insertOne(new Document("_id", offer.offerId()).append("amount", offer.amount().toPlainString()));
+            return new OfferReceivedEventAppender(mongo).append(offer);
+        });
+    }
+
+    @Test
+    void offerReceivedContractNotifiesOnlySellerWithSafeReferences() {
+        var offer = submittedOffer();
+        var source = commitOfferFixture(offer);
+        assertTrue(worker.processOne());
+        var sellerInbox = service.list(auth, 0, 20);
+        assertEquals(1, sellerInbox.total());
+        assertTrue(service.list(authentication(other), 0, 20).items().isEmpty());
+        var notice = sellerInbox.items().get(0);
+        assertEquals(Type.OFFER_RECEIVED, notice.type());
+        assertEquals(Status.PENDING, notice.payload().status());
+        assertEquals(new BigDecimal("12.50"), notice.payload().price());
+        assertEquals("Buyer Display", notice.payload().buyerDisplayName());
+        assertEquals(offer.offerId().toHexString(), notice.offerId());
+        assertEquals(offer.listingId().toHexString(), notice.listingId());
+        assertEquals(source.id().toHexString(), notice.eventId());
+        String json = tools.jackson.databind.json.JsonMapper.builder().build().writeValueAsString(notice);
+        for (String excluded : List.of("buyerId", "sellerId", "recipientId", "sourceEventKey", "email", "internal"))
+            assertFalse(json.contains(excluded), json);
+        assertFalse(json.contains(other.getId().toHexString()));
+    }
+
+    @Test
+    void offerFixtureReplayAndDeliveryReplayKeepOneEventAndNotice() {
+        var offer = submittedOffer();
+        var original = commitOfferFixture(offer);
+        var replay = commitOfferFixture(offer);
+        assertEquals(original.id(), replay.id());
+        assertEquals(1, mongo.getCollection("fixtureCommands").countDocuments());
+        assertEquals(1, mongo.count(new Query(), NotificationOutboxEvent.class));
+        assertTrue(worker.processOne());
+        String id = PrivateNotificationService.notificationId(original.eventKey(), owner.getId());
+        var read = service.read(auth, id);
+        assertEquals(original.id(), commitOfferFixture(offer).id());
+        assertFalse(worker.processOne()); // Same-key replay did not reset DONE to PENDING.
+        service.persist(original);
+        service.persist(original);
+        var inbox = service.list(auth, 0, 20);
+        assertEquals(1, inbox.total());
+        assertEquals(read.readAt(), inbox.items().get(0).readAt());
+        assertEquals(original.id().toHexString(), inbox.items().get(0).eventId());
+    }
+
+    @Test
+    void failureAfterAppendingOfferEventRollsBackBothFixtureAndEvent() {
+        var offer = submittedOffer();
+        var transactions = new TransactionTemplate(new MongoTransactionManager(mongo.getMongoDatabaseFactory()));
+        assertThrows(IllegalStateException.class, () -> transactions.executeWithoutResult(tx -> {
+            mongo.getCollection("fixtureCommands").insertOne(new Document("_id", offer.offerId()));
+            new OfferReceivedEventAppender(mongo).append(offer);
+            throw new IllegalStateException("Injected before commit");
+        }));
+        assertEquals(0, mongo.getCollection("fixtureCommands").countDocuments());
+        assertEquals(0, mongo.count(new Query(), NotificationOutboxEvent.class));
+        assertFalse(worker.processOne());
+        assertEquals(0, service.list(auth, 0, 20).total());
+    }
+
+    @Test
+    void appenderRejectsNontransactionalUseAndChangedReplay() {
+        var offer = submittedOffer();
+        var appender = new OfferReceivedEventAppender(mongo);
+        assertThrows(IllegalStateException.class, () -> appender.append(offer));
+        assertEquals(0, mongo.count(new Query(), NotificationOutboxEvent.class));
+        commitOfferFixture(offer);
+        var changed = new OfferReceivedEventAppender.Submission(offer.offerId(), offer.listingId(), offer.buyerId(),
+                offer.sellerId(), offer.buyerDisplayName(), new BigDecimal("99.00"), offer.submittedAt());
+        assertThrows(IllegalStateException.class, () -> commitOfferFixture(changed));
+        assertEquals(1, mongo.count(new Query(), NotificationOutboxEvent.class));
+        assertTrue(worker.processOne());
+        assertEquals(new BigDecimal("12.50"), service.list(auth, 0, 20).items().get(0).payload().price());
+    }
+
+    @Test
+    void invalidOfferInputCannotAppendAnEventAndDisplayNameIsBounded() {
+        var offer = submittedOffer();
+        for (BigDecimal invalid : List.of(BigDecimal.ZERO, new BigDecimal("-1"), new BigDecimal("1.001"))) {
+            assertThrows(IllegalArgumentException.class, () -> new OfferReceivedEventAppender.Submission(
+                    offer.offerId(), offer.listingId(), offer.buyerId(), offer.sellerId(), "Name", invalid, offer.submittedAt()));
+        }
+        assertThrows(IllegalArgumentException.class, () -> new OfferReceivedEventAppender.Submission(
+                offer.offerId(), offer.listingId(), owner.getId(), owner.getId(), "Name", offer.amount(), offer.submittedAt()));
+        var safe = new OfferReceivedEventAppender.Submission(offer.offerId(), offer.listingId(), offer.buyerId(), offer.sellerId(),
+                " Buyer\n\u0000\u202E" + "x".repeat(120), offer.amount(), offer.submittedAt());
+        assertEquals(100, safe.buyerDisplayName().length());
+        assertFalse(safe.buyerDisplayName().contains("\n"));
+        assertFalse(safe.buyerDisplayName().contains("\u202E"));
+        assertEquals(0, mongo.count(new Query(), NotificationOutboxEvent.class));
+    }
+
     static class MutableClock extends Clock {
         Instant now;
         public ZoneId getZone() { return ZoneOffset.UTC; }

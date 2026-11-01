@@ -48,6 +48,7 @@ public class PrivateNotificationService {
     public void persist(NotificationOutboxEvent event) {
         String id = notificationId(event.eventKey(), event.recipientId());
         Update fields = new Update().setOnInsert("recipientId", event.recipientId())
+                .setOnInsert("sourceEventId", event.id())
                 .setOnInsert("sourceEventKey", event.eventKey()).setOnInsert("type", event.type())
                 .setOnInsert("offerId", event.offerId()).setOnInsert("listingId", event.listingId())
                 .setOnInsert("payload", event.payload()).setOnInsert("createdAt", event.createdAt())
