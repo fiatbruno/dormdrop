@@ -204,6 +204,36 @@ test.describe("Authentication", () => {
 // These tokens exercise client-side session handling only; the API is mocked.
 
 test.describe("Authentication gaps", () => {
+  test("password reset sends both password fields and accepts a valid token", async ({
+    page,
+  }) => {
+    await page.route("**/api/v1/auth/reset-password", (route) =>
+      route.fulfill({ json: { success: true } }),
+    );
+    await page.goto("/reset-password?token=valid-reset-token");
+    await page
+      .getByLabel("New password", { exact: true })
+      .fill("new-password-123");
+    await page.getByLabel("Confirm new password").fill("new-password-123");
+
+    const requestPromise = page.waitForRequest(
+      "**/api/v1/auth/reset-password",
+    );
+    await page.getByRole("button", { name: "Reset password" }).click();
+
+    const request = await requestPromise;
+    expect(request.method()).toBe("POST");
+    expect(request.postDataJSON()).toEqual({
+      token: "valid-reset-token",
+      newPassword: "new-password-123",
+      confirmPassword: "new-password-123",
+    });
+    await expect(page).toHaveURL("/password-updated");
+    await expect(
+      page.getByRole("heading", { name: "Password updated" }),
+    ).toBeVisible();
+  });
+
   test("empty login is rejected without sending credentials", async ({
     page,
   }) => {
