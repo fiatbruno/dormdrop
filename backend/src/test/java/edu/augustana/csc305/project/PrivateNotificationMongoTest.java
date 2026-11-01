@@ -38,6 +38,7 @@ class PrivateNotificationMongoTest {
     private PrivateNotificationService service;
     private NotificationLeaseQueue queue;
     private PrivateNotificationWorker worker;
+    private NotificationLivePublisher live;
     private final User owner = new User(new ObjectId(), "Owner", "owner@example.edu", "hash");
     private final User other = new User(new ObjectId(), "Other", "other@example.edu", "hash");
     private final Authentication auth = authentication(owner);
@@ -59,7 +60,8 @@ class PrivateNotificationMongoTest {
         when(users.findByEmail(other.getEmail())).thenReturn(Optional.of(other));
         service = spy(new PrivateNotificationService(mongo, users, clock));
         queue = new NotificationLeaseQueue(mongo, clock, 1, 10);
-        worker = new PrivateNotificationWorker(mongo, queue, service, 50);
+        live = mock(NotificationLivePublisher.class);
+        worker = new PrivateNotificationWorker(mongo, queue, service, live, 50);
     }
 
     @AfterEach
@@ -170,6 +172,7 @@ class PrivateNotificationMongoTest {
                 .doCallRealMethod().when(service).persist(any());
         assertTrue(worker.processOne());
         assertEquals(0, mongo.count(new Query(), PrivateNotification.class));
+        verifyNoInteractions(live);
         var pending = mongo.getCollection("notificationOutbox").find().first();
         assertEquals("RETRY", pending.getString("status"));
         assertEquals("IllegalStateException", pending.getString("lastError"));
@@ -179,6 +182,23 @@ class PrivateNotificationMongoTest {
         assertEquals(1, mongo.count(new Query(), PrivateNotification.class));
         assertEquals(1, mongo.getCollection("fixtureCommands").countDocuments());
         assertEquals("DONE", mongo.getCollection("notificationOutbox").find().first().getString("status"));
+    }
+
+    @Test
+    void failedLiveDeliveryKeepsNoticeAndReconnectRestRecoversIt() {
+        doAnswer(invocation -> {
+            var notice = invocation.getArgument(1, edu.augustana.csc305.project.dto.NotificationResponse.class);
+            assertNotNull(mongo.findById(notice.id(), PrivateNotification.class));
+            throw new org.springframework.messaging.MessagingException("Simulated socket failure");
+        }).when(live).publish(eq(owner.getId()), any());
+        String id = deliver("socket-failure");
+        var reconnectInbox = service.list(authentication(owner), 0, 20);
+        assertEquals(1, reconnectInbox.total());
+        assertEquals(id, reconnectInbox.items().get(0).id());
+        assertEquals(1, service.unreadCount(authentication(owner)).count());
+        assertEquals("DONE", mongo.getCollection("notificationOutbox").find().first().getString("status"));
+        assertFalse(worker.processOne());
+        verify(live, times(1)).publish(eq(owner.getId()), any());
     }
 
     @Test
