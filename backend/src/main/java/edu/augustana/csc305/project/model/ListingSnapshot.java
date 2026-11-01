@@ -28,11 +28,13 @@ public record ListingSnapshot(
         String listingType,
         ListingStatus lifecycleStatus,
         List<String> privateEvidenceKeys,
-        Instant capturedAt
+        Instant capturedAt,
+        List<RetainedImage> retainedImages
 ) {
     public ListingSnapshot {
         privateEvidenceKeys = privateEvidenceKeys == null
                 ? List.of()
                 : List.copyOf(privateEvidenceKeys);
+        retainedImages = retainedImages == null ? List.of() : List.copyOf(retainedImages);
     }
 }
