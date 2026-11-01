@@ -19,14 +19,17 @@ public record ListingDetailsResponse(
         LocalDateTime listedOn,
         ListingStatus status,
         String ownerId,
-        String sellerName
+        String sellerName,
+        edu.augustana.csc305.project.model.ModerationTypes.Visibility moderationVisibility,
+        boolean restricted
 ) {
     public static ListingDetailsResponse from(Listing listing, String sellerName) {
         return new ListingDetailsResponse(
                 listing.getIdString(), listing.getTitle(), listing.getDescription(),
                 listing.getCategory(), listing.getPrice(), listing.getCondition(),
                 listing.getPickupArea(), listing.getListingType(), listing.getImageUrl(),
-                listing.getListedOn(), listing.getStatus(), listing.getOwnerId() == null ? null : listing.getOwnerId().toHexString(), sellerName
+                listing.getListedOn(), listing.getStatus(), listing.getOwnerId() == null ? null : listing.getOwnerId().toHexString(), sellerName,
+                listing.getModerationVisibility(), listing.getModerationVisibility() != edu.augustana.csc305.project.model.ModerationTypes.Visibility.VISIBLE
         );
     }
 }

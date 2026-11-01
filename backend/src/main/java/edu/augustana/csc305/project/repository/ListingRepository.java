@@ -7,4 +7,5 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 
 public interface ListingRepository
         extends MongoRepository<Listing, ObjectId> {
+    java.util.List<Listing> findAllByImageUrl(String imageUrl);
 }
