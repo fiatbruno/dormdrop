@@ -33,6 +33,7 @@ public class Listing {
     private String listingType = "For sale";
     private String imageUrl;
     private Visibility moderationVisibility = Visibility.VISIBLE;
+    private ObjectId temporaryHideCaseId;
 
     @Version
     private Long version;
@@ -145,6 +146,7 @@ public class Listing {
         this.moderationVisibility = moderationVisibility;
     }
 
+    @JsonIgnore
     public Long getVersion() {
         return version;
     }
@@ -152,6 +154,10 @@ public class Listing {
     public void setVersion(Long version) {
         this.version = version;
     }
+
+    @JsonIgnore
+    public ObjectId getTemporaryHideCaseId() { return temporaryHideCaseId; }
+    public void setTemporaryHideCaseId(ObjectId caseId) { temporaryHideCaseId = caseId; }
 
     public void setStatus(ListingStatus status) {
         this.status = status;

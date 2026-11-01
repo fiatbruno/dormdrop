@@ -12,5 +12,7 @@ public record SavedListingResponse(
         String imageUrl,
         String status,
         boolean available,
-        Instant savedAt
+        Instant savedAt,
+        edu.augustana.csc305.project.model.ModerationTypes.Visibility moderationVisibility,
+        boolean restricted
 ) {}
