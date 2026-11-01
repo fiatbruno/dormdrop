@@ -120,6 +120,99 @@ class ReportSubmissionMongoTest {
     }
 
     @Test
+    void duplicateKeysAndChangedReasonsDoNotGrowRequestRecordsOrReplaceEvidence() throws Exception {
+        Listing listing = listing();
+        User user = reporter();
+        var service = service(1);
+        var original = service.submit(listing.getId().toHexString(), body, "original-key", auth(user));
+        for (int i = 0; i < 24; i++) {
+            var changed = new SubmitReportRequest("SUSPECTED_SCAM", "Different reason " + i);
+            var conflict = assertThrows(ReportSubmissionService.ReportConflict.class,
+                    () -> service.submit(listing.getId().toHexString(), changed, UUID.randomUUID().toString(), auth(user)));
+            assertEquals("REPORT_ALREADY_EXISTS", conflict.code());
+            assertTrue(conflict.getReason().contains("were not saved"));
+        }
+        Report saved = mongo.findById(new ObjectId(original.status().reportId()), Report.class);
+        assertEquals(body.description(), saved.description());
+        assertEquals(ReportCategory.OTHER, saved.category());
+        assertEquals(1, mongo.count(new Query(), ReportRequest.class));
+        assertEquals(1, mongo.count(new Query(), Report.class));
+        assertEquals(1, mongo.count(new Query(), ListingSnapshot.class));
+        assertEquals(1, mongo.findById(user.getId(), ReportRateWindow.class).count());
+        assertEquals(original.status().reportId(), service.submit(listing.getId().toHexString(),body,"original-key",auth(user))
+                .status().reportId());
+    }
+
+    @Test
+    void listingVersionStillPersistsAndRejectsStaleRepositorySaves() throws Exception {
+        Listing listing = listing();
+        ListingRepository real = new org.springframework.data.mongodb.repository.support.MongoRepositoryFactory(mongo)
+                .getRepository(ListingRepository.class);
+        Listing first = real.findById(listing.getId()).orElseThrow();
+        Listing stale = real.findById(listing.getId()).orElseThrow();
+        Long originalVersion = first.getVersion();
+        first.setTitle("Saved title");
+        Listing updated = real.save(first);
+        assertEquals(originalVersion+1, updated.getVersion());
+        assertEquals(updated.getVersion(), real.findById(listing.getId()).orElseThrow().getVersion());
+        stale.setTitle("Stale title");
+        assertThrows(org.springframework.dao.OptimisticLockingFailureException.class, () -> real.save(stale));
+        assertEquals("Saved title", real.findById(listing.getId()).orElseThrow().getTitle());
+        var json = tools.jackson.databind.json.JsonMapper.builder().build().valueToTree(updated);
+        assertFalse(json.has("version"));
+    }
+
+    @Test
+    void reportBetweenSellerReadAndSaveReturnsUseful409AndPreservesOriginalEvidence() throws Exception {
+        Listing listing = listing();
+        User reporter = reporter();
+        User seller = new User(listing.getOwnerId(),"Seller","seller@augustana.edu","hash");
+        users.storeUser(seller);
+        ListingRepository real = new org.springframework.data.mongodb.repository.support.MongoRepositoryFactory(mongo)
+                .getRepository(ListingRepository.class);
+        ListingRepository interleaved = mock(ListingRepository.class);
+        when(interleaved.findById(listing.getId())).thenAnswer(call -> real.findById(listing.getId()));
+        when(interleaved.save(any(Listing.class))).thenAnswer(call -> {
+            // The seller has read version N. A report commits its version fence before the seller writes.
+            service(5).submit(listing.getId().toHexString(),body,"report-during-edit",auth(reporter));
+            return real.save(call.getArgument(0));
+        });
+        var sellerService = new ListingService(interleaved,users,mongo);
+        var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(
+                new edu.augustana.csc305.project.controller.ListingController(sellerService))
+                .setControllerAdvice(new edu.augustana.csc305.project.controller.ListingConflictAdvice()).build();
+        var result = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .put("/home/"+listing.getId()).principal(auth(seller)).contentType("application/json")
+                .content("{\"title\":\"Seller edit\",\"description\":\"Edited text\",\"category\":\"Furniture\","
+                        +"\"price\":20,\"condition\":\"Good\",\"pickupArea\":\"Campus\",\"listingType\":\"For sale\"}"))
+                .andReturn().getResponse();
+        assertEquals(409,result.getStatus());
+        assertTrue(result.getContentAsString().contains("LISTING_CHANGED"));
+        assertTrue(result.getContentAsString().contains("Your changes were not saved"));
+        assertTrue(result.getContentAsString().contains("Refresh"));
+        assertEquals("Original title",real.findById(listing.getId()).orElseThrow().getTitle());
+        assertEquals(1,mongo.count(new Query(),Report.class));
+        ListingSnapshot snapshot = mongo.findOne(new Query(),ListingSnapshot.class);
+        assertEquals("Original title",snapshot.title());
+        assertEquals("Original description",snapshot.description());
+        assertTrue(real.findById(listing.getId()).orElseThrow().getVersion() > snapshot.sourceListingVersion());
+    }
+
+    @Test
+    void resolvedSchemaInitializationKeepsReportBootstrapAndModerationIndexesRepeatable() {
+        ModerationSchema.initialize(mongo);
+        ModerationSchema.initialize(mongo);
+        assertTrue(mongo.getCollection("reportRequests").listIndexes().into(new ArrayList<>()).stream()
+                .anyMatch(index -> "report_request_history".equals(index.getString("name"))));
+        assertTrue(mongo.getCollection("reportRateWindows").listIndexes().into(new ArrayList<>()).stream()
+                .anyMatch(index -> "report_rate_window_start".equals(index.getString("name"))));
+        assertTrue(mongo.getCollection("moderationCases").listIndexes().into(new ArrayList<>()).stream()
+                .anyMatch(index -> "one_active_case_per_listing".equals(index.getString("name")) && Boolean.TRUE.equals(index.getBoolean("unique"))));
+        assertTrue(mongo.getCollection("reports").listIndexes().into(new ArrayList<>()).stream()
+                .anyMatch(index -> "one_reporter_per_case".equals(index.getString("name")) && Boolean.TRUE.equals(index.getBoolean("unique"))));
+    }
+
+    @Test
     void differentReportersConcurrentlyShareOneCaseWithExactCountsAndVisibleListing() throws Exception {
         Listing listing = listing();
         var service = service(5);
@@ -148,18 +241,23 @@ class ReportSubmissionMongoTest {
         Listing listing = listing();
         User user = reporter();
         var service = service(1);
-        var results = concurrent(List.of(
-                () -> service.submit(listing.getId().toHexString(), body, "same", auth(user)),
-                () -> service.submit(listing.getId().toHexString(), body, "same", auth(user)),
-                () -> service.submit(listing.getId().toHexString(), body, "different", auth(user))));
+        java.util.function.Function<String, Callable<ReportSubmissionService.Submission>> attempt = key -> () -> {
+            try { return service.submit(listing.getId().toHexString(), body, key, auth(user)); }
+            catch (ReportSubmissionService.ReportConflict duplicate) {
+                assertEquals("REPORT_ALREADY_EXISTS", duplicate.code());
+                return new ReportSubmissionService.Submission(duplicate.existingReport(), false);
+            }
+        };
+        var results = concurrent(List.of(attempt.apply("same"), attempt.apply("same"), attempt.apply("different")));
         assertEquals(1, results.stream().filter(ReportSubmissionService.Submission::created).count());
         assertEquals(1, results.stream().map(result -> result.status().reportId()).distinct().count());
         assertEquals(1, mongo.count(new Query(), Report.class));
         assertEquals(1, mongo.count(new Query(), ListingSnapshot.class));
         assertEquals(1, mongo.count(new Query(), ModerationCase.class));
         assertEquals(1, mongo.findById(user.getId(), ReportRateWindow.class).count());
-        service.submit(listing.getId().toHexString(), body, "same", auth(user));
+        attempt.apply("same").call();
         assertEquals(1, mongo.count(new Query(), Report.class));
+        assertEquals(1, mongo.count(new Query(), ReportRequest.class));
     }
 
     @Test

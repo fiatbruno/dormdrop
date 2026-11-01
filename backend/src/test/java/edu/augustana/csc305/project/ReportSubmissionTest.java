@@ -101,13 +101,47 @@ class ReportSubmissionTest {
     }
 
     @Test
-    void sameReporterWithDifferentKeyReusesReportInActiveCase() {
+    void sameReporterWithDifferentKeyIsRejectedWithoutCreatingRequestAliases() {
         Report report = report();
         when(mongo.findOne(any(Query.class), eq(Report.class))).thenReturn(report);
-        assertEquals(report.id().toHexString(), service().submit(listing.getId().toHexString(), body, key, auth)
-                .status().reportId());
+        var conflict = assertThrows(ReportSubmissionService.ReportConflict.class,
+                () -> service().submit(listing.getId().toHexString(), body, key, auth));
+        assertEquals(409, conflict.getStatusCode().value());
+        assertEquals(report.id().toHexString(), conflict.existingReport().reportId());
         verifyNoInteractions(evidence);
         verify(mongo, never()).insert(any(ReportRateWindow.class));
+        verify(mongo, never()).insert(any(ReportRequest.class));
+    }
+
+    @Test
+    void changedReasonReturnsExplicitNotSavedResponse() throws Exception {
+        Report original = report();
+        when(mongo.findOne(any(Query.class), eq(Report.class))).thenReturn(original);
+        var mvc = MockMvcBuilders.standaloneSetup(new ReportController(service())).build();
+        String response = mvc.perform(post("/home/"+listing.getId()+"/reports").principal(auth)
+                .header("Idempotency-Key", "another-key").contentType("application/json")
+                .content("{\"category\":\"SUSPECTED_SCAM\",\"description\":\"Different details\"}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("REPORT_ALREADY_EXISTS"))
+                .andExpect(jsonPath("$.detailsSaved").value(false))
+                .andExpect(jsonPath("$.report.reportId").value(original.id().toHexString()))
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(response.contains("were not saved"));
+        assertFalse(response.contains("Different details"));
+        verify(mongo, never()).insert(any(ReportRequest.class));
+        verifyNoInteractions(evidence);
+    }
+
+    @Test
+    void reusedKeyWithChangedDetailsAlsoReturnsExplicitNotSavedResponse() throws Exception {
+        when(mongo.findById(requestId(), ReportRequest.class)).thenReturn(new ReportRequest(requestId(),
+                listing.getId(), ReportCategory.OTHER, "Original details", new ObjectId(), Instant.now()));
+        var mvc = MockMvcBuilders.standaloneSetup(new ReportController(service())).build();
+        mvc.perform(post("/home/"+listing.getId()+"/reports").principal(auth)
+                .header("Idempotency-Key", key).contentType("application/json")
+                .content("{\"category\":\"OTHER\",\"description\":\"Changed details\"}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REUSED"))
+                .andExpect(jsonPath("$.detailsSaved").value(false));
+        verifyNoInteractions(evidence);
     }
 
     @Test
