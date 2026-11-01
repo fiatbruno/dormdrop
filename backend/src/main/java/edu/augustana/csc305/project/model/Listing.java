@@ -145,6 +145,7 @@ public class Listing {
         this.moderationVisibility = moderationVisibility;
     }
 
+    @JsonIgnore
     public Long getVersion() {
         return version;
     }
