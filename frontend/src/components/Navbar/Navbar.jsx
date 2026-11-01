@@ -4,6 +4,8 @@ import { Menu, Plus, Search, UserRound, X } from "lucide-react";
 import logo from "../../assets/Logo.png";
 import "./Navbar.css";
 
+import NotificationBell from "../NotificationBell/NotificationBell";
+
 const defaultLinks = [
   { label: "Browse", to: "/home" },
   { label: "Saved", to: "/saved-item" },
@@ -98,6 +100,7 @@ function NavbarContent({
         </nav>
 
         <div className="dormdrop-navbar__actions">
+            <NotificationBell />
           <Link className="dormdrop-navbar__list-item" to="/list-an-item">
             <Plus size={18} aria-hidden="true" />
             List item

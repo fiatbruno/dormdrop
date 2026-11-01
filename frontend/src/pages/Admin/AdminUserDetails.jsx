@@ -1,24 +1,24 @@
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
-  LayoutDashboard,
-  Flag,
-  Box,
-  Users,
-  Undo2,
-  ClipboardList,
-  Settings,
-  Search,
-  Bell,
+  Link,
+  useParams,
+} from "react-router-dom";
+
+import {
   ArrowLeft,
-  Menu,
-  X,
+  Box,
   ShieldAlert,
 } from "lucide-react";
 
-import AdminLogout from "../../components/AdminLogout";
+import AdminLayout from "../../components/AdminLayout/AdminLayout";
+import Button from "../../components/Button/Button";
+import ListingImage from "../../components/ListingImage";
 
 import {
   getAdminUserDetails,
@@ -33,49 +33,12 @@ import {
 
 import "./AdminUserDetails.css";
 
-
-const navigation = [
-  {
-    label: "Overview",
-    icon: LayoutDashboard,
-    path: "/admin",
-  },
-  {
-    label: "Reports",
-    icon: Flag,
-    path: "/admin/reports",
-  },
-  {
-    label: "Listings",
-    icon: Box,
-    path: "/admin/listings",
-  },
-  {
-    label: "Users",
-    icon: Users,
-    path: "/admin/users",
-  },
-  {
-    label: "Appeals",
-    icon: Undo2,
-    path: "/admin/appeals",
-  },
-  {
-    label: "Activity log",
-    icon: ClipboardList,
-    path: "/admin/activity",
-  },
-  {
-    label: "Settings",
-    icon: Settings,
-    path: "/admin/settings",
-  },
-];
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
 
 function formatDate(value) {
-  if (!value) {
-    return "Not available";
-  }
+  if (!value) return "Not available";
 
   const date = new Date(value);
 
@@ -89,48 +52,52 @@ function formatDate(value) {
   });
 }
 
-function readableStatus(status) {
-  if (!status) {
-    return "Not available";
-  }
+function readableStatus(value) {
+  if (!value) return "Not available";
 
-  return String(status)
+  return String(value)
     .replaceAll("_", " ")
     .toLowerCase()
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function formatPrice(price) {
-  if (price === null || price === undefined || price === "") {
+function formatPrice(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
     return "Not available";
   }
 
-  const number = Number(price);
+  const amount = Number(value);
 
-  if (!Number.isFinite(number)) {
+  if (!Number.isFinite(amount)) {
     return "Not available";
   }
 
-  return number.toLocaleString("en-US", {
+  return amount.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
   });
 }
 
 function getErrorMessage(error) {
-  if (error.response?.status === 401) {
+  const status = error.response?.status;
+
+  if (status === 401) {
     return "Your administrator session has expired. Please log in again.";
   }
 
-  if (error.response?.status === 403) {
+  if (status === 403) {
     return "You do not have permission to perform this action.";
   }
 
-  if (error.response?.status === 404) {
+  if (status === 404) {
     return "The requested record was not found.";
   }
 
-  if (error.response?.status >= 500) {
+  if (status >= 500) {
     return "A server error occurred. Please try again later.";
   }
 
@@ -141,113 +108,9 @@ function getErrorMessage(error) {
   );
 }
 
-function AdminSidebar({ open, onClose }) {
-  return (
-    <aside
-      className={`admin-sidebar ${
-        open ? "admin-sidebar-open" : ""
-      }`}
-    >
-      <div className="admin-brand">
-        <strong>DormDrop</strong>
-
-        <button
-          type="button"
-          className="admin-mobile-close"
-          onClick={onClose}
-          aria-label="Close sidebar"
-        >
-          <X size={20} />
-        </button>
-      </div>
-
-      <div className="admin-campus">
-        <small>AUGUSTANA COLLEGE</small>
-        <p>Campus administration</p>
-        <span>Moderation workspace</span>
-      </div>
-
-      <p className="admin-nav-label">WORKSPACE</p>
-
-      <nav
-        className="admin-navigation"
-        aria-label="Admin navigation"
-      >
-        {navigation.map(({ label, icon: Icon, path }) => (
-          <Link
-            key={label}
-            to={path}
-            onClick={onClose}
-            className={`admin-nav-item ${
-              label === "Users" ? "selected" : ""
-            }`}
-          >
-            <Icon size={17} />
-            <span>{label}</span>
-          </Link>
-        ))}
-      </nav>
-
-      <div className="admin-sidebar-footer">
-        <strong>Administrator</strong>
-        <span>DormDrop administration</span>
-
-        <AdminLogout />
-      </div>
-    </aside>
-  );
-}
-
-
-function AdminHeader({
-  search,
-  setSearch,
-  onMenuClick,
-  userId,
-}) {
-  return (
-    <header className="admin-topbar">
-      <button
-        type="button"
-        className="admin-menu-button"
-        onClick={onMenuClick}
-        aria-label="Open sidebar"
-      >
-        <Menu size={22} />
-      </button>
-
-      <div className="admin-breadcrumb">
-        Admin / User {userId}
-      </div>
-
-      <div className="admin-search">
-        <Search size={17} />
-
-        <input
-          type="search"
-          placeholder="Search reports or listings"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          aria-label="Search user reports and listings"
-        />
-      </div>
-
-      <div className="admin-top-actions">
-        <Link to="/">View marketplace</Link>
-
-        <button
-          type="button"
-          aria-label="Notifications"
-          title="Notifications"
-        >
-          <Bell size={18} />
-        </button>
-
-        <span className="admin-avatar">AD</span>
-      </div>
-    </header>
-  );
-}
+// ============================================
+// ACCOUNT OVERVIEW
+// ============================================
 
 function AccountOverview({ user }) {
   return (
@@ -289,8 +152,15 @@ function AccountOverview({ user }) {
   );
 }
 
+// ============================================
+// ACCOUNT ACTIONS
+// ============================================
 
-function AccountActions({ user, onAction }) {
+function AccountActions({
+  user,
+  onAction,
+  disabled,
+}) {
   const isSuspended = user.status === "SUSPENDED";
 
   return (
@@ -302,33 +172,38 @@ function AccountActions({ user, onAction }) {
         moderation action against this account.
       </p>
 
-      <button
+      <Button
         type="button"
         className="admin-warning-button"
+        disabled={disabled}
         onClick={() => onAction("warning")}
       >
         Send policy warning
-      </button>
+      </Button>
 
-      <button
+      <Button
         type="button"
         className="admin-suspend-button"
-        disabled={isSuspended}
+        disabled={disabled || isSuspended}
         onClick={() => onAction("suspend")}
       >
         {isSuspended
           ? "Account suspended"
           : "Suspend account"}
-      </button>
+      </Button>
 
       <small>
-        Account restrictions are enforced by the backend
-        according to DormDrop's moderation policies.
+        Account restrictions are enforced by the
+        backend according to DormDrop's moderation
+        policies.
       </small>
     </section>
   );
 }
 
+// ============================================
+// MODERATION HISTORY
+// ============================================
 
 function ModerationHistory({ reports }) {
   return (
@@ -341,8 +216,8 @@ function ModerationHistory({ reports }) {
         ) : (
           reports.map((report) => (
             <article
-              className="admin-report"
               key={report.id}
+              className="admin-report"
             >
               <div className="admin-report-heading">
                 <strong>
@@ -365,15 +240,17 @@ function ModerationHistory({ reports }) {
       </div>
 
       <p className="admin-history-note">
-        A report does not automatically establish a
-        policy violation. Review supporting evidence
-        before making a moderation decision.
+        Reports alone do not establish a policy
+        violation. Review supporting evidence before
+        taking action.
       </p>
     </section>
   );
 }
 
-
+// ============================================
+// INTERNAL NOTES
+// ============================================
 
 function InternalNotes({
   notes,
@@ -385,15 +262,13 @@ function InternalNotes({
   async function handleSubmit(event) {
     event.preventDefault();
 
-    const trimmedContent = content.trim();
+    const trimmed = content.trim();
 
-    if (!trimmedContent) {
-      return;
-    }
+    if (!trimmed || saving) return;
 
-    const success = await onAddNote(trimmedContent);
+    const successful = await onAddNote(trimmed);
 
-    if (success) {
+    if (successful) {
       setContent("");
     }
   }
@@ -413,7 +288,8 @@ function InternalNotes({
             <p>{note.content}</p>
 
             <span>
-              {note.authorName || "Unknown administrator"}
+              {note.authorName ||
+                "Administrator not available"}
               {" · "}
               {formatDate(note.createdAt)}
             </span>
@@ -422,8 +298,8 @@ function InternalNotes({
       )}
 
       <form
-        onSubmit={handleSubmit}
         className="admin-note-form"
+        onSubmit={handleSubmit}
       >
         <label htmlFor="admin-new-note">
           Add internal note
@@ -438,31 +314,35 @@ function InternalNotes({
           placeholder="Write a note for the moderation team..."
           maxLength={2000}
           rows={3}
+          disabled={saving}
           required
         />
 
-        <button
+        <Button
           type="submit"
           className="admin-warning-button"
           disabled={saving || !content.trim()}
         >
           {saving ? "Saving..." : "Save note"}
-        </button>
+        </Button>
       </form>
 
       <small>
-        Internal notes are visible only to authorized
-        administrators.
+        Internal notes are visible only to
+        authorized administrators.
       </small>
     </section>
   );
 }
 
-
+// ============================================
+// USER LISTINGS
+// ============================================
 
 function UserListings({
   listings,
   onReview,
+  disabled,
 }) {
   return (
     <section className="admin-card admin-listings-card">
@@ -473,19 +353,18 @@ function UserListings({
       ) : (
         listings.map((listing) => (
           <article
-            className="admin-listing"
             key={listing.id}
+            className="admin-listing"
           >
-            {listing.imageUrl ? (
-              <img
-                src={listing.imageUrl}
-                alt={listing.title || "Listing image"}
-              />
-            ) : (
-              <div className="admin-listing-placeholder">
-                <Box size={26} />
-              </div>
-            )}
+            <ListingImage
+              src={listing.imageUrl}
+              alt={listing.title || "Listing image"}
+              fallback={
+                <div className="admin-listing-placeholder">
+                  <Box size={26} />
+                </div>
+              }
+            />
 
             <div className="admin-listing-info">
               <strong>
@@ -501,19 +380,24 @@ function UserListings({
               </span>
             </div>
 
-            <button
+            <Button
               type="button"
               className="admin-review-button"
+              disabled={disabled}
               onClick={() => onReview(listing.id)}
             >
               Review
-            </button>
+            </Button>
           </article>
         ))
       )}
     </section>
   );
 }
+
+// ============================================
+// MODERATION DIALOG
+// ============================================
 
 function ModerationDialog({
   action,
@@ -525,24 +409,16 @@ function ModerationDialog({
   const [durationDays, setDurationDays] =
     useState("7");
 
-  if (!action) {
-    return null;
-  }
-
   const isSuspension = action === "suspend";
 
   async function handleSubmit(event) {
     event.preventDefault();
 
-    const trimmedReason = reason.trim();
-
-    if (!trimmedReason) {
-      return;
-    }
+    if (!reason.trim() || saving) return;
 
     await onSubmit({
       action,
-      reason: trimmedReason,
+      reason: reason.trim(),
       durationDays: Number(durationDays),
     });
   }
@@ -559,16 +435,12 @@ function ModerationDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="moderation-dialog-title"
-        onClick={(event) =>
-          event.stopPropagation()
-        }
+        onClick={(event) => event.stopPropagation()}
       >
         <ShieldAlert
           size={28}
           color={
-            isSuspension
-              ? "#b42318"
-              : "#194278"
+            isSuspension ? "#b42318" : "#194278"
           }
         />
 
@@ -585,8 +457,8 @@ function ModerationDialog({
         </p>
 
         <form
-          onSubmit={handleSubmit}
           className="admin-action-form"
+          onSubmit={handleSubmit}
         >
           <label htmlFor="moderation-reason">
             Reason
@@ -601,6 +473,7 @@ function ModerationDialog({
             placeholder="Explain the confirmed issue..."
             maxLength={2000}
             rows={4}
+            disabled={saving}
             required
           />
 
@@ -616,6 +489,7 @@ function ModerationDialog({
                 onChange={(event) =>
                   setDurationDays(event.target.value)
                 }
+                disabled={saving}
               >
                 <option value="1">1 day</option>
                 <option value="3">3 days</option>
@@ -627,32 +501,30 @@ function ModerationDialog({
           )}
 
           <div className="admin-modal-buttons">
-            <button
+            <Button
               type="button"
               className="admin-warning-button"
               onClick={onClose}
               disabled={saving}
             >
               Cancel
-            </button>
+            </Button>
 
-            <button
+            <Button
               type="submit"
               className={
                 isSuspension
                   ? "admin-suspend-button"
                   : "admin-warning-button"
               }
-              disabled={
-                saving || !reason.trim()
-              }
+              disabled={saving || !reason.trim()}
             >
               {saving
                 ? "Processing..."
                 : isSuspension
-                ? "Confirm suspension"
-                : "Send warning"}
-            </button>
+                  ? "Confirm suspension"
+                  : "Send warning"}
+            </Button>
           </div>
         </form>
       </div>
@@ -660,15 +532,14 @@ function ModerationDialog({
   );
 }
 
+// ============================================
+// LISTING DETAILS DIALOG
+// ============================================
 
 function ListingDialog({
   listing,
   onClose,
 }) {
-  if (!listing) {
-    return null;
-  }
-
   return (
     <div
       className="admin-modal-overlay"
@@ -679,9 +550,7 @@ function ListingDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="listing-dialog-title"
-        onClick={(event) =>
-          event.stopPropagation()
-        }
+        onClick={(event) => event.stopPropagation()}
       >
         <h2 id="listing-dialog-title">
           {listing.title || "Listing details"}
@@ -699,138 +568,116 @@ function ListingDialog({
           Status: {readableStatus(listing.status)}
         </p>
 
-        <button
+        <Button
           type="button"
           className="admin-warning-button"
           onClick={onClose}
         >
           Close
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
 
+// ============================================
+// MAIN USER DETAILS COMPONENT
+// ============================================
 
-
-export default function AdminUserDetails() {
-  const { userId } = useParams();
-
-
+function AdminUserDetailsContent({ userId }) {
+  // Real API data
   const [user, setUser] = useState(null);
   const [listings, setListings] = useState([]);
   const [reports, setReports] = useState([]);
   const [notes, setNotes] = useState([]);
 
-
+  // Request states
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
 
-
+  // Feedback
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-
+  // UI state
   const [search, setSearch] = useState("");
-  const [sidebarOpen, setSidebarOpen] =
-    useState(false);
-
   const [action, setAction] = useState(null);
-
   const [selectedListing, setSelectedListing] =
     useState(null);
 
-
+  // Tracks the ID associated with loaded data
   const [loadedUserId, setLoadedUserId] =
     useState(null);
 
-
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-
-
-    setUser(null);
-    setListings([]);
-    setReports([]);
-    setNotes([]);
-
-
-    setError("");
-    setSuccess("");
-    setSearch("");
-    setAction(null);
-    setSelectedListing(null);
-    setLoadedUserId(null);
-
-    const [
-      userResult,
-      listingsResult,
-      historyResult,
-      notesResult,
-    ] = await Promise.allSettled([
-      getAdminUserDetails(userId),
-      getAdminUserListings(userId),
-      getModerationHistory(userId),
-      getAdminNotes(userId),
-    ]);
-
-    if (userResult.status === "rejected") {
-      throw userResult.reason;
-    }
-
-    // All sections must load successfully.
-    // This prevents missing API data from being
-    // incorrectly displayed as empty records.
-    const failedResult = [
-      listingsResult,
-      historyResult,
-      notesResult,
-    ].find((result) => result.status === "rejected");
-
-    if (failedResult) {
-      throw failedResult.reason;
-    }
-
-    return {
-      user: userResult.value,
-      listings: listingsResult.value,
-      reports: historyResult.value,
-      notes: notesResult.value,
-    };
-  }, [userId]);
+  // ==========================================
+  // LOAD USER DATA FROM BACKEND
+  // ==========================================
 
   useEffect(() => {
     let active = true;
 
-    async function fetchData() {
-      try {
-        const data = await loadData();
+    async function loadUserData() {
+      setLoading(true);
 
-        // Prevent a previous request from overwriting
-        // another user's profile after navigation.
+      // Clear all data belonging to the
+      // previously displayed user.
+      setUser(null);
+      setListings([]);
+      setReports([]);
+      setNotes([]);
+
+      // Clear messages and dialogs.
+      setError("");
+      setSuccess("");
+      setSearch("");
+      setAction(null);
+      setSelectedListing(null);
+
+      // Mark the current data as unloaded.
+      setLoadedUserId(null);
+
+      try {
+        const [
+          userData,
+          listingsData,
+          reportsData,
+          notesData,
+        ] = await Promise.all([
+          getAdminUserDetails(userId),
+          getAdminUserListings(userId),
+          getModerationHistory(userId),
+          getAdminNotes(userId),
+        ]);
+
+        // Ignore results from an outdated request.
         if (!active) return;
 
+        // Validate the response format.
         if (
-          !data.user ||
-          !Array.isArray(data.listings) ||
-          !Array.isArray(data.reports) ||
-          !Array.isArray(data.notes)
+          !userData ||
+          typeof userData !== "object" ||
+          Array.isArray(userData) ||
+          !Array.isArray(listingsData) ||
+          !Array.isArray(reportsData) ||
+          !Array.isArray(notesData)
         ) {
           throw new Error(
             "The backend returned an unexpected response format."
           );
         }
 
-        setUser(data.user);
-        setListings(data.listings);
-        setReports(data.reports);
-        setNotes(data.notes);
+        setUser(userData);
+        setListings(listingsData);
+        setReports(reportsData);
+        setNotes(notesData);
+
+        // Only now mark this user as loaded.
         setLoadedUserId(userId);
       } catch (err) {
-        if (active) {
-          setError(getErrorMessage(err));
-        }
+        if (!active) return;
+
+        setError(getErrorMessage(err));
       } finally {
         if (active) {
           setLoading(false);
@@ -838,21 +685,21 @@ export default function AdminUserDetails() {
       }
     }
 
-    fetchData();
+    loadUserData();
 
     return () => {
       active = false;
     };
-  }, [loadData, userId]);
+  }, [userId]);
 
-
+  // ==========================================
+  // FILTER MODERATION HISTORY
+  // ==========================================
 
   const filteredReports = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    if (!query) {
-      return reports;
-    }
+    if (!query) return reports;
 
     return reports.filter((report) =>
       `${report.id} ${report.status} ${report.description}`
@@ -861,14 +708,14 @@ export default function AdminUserDetails() {
     );
   }, [reports, search]);
 
-
+  // ==========================================
+  // FILTER LISTINGS
+  // ==========================================
 
   const filteredListings = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    if (!query) {
-      return listings;
-    }
+    if (!query) return listings;
 
     return listings.filter((listing) =>
       `${listing.id} ${listing.title} ${listing.status}`
@@ -877,17 +724,24 @@ export default function AdminUserDetails() {
     );
   }, [listings, search]);
 
+  // ==========================================
+  // ADD INTERNAL NOTE
+  // ==========================================
 
   async function handleAddNote(content) {
+    if (saving) return false;
+
     setSaving(true);
     setError("");
     setSuccess("");
 
+    let noteSaved = false;
+
     try {
       await addAdminNote(userId, content);
+      noteSaved = true;
 
-      const updatedNotes =
-        await getAdminNotes(userId);
+      const updatedNotes = await getAdminNotes(userId);
 
       if (!Array.isArray(updatedNotes)) {
         throw new Error(
@@ -896,61 +750,71 @@ export default function AdminUserDetails() {
       }
 
       setNotes(updatedNotes);
-
-      setSuccess(
-        "Internal note saved successfully."
-      );
+      setSuccess("Internal note saved successfully.");
 
       return true;
     } catch (err) {
-      setError(getErrorMessage(err));
-      return false;
+      setError(
+        noteSaved
+          ? "The note was saved, but the notes list could not be refreshed. " +
+            getErrorMessage(err)
+          : getErrorMessage(err)
+      );
+
+      // Clear the input if the backend saved
+      // the note, even if refreshing failed.
+      return noteSaved;
     } finally {
       setSaving(false);
     }
   }
 
+  // ==========================================
+  // SEND WARNING OR SUSPEND USER
+  // ==========================================
 
   async function handleModeration({
-    action,
+    action: selectedAction,
     reason,
     durationDays,
   }) {
+    if (saving) return;
+
     setSaving(true);
     setError("");
     setSuccess("");
 
     try {
-      if (action === "warning") {
-        await sendPolicyWarning(
-          userId,
-          reason
-        );
-      } else if (action === "suspend") {
+      if (selectedAction === "warning") {
+        await sendPolicyWarning(userId, reason);
+      } else if (selectedAction === "suspend") {
         await suspendAdminUser(
           userId,
           reason,
           durationDays
         );
       } else {
-        throw new Error(
-          "Unsupported moderation action."
-        );
+        throw new Error("Unsupported moderation action.");
       }
+    } catch (err) {
+      setError(getErrorMessage(err));
+      setSaving(false);
+      return;
+    }
 
+    // The action succeeded on the backend.
+    setAction(null);
 
-      setAction(null);
+    setSuccess(
+      selectedAction === "warning"
+        ? "Policy warning sent successfully."
+        : "Account suspended successfully."
+    );
 
-      setSuccess(
-        action === "warning"
-          ? "Policy warning sent successfully."
-          : "Account suspended successfully."
-      );
-
-
+    try {
       const [
         updatedUser,
-        updatedHistory,
+        updatedReports,
       ] = await Promise.all([
         getAdminUserDetails(userId),
         getModerationHistory(userId),
@@ -958,33 +822,41 @@ export default function AdminUserDetails() {
 
       if (
         !updatedUser ||
-        !Array.isArray(updatedHistory)
+        !Array.isArray(updatedReports)
       ) {
         throw new Error(
-          "Moderation succeeded, but the updated records could not be loaded."
+          "The backend returned an invalid response."
         );
       }
 
       setUser(updatedUser);
-      setReports(updatedHistory);
+      setReports(updatedReports);
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(
+        "The moderation action succeeded, but the updated records could not be loaded. " +
+        getErrorMessage(err)
+      );
     } finally {
       setSaving(false);
     }
   }
 
+  // ==========================================
+  // REVIEW A LISTING
+  // ==========================================
 
   async function handleReview(listingId) {
+    if (reviewing) return;
+
+    setReviewing(true);
     setError("");
+    setSelectedListing(null);
 
     try {
       const listing =
-        await getAdminListingDetails(
-          listingId
-        );
+        await getAdminListingDetails(listingId);
 
-      if (!listing) {
+      if (!listing || typeof listing !== "object") {
         throw new Error(
           "Listing details were not returned."
         );
@@ -993,144 +865,162 @@ export default function AdminUserDetails() {
       setSelectedListing(listing);
     } catch (err) {
       setError(getErrorMessage(err));
+    } finally {
+      setReviewing(false);
     }
   }
 
-
+  // ==========================================
+  // GUARD AGAINST PREVIOUS USER DATA
+  // ==========================================
 
   const isCurrentUserLoaded =
     loadedUserId === userId;
 
+  // ==========================================
+  // PAGE RENDER
+  // ==========================================
+
   return (
-    <div className="admin-page">
-      <AdminSidebar
-        open={sidebarOpen}
-        onClose={() =>
-          setSidebarOpen(false)
-        }
-      />
+    <>
+      <AdminLayout
+        breadcrumb={`Admin / User ${userId}`}
+        search={search}
+        onSearchChange={setSearch}
+      >
+        {error && (
+          <div
+            className="admin-feedback admin-feedback-error"
+            role="alert"
+          >
+            {error}
+          </div>
+        )}
 
-      <div className="admin-main">
-        <AdminHeader
-          search={search}
-          setSearch={setSearch}
-          onMenuClick={() =>
-            setSidebarOpen(true)
-          }
-          userId={userId}
-        />
+        {success && (
+          <div
+            className="admin-feedback admin-feedback-success"
+            role="status"
+          >
+            {success}
+          </div>
+        )}
 
-        <main className="admin-content">
-          {error && (
-            <div
-              className="admin-feedback admin-feedback-error"
-              role="alert"
+        {loading ? (
+          <div
+            className="admin-loading"
+            role="status"
+          >
+            Loading user details...
+          </div>
+        ) : !user || !isCurrentUserLoaded ? (
+          <div className="admin-card">
+            <h2>Unable to load user</h2>
+
+            <p>
+              User information could not be retrieved.
+            </p>
+
+            <Link
+              to="/admin/users"
+              className="admin-back-link"
             >
-              {error}
-            </div>
-          )}
+              <ArrowLeft size={16} />
+              Back to users
+            </Link>
+          </div>
+        ) : (
+          <>
+            <div className="admin-page-heading">
+              <div>
+                <h1>
+                  {user.name || "Name not available"}
+                </h1>
 
-          {success && (
-            <div
-              className="admin-feedback admin-feedback-success"
-              role="status"
-            >
-              {success}
-            </div>
-          )}
-
-          {loading ? (
-            <div className="admin-loading">
-              Loading user details...
-            </div>
-          ) : !user || !isCurrentUserLoaded ? (
-            <div className="admin-card">
-              <h2>Unable to load user</h2>
-
-              <p>
-                User information could not be retrieved.
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="admin-page-heading">
-                <div>
-                  <h1>
-                    {user.name ||
-                      "Name not available"}
-                  </h1>
-
-                  <p>
-                    {user.id}
-                    {" · "}
-                    {user.campus ||
-                      "Campus not available"}
-                    {" · "}
-                    Joined{" "}
-                    {formatDate(user.joinedAt)}
-                  </p>
-                </div>
-
-                <Link
-                  to="/admin/users"
-                  className="admin-back-link"
-                >
-                  <ArrowLeft size={16} />
-                  Back to users
-                </Link>
+                <p>
+                  {user.id || userId}
+                  {" · "}
+                  {user.campus ||
+                    "Campus not available"}
+                  {" · "}
+                  Joined {formatDate(user.joinedAt)}
+                </p>
               </div>
 
-              <div className="admin-dashboard-grid">
-                <AccountOverview
-                  user={user}
-                />
+              <Link
+                to="/admin/users"
+                className="admin-back-link"
+              >
+                <ArrowLeft size={16} />
+                Back to users
+              </Link>
+            </div>
 
-                <AccountActions
-                  user={user}
-                  onAction={setAction}
-                />
+            <div className="admin-dashboard-grid">
+              <AccountOverview user={user} />
 
-                <ModerationHistory
-                  reports={filteredReports}
-                />
+              <AccountActions
+                user={user}
+                onAction={setAction}
+                disabled={saving}
+              />
 
-                <InternalNotes
-                  key={userId}
-                  notes={notes}
-                  onAddNote={handleAddNote}
-                  saving={saving}
-                />
+              <ModerationHistory
+                reports={filteredReports}
+              />
 
-                <UserListings
-                  listings={filteredListings}
-                  onReview={handleReview}
-                />
-              </div>
-            </>
-          )}
-        </main>
-      </div>
+              <InternalNotes
+                notes={notes}
+                onAddNote={handleAddNote}
+                saving={saving}
+              />
 
-      {action && (
+              <UserListings
+                listings={filteredListings}
+                onReview={handleReview}
+                disabled={reviewing}
+              />
+            </div>
+          </>
+        )}
+      </AdminLayout>
+
+      {action && isCurrentUserLoaded && (
         <ModerationDialog
           key={`${userId}-${action}`}
           action={action}
-          onClose={() =>
-            setAction(null)
-          }
+          onClose={() => setAction(null)}
           onSubmit={handleModeration}
           saving={saving}
         />
       )}
 
-      {selectedListing && (
+      {selectedListing && isCurrentUserLoaded && (
         <ListingDialog
           listing={selectedListing}
-          onClose={() =>
-            setSelectedListing(null)
-          }
+          onClose={() => setSelectedListing(null)}
         />
       )}
-    </div>
+    </>
+  );
+}
+
+// ============================================
+// EXPORTED PAGE
+// ============================================
+
+// The key forces a fresh component instance
+// when the route changes to another user.
+// This prevents previous user's state from
+// carrying over between profiles.
+
+export default function AdminUserDetails() {
+  const { userId } = useParams();
+
+  return (
+    <AdminUserDetailsContent
+      key={userId}
+      userId={userId}
+    />
   );
 }
