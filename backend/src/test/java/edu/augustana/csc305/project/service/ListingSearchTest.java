@@ -73,7 +73,9 @@ class ListingSearchTest {
         String uri = System.getenv("MONGODB_TEST_URI");
         assumeTrue(uri != null && !uri.isBlank(), "Set MONGODB_TEST_URI for MongoDB integration tests");
         try (MongoClient client = MongoClients.create(uri)) {
-            MongoTemplate mongo = new MongoTemplate(client, "listing_search_test_" + UUID.randomUUID().toString().replace("-", ""));
+            // Keep the name under the 38-byte limit on MongoDB Atlas free clusters.
+            String database = "search_test_" + UUID.randomUUID().toString().replace("-", "").substring(0, 24);
+            MongoTemplate mongo = new MongoTemplate(client, database);
             try {
                 mongo.insertAll(List.of(listing("Blue Chair", "Soft seat", "Furniture", "30"),
                         listing("Lamp .*", "Desk light", "Furniture", "60"),
