@@ -4,7 +4,6 @@ package edu.augustana.csc305.project.controller;
 import edu.augustana.csc305.project.dto.StartConversationRequest;
 import edu.augustana.csc305.project.dto.ConversationResponse;
 import edu.augustana.csc305.project.dto.MessageResponse;
-import edu.augustana.csc305.project.model.Conversation;
 import edu.augustana.csc305.project.service.ConversationService;
 
 import edu.augustana.csc305.project.dto.SendMessageRequest;
