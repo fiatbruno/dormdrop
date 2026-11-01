@@ -23,12 +23,14 @@ public class MyListingsService {
 
     private final MongoTemplate mongoTemplate;
     private final UserRepository userRepository;
+    private final ListingVisibilityPolicy visibility;
 
     public MyListingsService(
             MongoTemplate mongoTemplate,
-            UserRepository userRepository) {
+            UserRepository userRepository, ListingVisibilityPolicy visibility) {
         this.mongoTemplate = mongoTemplate;
         this.userRepository = userRepository;
+        this.visibility = visibility;
     }
 
 
@@ -42,7 +44,7 @@ public class MyListingsService {
 
         query.with(Sort.by(Sort.Direction.DESC, "listedOn"));
 
-        return mongoTemplate.find(query, Listing.class);
+        return mongoTemplate.find(query, Listing.class).stream().map(listing -> visibility.view(listing, user)).toList();
     }
 
 
@@ -64,7 +66,7 @@ public class MyListingsService {
             );
         }
 
-        return listing;
+        return visibility.view(listing, user);
     }
 
 
@@ -77,13 +79,17 @@ public class MyListingsService {
                         .and("ownerId").is(user.getId())
         );
 
-        long deletedCount =
-                mongoTemplate.remove(query, Listing.class).getDeletedCount();
+        Listing listing = mongoTemplate.findOne(query, Listing.class);
+        if (listing == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found.");
+        visibility.requireSellerMutation(listing, user);
+        query.addCriteria(Criteria.where("version").is(listing.getVersion()));
+        query.addCriteria(visibility.visibleCriteria());
+        long deletedCount = mongoTemplate.remove(query, Listing.class).getDeletedCount();
 
         if (deletedCount == 0) {
             throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Listing not found."
+                    HttpStatus.CONFLICT,
+                    "Listing changed. Refresh before retrying."
             );
         }
     }
@@ -134,7 +140,8 @@ public class MyListingsService {
         List<Listing> soldListings =
                 mongoTemplate.find(soldQuery, Listing.class);
 
-        return new MyListingsResponse(activeListings, soldListings);
+        return new MyListingsResponse(activeListings.stream().map(listing -> visibility.view(listing, user)).toList(),
+                soldListings.stream().map(listing -> visibility.view(listing, user)).toList());
     }
 
 }

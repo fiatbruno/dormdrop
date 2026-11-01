@@ -29,15 +29,17 @@ public class ListingService {
     private final ListingRepository repository;
     private final UserRepository userRepository;
     private final MongoTemplate mongoTemplate;
+    private final ListingVisibilityPolicy visibility;
 
     public ListingService(
             ListingRepository repository,
             UserRepository userRepository,
-            MongoTemplate mongoTemplate) {
+            MongoTemplate mongoTemplate, ListingVisibilityPolicy visibility) {
 
         this.repository = repository;
         this.userRepository = userRepository;
         this.mongoTemplate = mongoTemplate;
+        this.visibility = visibility;
     }
 
     public List<Listing> getListings(
@@ -50,6 +52,7 @@ public class ListingService {
             LocalDate endDate) {
 
         Query query = new Query();
+        query.addCriteria(visibility.visibleCriteria());
 
         if (category != null &&
                 !category.isBlank() &&
@@ -142,6 +145,7 @@ public class ListingService {
             );
         }
 
+        visibility.requireSellerMutation(listing, user);
         return listing;
     }
 
@@ -205,6 +209,7 @@ public class ListingService {
             String email) {
 
         Listing listing = ownedListing(id, email);
+        visibility.requireStatusTransition(listing, status);
         listing.setStatus(status);
 
         return repository.save(listing);
@@ -215,12 +220,14 @@ public class ListingService {
 
 
 
-    public ListingDetailsResponse getListingById(ObjectId id) {
+    public ListingDetailsResponse getListingById(ObjectId id, String email) {
         Listing listing = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Listing not found"
                 ));
 
+        User viewer = email == null ? null : currentUser(email);
+        listing = visibility.view(listing, viewer);
         String sellerName = listing.getOwnerId() == null
                 ? null
                 : userRepository.findById(listing.getOwnerId())
