@@ -118,7 +118,7 @@ export default function ResetPassword() {
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete="new-password"
                 required
-                minLength={12}
+                minLength={8}
               />
 
               <button
@@ -132,7 +132,7 @@ export default function ResetPassword() {
           </div>
 
           <p className="passwordResetPage__hint">
-            Use at least 12 characters.
+            Use at least 8 characters.
           </p>
 
           <div className="passwordResetPage__field">
