@@ -35,6 +35,7 @@ build/
 # Secrets
 .env
 .env.*
+*.env
 application-local.properties
 
 # IntelliJ
