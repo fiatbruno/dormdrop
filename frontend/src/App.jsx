@@ -122,10 +122,11 @@ const router = createBrowserRouter([
     ),
   },
 
+
   {
-    path: "*",
-    element: <NotFound />,
-  },
+      path: "*",
+      element: <NotFound />,
+    },
 ]);
 
 function App() {
