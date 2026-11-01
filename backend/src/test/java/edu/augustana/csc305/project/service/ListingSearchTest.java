@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 
 class ListingSearchTest {
     private ListingService service(MongoTemplate mongo) {
-        return new ListingService(mock(ListingRepository.class), mock(UserRepository.class), mongo);
+        return new ListingService(mock(ListingRepository.class), mock(UserRepository.class), mongo, new ListingVisibilityPolicy());
     }
 
     private List<Listing> search(ListingService service, String q, String category, BigDecimal min, BigDecimal max) {
@@ -56,7 +56,7 @@ class ListingSearchTest {
                 () -> search(service, "x".repeat(201), null, null, null)).getStatusCode().value());
         assertDoesNotThrow(() -> search(service, "  " + "x".repeat(200) + "  ", null, null, null));
         search(service, "  ", null, null, null);
-        verify(mongo).find(argThat((Query query) -> query.getQueryObject().isEmpty()), eq(Listing.class));
+        verify(mongo).find(argThat((Query query) -> query.getQueryObject().equals(new ListingVisibilityPolicy().visibleCriteria().getCriteriaObject())), eq(Listing.class));
     }
 
     private Listing listing(String title, String description, String category, String price) {
@@ -94,7 +94,7 @@ class ListingSearchTest {
                 assertEquals(1, search(service, "blue", "Furniture", BigDecimal.TEN, new BigDecimal("50")).size());
                 assertEquals(0, search(service, "blue", "Furniture", new BigDecimal("31"), new BigDecimal("50")).size());
             } finally {
-                mongo.getDb().drop();
+                edu.augustana.csc305.project.MongoTestCleanup.dropCollections(client,database,"search_test_");
             }
         }
     }
