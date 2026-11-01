@@ -28,8 +28,8 @@ export default function ResetPassword() {
       return;
     }
 
-    if (password.length < 12) {
-      setError("Your password must contain at least 12 characters.");
+    if (password.length < 8) {
+      setError("Your password must contain at least 8 characters.");
       return;
     }
 
@@ -51,6 +51,7 @@ export default function ResetPassword() {
           body: JSON.stringify({
             token,
             newPassword: password,
+            confirmPassword,
           }),
         }
       );
