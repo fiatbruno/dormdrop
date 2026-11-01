@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   ShieldCheck,
   Mail,
@@ -8,11 +8,13 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  ArrowLeft,
 } from "lucide-react";
-import {
-  adminLogin
-} from "../../api/adminAuthApi";
+
+import Navbar from "../../components/Navbar/Navbar";
+import Footer from "../../components/Footer/Footer";
+import Button from "../../components/Button/Button";
+import { adminLogin } from "../../api/adminAuthApi";
+
 import "./AdminLogin.css";
 
 export default function AdminLogin() {
@@ -27,19 +29,18 @@ export default function AdminLogin() {
 
   const redirectTo = location.state?.from;
 
-  // The protected route will verify any existing token.
-
-
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
 
-    if (!email.trim() || !password) {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail || !password) {
       setError("Please enter your email and password.");
       return;
     }
 
-    if (!email.trim().toLowerCase().endsWith("@augustana.edu")) {
+    if (!normalizedEmail.endsWith("@augustana.edu")) {
       setError("Please enter your Augustana email address.");
       return;
     }
@@ -47,7 +48,7 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      await adminLogin(email, password);
+      await adminLogin(normalizedEmail, password);
 
       const destination =
         typeof redirectTo === "string" &&
@@ -55,7 +56,7 @@ export default function AdminLogin() {
         !redirectTo.startsWith("//") &&
         redirectTo !== "/admin/login"
           ? redirectTo
-          : "/admin/users/USR-0087";
+          : "/admin/users";
 
       navigate(destination, { replace: true });
     } catch (err) {
@@ -68,8 +69,8 @@ export default function AdminLogin() {
       } else {
         setError(
           err.response?.data?.message ||
-            err.message ||
-            "Unable to sign in. Please try again."
+          err.message ||
+          "Unable to sign in. Please try again."
         );
       }
     } finally {
@@ -79,16 +80,7 @@ export default function AdminLogin() {
 
   return (
     <div className="admin-login-page">
-      <header className="admin-login-header">
-        <Link to="/" className="admin-login-logo">
-          DormDrop
-        </Link>
-
-        <Link to="/" className="admin-marketplace-link">
-          <ArrowLeft size={16} />
-          Back to marketplace
-        </Link>
-      </header>
+      <Navbar variant="auth" authAction="login" />
 
       <main className="admin-login-main">
         <section className="admin-login-card">
@@ -99,6 +91,7 @@ export default function AdminLogin() {
           <div className="admin-login-heading">
             <span>ADMINISTRATION PORTAL</span>
             <h1>Welcome back</h1>
+
             <p>
               Sign in with your authorized administrator
               credentials to manage the DormDrop marketplace.
@@ -119,6 +112,7 @@ export default function AdminLogin() {
 
               <div className="admin-input-wrapper">
                 <Mail size={18} />
+
                 <input
                   id="admin-email"
                   type="email"
@@ -151,10 +145,10 @@ export default function AdminLogin() {
                   required
                 />
 
-                <button
+                <Button
                   type="button"
                   className="admin-password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowPassword((value) => !value)}
                   aria-label={
                     showPassword ? "Hide password" : "Show password"
                   }
@@ -164,22 +158,23 @@ export default function AdminLogin() {
                   ) : (
                     <Eye size={18} />
                   )}
-                </button>
+                </Button>
               </div>
             </div>
 
-            <button
+            <Button
               type="submit"
               className="admin-login-submit"
               disabled={loading}
             >
               {loading ? "Signing in..." : "Sign in to admin"}
               {!loading && <ArrowRight size={18} />}
-            </button>
+            </Button>
           </form>
 
           <div className="admin-login-notice">
             <ShieldCheck size={17} />
+
             <p>
               Restricted access. This portal is intended for
               authorized DormDrop administrators only.
@@ -188,10 +183,7 @@ export default function AdminLogin() {
         </section>
       </main>
 
-      <footer className="admin-login-footer">
-        <span>© 2026 DormDrop</span>
-        <span>Augustana College · Administration</span>
-      </footer>
+      <Footer />
     </div>
   );
 }

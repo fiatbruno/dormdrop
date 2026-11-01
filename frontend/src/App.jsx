@@ -1,6 +1,12 @@
+
 import AuthProvider from "./auth/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
+
+import {
+  createBrowserRouter,
+  RouterProvider,
+} from "react-router-dom";
 
 import Login from "./pages/Login/Login";
 import Signup from "./pages/Signup/Signup";
@@ -8,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
 import VerificationSuccess from "./pages/EmailVerificationSuccess/EmailVerificationSuccess";
 import EmailVerificationExpired from "./pages/EmailVerificationExpired/EmailVerificationExpired";
+
 import ListItem from "./pages/ListItem/ListItem";
 import ItemDetails from "./pages/ItemDetails/ItemDetails";
 import Messages from "./pages/Messages/Messages";
@@ -15,20 +22,51 @@ import Home from "./pages/Home/Home";
 import SavedItem from "./pages/SavedItems/SavedItem";
 import Profile from "./pages/Profile/Profile";
 import EditListing from "./pages/EditListing/EditListing";
+import OfferDetails from "./pages/Offers/OfferDetails";
+
 import AdminUserDetails from "./pages/Admin/AdminUserDetails";
 import AdminLogin from "./pages/Admin/AdminLogin";
-import AdminProtectedRoute from "./components/AdminProtectedRoute";
-
-/*
- * We use the react-router-dom library to load pages based
- * on path. This object configures which paths map to which
- * page.
- *
- * Matching happens from top to bottom; the last path is "*",
- * which is the fall-through case when no other path matches.
- */
+import AdminUsers from "./pages/Admin/AdminUsers";
 
 const router = createBrowserRouter([
+
+
+  {
+    path: "/",
+    element: (
+      <ProtectedRoute>
+        <Home />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/home",
+    element: (
+      <ProtectedRoute>
+        <Home />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/signup",
+    element: <Signup />,
+  },
+  {
+    path: "/verify-email",
+    element: <VerifyEmail />,
+  },
+  {
+    path: "/verification-success",
+    element: <VerificationSuccess />,
+  },
+  {
+    path: "/verification-expired",
+    element: <EmailVerificationExpired />,
+  },
   {
     path: "/messages",
     element: (
@@ -44,37 +82,6 @@ const router = createBrowserRouter([
         <Messages />
       </ProtectedRoute>
     ),
-  },
-  {
-    path: "/",
-    element: (
-      <ProtectedRoute>
-        <Home />
-      </ProtectedRoute>
-    ),
-  },
-
-  {
-    path: "/verify-email",
-    element: <VerifyEmail />,
-  },
-
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/signup",
-    element: <Signup />,
-  },
-
-  {
-    path: "/verification-success",
-    element: <VerificationSuccess />,
-  },
-  {
-    path: "/verification-expired",
-    element: <EmailVerificationExpired />,
   },
   {
     path: "/list-an-item",
@@ -117,34 +124,44 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/home",
+    path: "/offers/:offerId",
     element: (
       <ProtectedRoute>
-        <Home />
+        <OfferDetails />
       </ProtectedRoute>
     ),
   },
+
+
+
+  {
+    path: "/admin/login",
+    element: <AdminLogin />,
+  },
+
+
+
+  {
+    element: <AdminProtectedRoute />,
+    children: [
+      {
+        path: "/admin/users",
+        element: <AdminUsers />,
+      },
+      {
+        path: "/admin/users/:userId",
+        element: <AdminUserDetails />,
+      },
+    ],
+  },
+
+
+
 
   {
     path: "*",
     element: <NotFound />,
   },
-
-{
-  path: "/admin/login",
-  element: <AdminLogin />,
-},
-{
-  element: <AdminProtectedRoute />,
-  children: [
-    {
-      path: "/admin/users/:userId",
-      element: <AdminUserDetails />,
-    },
-  ],
-},
-
-
 ]);
 
 function App() {

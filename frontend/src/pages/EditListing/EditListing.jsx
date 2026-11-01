@@ -256,7 +256,8 @@ export default function EditListing() {
         }
       }
 
-      navigate("/profile#my-listings");
+      //navigate("/profile#my-listings");
+      window.location.assign("/profile#my-listings");
     } catch (err) {
       const responseStatus = err.response?.status;
 

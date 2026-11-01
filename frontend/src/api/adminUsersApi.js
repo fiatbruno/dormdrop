@@ -72,3 +72,16 @@ export async function getAdminListingDetails(listingId) {
   );
   return response.data;
 }
+
+
+export async function getAdminUsers() {
+  const response = await adminClient.get("/admin/users");
+
+  if (!Array.isArray(response.data)) {
+    throw new Error(
+      "Expected an array of users from GET /admin/users."
+    );
+  }
+
+  return response.data;
+}

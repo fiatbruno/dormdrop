@@ -562,4 +562,52 @@
   .admin-review-button {
     width: 100%;
   }
+
+
+/* Shared DormDrop branding in the admin sidebar */
+
+.admin-brand-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.admin-brand-link img {
+  display: block;
+  width: 155px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Shared button component */
+
+.admin-page .admin-warning-button,
+.admin-page .admin-suspend-button,
+.admin-page .admin-review-button {
+  font-family: var(--sans, "Inter", sans-serif);
+}
+
+.admin-page button:focus-visible,
+.admin-page a:focus-visible {
+  outline: 2px solid #5b9cf6;
+  outline-offset: 3px;
+}
+
+/* Keep active navigation consistent */
+
+.admin-navigation .admin-nav-item.selected {
+  background: #1b4479;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Ensure reusable listing images fit their container */
+
+.admin-listing > img {
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 }

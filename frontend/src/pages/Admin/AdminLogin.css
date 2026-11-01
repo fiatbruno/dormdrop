@@ -245,3 +245,29 @@
     gap: 8px;
   }
 }
+
+
+/* Shared DormDrop components on admin login */
+
+.admin-login-page {
+  color-scheme: light;
+}
+
+.admin-login-page .dormdrop-navbar {
+  flex-shrink: 0;
+}
+
+.admin-login-page .dormdrop-footer {
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.admin-login-page .admin-login-submit {
+  font-family: var(--sans, "Inter", sans-serif);
+}
+
+.admin-login-page .admin-login-submit:focus-visible,
+.admin-login-page .admin-password-toggle:focus-visible {
+  outline: 2px solid #194278;
+  outline-offset: 3px;
+}

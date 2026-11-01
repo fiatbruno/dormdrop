@@ -14,3 +14,13 @@ export function websocketUrl(base = api.defaults.baseURL) {
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   return url.href;
 }
+
+
+export async function getConversationOffers(conversationId) {
+  const response = await api.get(
+    `/conversations/${encodeURIComponent(conversationId)}/offers`
+  );
+
+  return response.data;
+}
+
