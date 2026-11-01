@@ -88,6 +88,21 @@ public class ImageStorageService {
         return apiPrefix + "/images/" + filename;
     }
 
+    public String imageUrl(String filename) {
+        if (!filename.matches("[a-fA-F0-9-]{36}\\.(jpg|png|webp)"))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid filename");
+        return apiPrefix + "/images/" + filename;
+    }
+
+    public void discardNewUpload(String url) {
+        String prefix = apiPrefix + "/images/";
+        if (!url.startsWith(prefix)) return;
+        String filename = url.substring(prefix.length());
+        imageUrl(filename);
+        try { Files.deleteIfExists(uploadDirectory.resolve(filename)); }
+        catch (IOException ignored) { /* Unlinked files cannot be served by the listing image route. */ }
+    }
+
     public Path getImage(String filename) {
         if (!filename.matches(
                 "[a-fA-F0-9-]{36}\\.(jpg|png|webp)")) {

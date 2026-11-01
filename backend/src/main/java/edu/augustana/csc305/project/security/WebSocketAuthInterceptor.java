@@ -75,9 +75,8 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             }
         } else if (command == StompCommand.SUBSCRIBE) {
             if (accessor.getUser() == null ||
-                    !"/user/queue/messages".equals(
-                            accessor.getDestination()
-                    )) {
+                    !("/user/queue/messages".equals(accessor.getDestination())
+                            || "/user/queue/notifications".equals(accessor.getDestination()))) {
                 throw new AccessDeniedException(
                         "You cannot subscribe to this destination."
                 );
