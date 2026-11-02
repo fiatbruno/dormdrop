@@ -5,6 +5,7 @@ import edu.augustana.csc305.project.dto.ProfileResponse;
 import edu.augustana.csc305.project.dto.UpdateProfileRequest;
 import edu.augustana.csc305.project.model.User;
 import edu.augustana.csc305.project.repository.UserRepository;
+import edu.augustana.csc305.project.security.PermissionPolicy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -147,7 +148,9 @@ public class UserController {
                 "Augustana College",
                 user.getAboutYou() == null
                         ? ""
-                        : user.getAboutYou()
+                        : user.getAboutYou(),
+                user.getRole(),
+                PermissionPolicy.capabilities(user.getRole()).stream().sorted().toList()
         );
     }
 }
