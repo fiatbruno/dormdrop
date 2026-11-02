@@ -56,6 +56,16 @@ export default function ResetPassword() {
         }
       );
 
+      const result = await response.json();
+
+      if (
+        !response.ok &&
+        result.message === "Invalid or expired password reset link."
+      ) {
+        navigate("/password-reset-expired", { replace: true });
+        return;
+      }
+
       if (!response.ok) {
         throw new Error("Password reset failed.");
       }
@@ -65,9 +75,7 @@ export default function ResetPassword() {
         state: { resetSuccessful: true },
       });
     } catch {
-      setError(
-        "Unable to reset your password. Your link may be expired or invalid."
-      );
+      setError("Unable to reset your password. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -96,7 +104,7 @@ export default function ResetPassword() {
           </p>
 
           <Link
-            to="/forgot-password"
+            to="/password-reset-expired"
             className="passwordResetPage__button"
           >
             Request a new link
