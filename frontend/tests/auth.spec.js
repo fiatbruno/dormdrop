@@ -204,6 +204,79 @@ test.describe("Authentication", () => {
 // These tokens exercise client-side session handling only; the API is mocked.
 
 test.describe("Authentication gaps", () => {
+  test("password reset sends both password fields and accepts a valid token", async ({
+    page,
+  }) => {
+    await page.route("**/api/v1/auth/reset-password", (route) =>
+      route.fulfill({ json: { success: true } }),
+    );
+    await page.goto("/reset-password?token=valid-reset-token");
+    await page
+      .getByLabel("New password", { exact: true })
+      .fill("new-password-123");
+    await page.getByLabel("Confirm new password").fill("new-password-123");
+
+    const requestPromise = page.waitForRequest(
+      "**/api/v1/auth/reset-password",
+    );
+    await page.getByRole("button", { name: "Reset password" }).click();
+
+    const request = await requestPromise;
+    expect(request.method()).toBe("POST");
+    expect(request.postDataJSON()).toEqual({
+      token: "valid-reset-token",
+      newPassword: "new-password-123",
+      confirmPassword: "new-password-123",
+    });
+    await expect(page).toHaveURL("/password-updated");
+    await expect(
+      page.getByRole("heading", { name: "Password updated" }),
+    ).toBeVisible();
+  });
+
+  test("expired password reset links allow requesting a replacement", async ({
+    page,
+  }) => {
+    await page.route("**/api/v1/auth/reset-password", (route) =>
+      route.fulfill({
+        status: 400,
+        json: { message: "Invalid or expired password reset link." },
+      }),
+    );
+    await page.route("**/api/v1/auth/forgot-password", (route) =>
+      route.fulfill({ json: { message: "If an account exists, a link will be sent." } }),
+    );
+
+    await page.goto("/reset-password?token=expired-reset-token");
+    await page
+      .getByLabel("New password", { exact: true })
+      .fill("new-password-123");
+    await page.getByLabel("Confirm new password").fill("new-password-123");
+    await page.getByRole("button", { name: "Reset password" }).click();
+
+    await expect(page).toHaveURL("/password-reset-expired");
+    await expect(
+      page.getByRole("heading", { name: "Password reset link expired" }),
+    ).toBeVisible();
+
+    await page.getByLabel("Campus email").fill(" SAMPLE@Augustana.edu ");
+    const requestPromise = page.waitForRequest(
+      "**/api/v1/auth/forgot-password",
+    );
+    await page
+      .getByRole("button", { name: "Send a new password reset link" })
+      .click();
+
+    const request = await requestPromise;
+    expect(request.method()).toBe("POST");
+    expect(request.postDataJSON()).toEqual({
+      email: "sample@augustana.edu",
+    });
+    await expect(page.getByRole("status")).toHaveText(
+      "If a verified account exists, a new password-reset link will be sent.",
+    );
+  });
+
   test("empty login is rejected without sending credentials", async ({
     page,
   }) => {
