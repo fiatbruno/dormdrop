@@ -35,7 +35,7 @@ public class ListingEvidenceController {
         User user = users.findByEmail(auth.getName()).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found."));
         if (!edu.augustana.csc305.project.security.StaffAccess.permits(user.getRole(),
-                edu.augustana.csc305.project.security.StaffAccess.Capability.REVIEW_CASES)) {
+                edu.augustana.csc305.project.security.PermissionPolicy.Capability.REVIEW_EVIDENCE)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Staff access required.");
         }
         if (!ObjectId.isValid(caseId) || !ObjectId.isValid(snapshotId)) {
