@@ -28,6 +28,7 @@ import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
 import CheckYourInbox from "./pages/CheckYourInbox/CheckYourInbox";
 import ResetPassword from "./pages/ResetPassword/ResetPassword";
 import PasswordUpdated from "./pages/PasswordUpdated/PasswordUpdated";
+import PasswordResetExpired from "./pages/PasswordResetExpired/PasswordResetExpired";
 
 const protectedPage = (element) => (
   <ProtectedRoute>{element}</ProtectedRoute>
@@ -73,6 +74,10 @@ const router = createBrowserRouter([
   {
     path: "/reset-password",
     element: <ResetPassword />,
+  },
+  {
+    path: "/password-reset-expired",
+    element: <PasswordResetExpired />,
   },
   {
     path: "/password-updated",
