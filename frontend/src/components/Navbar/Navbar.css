@@ -90,6 +90,7 @@
 .dormdrop-navbar__link {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   min-height: 44px;
   color: #10295c;
   font-size: 12px;

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { Tag } from "lucide-react";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ListingImage from "../../components/ListingImage";
@@ -45,6 +46,7 @@ export default function Messages() {
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [newMessages, setNewMessages] = useState(false);
   const scroll = useRef(null);
+  const composerInput = useRef(null);
   const nearBottom = useRef(true);
   const previous = useRef({ id: null, last: null, sent: 0 });
   const bottom = () => {
@@ -78,36 +80,51 @@ export default function Messages() {
     (item) => item.unreadCount > 0,
   ).length;
   const item = chat.conversation?.listing;
+  const offer = chat.conversation?.offer;
+  const offerAccepted = offer?.status === "ACCEPTED";
+  const agreedPrice = Number(offer?.amount);
+  const formattedAgreedPrice = Number.isFinite(agreedPrice)
+    ? new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 2,
+      }).format(agreedPrice)
+    : "";
+  const formattedListingPrice =
+    item && Number.isFinite(Number(item.price))
+      ? new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+          maximumFractionDigits: 2,
+        }).format(Number(item.price))
+      : "";
+
+  function arrangePickup() {
+    composerInput.current?.focus();
+  }
 
   return (
     <div className="messages-shell">
       <Navbar showSearch={false} />
       <main className="messages-page">
-          <div className="offer-preview-controls">
-            <span>Preview offer status:</span>
-
-            <button
-              type="button"
-              onClick={() => setOfferStatus("ACCEPTED")}
-            >
-              Offer Accepted
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setOfferStatus("DECLINED")}
-            >
-              Offer Declined
-            </button>
-          </div>
         <header className="messages-heading">
           <div>
             <h1>Messages</h1>
             <p>A good find starts with a conversation.</p>
           </div>
-          <div className="messages-connection">
-            <span role="status">{chat.connection}</span>
-          </div>
+          {offerAccepted ? (
+            <button
+              type="button"
+              className="messages-propose-pickup"
+              onClick={arrangePickup}
+            >
+              Propose pickup
+            </button>
+          ) : (
+            <div className="messages-connection">
+              <span role="status">{chat.connection}</span>
+            </div>
+          )}
         </header>
         <div
           className={`messages-workspace ${conversationId ? "has-selection" : ""}`}
@@ -257,6 +274,11 @@ export default function Messages() {
                               </p>
                             </div>
                             <Link to={`/items/${item.id}`}>View item</Link>
+                            {offerAccepted && (
+                              <span className="messages-price-agreed">
+                                Price agreed
+                              </span>
+                            )}
                           </>
                         ) : (
                           <p>
@@ -310,21 +332,58 @@ export default function Messages() {
                             </div>
                           );
                         })}
-
-                    <OfferCard
-                      offer={offer}
-                      onArrangePickup={() => {
-                        chat.setDraft(
-                          "Hi! When and where would you like to meet for pickup?"
-                        );
-                      }}
-                      onMakeAnotherOffer={() => {
-                        // Connect this to the actual offer submission flow later.
-                        chat.setDraft(
-                          "Hi! I'd like to make another offer. Would you consider a different price?"
-                        );
-                      }}
-                    />
+                        {offerAccepted && formattedAgreedPrice && (
+                          <article
+                            className="offer-accepted-card"
+                            aria-label="Offer accepted"
+                          >
+                            <div className="offer-accepted-card__eyebrow">
+                              <Tag size={15} aria-hidden="true" />
+                              <span>Offer accepted</span>
+                            </div>
+                            <p className="offer-accepted-card__price">
+                              {formattedAgreedPrice}
+                            </p>
+                            <p className="offer-accepted-card__listing-price">
+                              {formattedListingPrice
+                                ? `Listing price ${formattedListingPrice}`
+                                : "Listing price unavailable"}
+                              {" · Campus pickup"}
+                            </p>
+                            <p className="offer-accepted-card__agreement">
+                              You and {chat.conversation.participant.name}{" "}
+                              agreed on {formattedAgreedPrice}. Arrange pickup
+                              in chat.
+                            </p>
+                            <p className="offer-accepted-card__note">
+                              Accepting an offer does not mark the item as
+                              sold.
+                            </p>
+                            <button
+                              type="button"
+                              className="offer-accepted-card__button"
+                              onClick={arrangePickup}
+                            >
+                              Arrange pickup
+                            </button>
+                          </article>
+                        )}
+                        {!offerAccepted && (
+                          <OfferCard
+                            offer={
+                              offer?.status === "REJECTED"
+                                ? { ...offer, status: "DECLINED" }
+                                : offer
+                            }
+                            onArrangePickup={arrangePickup}
+                            onMakeAnotherOffer={() => {
+                              chat.setDraft(
+                                "Hi! I'd like to make another offer. Would you consider a different price?",
+                              );
+                              composerInput.current?.focus();
+                            }}
+                          />
+                        )}
                       </div>
                       {newMessages && (
                         <button
@@ -352,6 +411,7 @@ export default function Messages() {
                             Write a message
                           </span>
                           <textarea
+                            ref={composerInput}
                             placeholder="Write a message…"
                             value={chat.draft}
                             onChange={(event) =>

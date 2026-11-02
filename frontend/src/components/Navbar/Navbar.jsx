@@ -2,8 +2,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { Menu, Plus, Search, UserRound, X } from "lucide-react";
 import logo from "../../assets/Logo.png";
+import NotificationBell from "../NotificationBell/NotificationBell";
 import "./Navbar.css";
-import Notifications from "../Notifications/Notifications";
 
 const defaultLinks = [
   { label: "Browse", to: "/home" },
@@ -35,6 +35,7 @@ function NavbarContent({
   }, []);
 
   const closeMenu = () => setMenuOpen(false);
+  const navLinks = links;
 
   if (variant === "auth") {
     return (
@@ -81,7 +82,7 @@ function NavbarContent({
         )}
 
         <nav id={menuId} className="dormdrop-navbar__links" aria-label="Main navigation">
-          {links.map(({ label, to }) => (
+          {navLinks.map(({ label, to }) => (
             <NavLink
               key={to}
               to={to}
@@ -103,10 +104,7 @@ function NavbarContent({
             <Plus size={18} aria-hidden="true" />
             List item
           </Link>
-
-          {/* Notification bell and dropdown */}
-          <Notifications />
-
+          <NotificationBell />
           <Link
             className="dormdrop-navbar__profile"
             to={profilePath}
