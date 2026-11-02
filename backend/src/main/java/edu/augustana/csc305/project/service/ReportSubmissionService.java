@@ -51,6 +51,18 @@ public class ReportSubmissionService {
 
     public record Submission(ModerationDtos.ReporterStatus status, boolean created) {}
 
+    public static final class ReportConflict extends ResponseStatusException {
+        private final String code;
+        private final ModerationDtos.ReporterStatus existingReport;
+        public ReportConflict(String code, String message, ModerationDtos.ReporterStatus existingReport) {
+            super(HttpStatus.CONFLICT, message);
+            this.code = code;
+            this.existingReport = existingReport;
+        }
+        public String code() { return code; }
+        public ModerationDtos.ReporterStatus existingReport() { return existingReport; }
+    }
+
     public static final class RateLimitExceeded extends ResponseStatusException {
         private final long retryAfter;
         public RateLimitExceeded(long retryAfter) {
@@ -102,7 +114,8 @@ public class ReportSubmissionService {
         if (previousRequest != null) {
             if (!listingId.equals(previousRequest.listingId()) || category != previousRequest.category()
                     || !description.equals(previousRequest.description())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Idempotency-Key was used for a different request.");
+                throw new ReportConflict("IDEMPOTENCY_KEY_REUSED",
+                        "This Idempotency-Key was already used for a different request. Your new report details were not saved.", null);
             }
             Report report = mongo.findById(previousRequest.reportId(), Report.class);
             if (report == null || !reporter.getId().equals(report.reporterId())) {
@@ -122,8 +135,10 @@ public class ReportSubmissionService {
             Report previousReport = mongo.findOne(Query.query(Criteria.where("caseId").is(active.id())
                     .and("reporterId").is(reporter.getId())), Report.class);
             if (previousReport != null) {
-                mongo.insert(new ReportRequest(requestId, listingId, category, description, previousReport.id(), now));
-                return result(previousReport, false);
+                // Only accepted reports reserve keys. Rejected aliases must not grow the ledger indefinitely.
+                throw new ReportConflict("REPORT_ALREADY_EXISTS",
+                        "You already reported this listing in the active case. Your new reason and description were not saved.",
+                        result(previousReport, false).status());
             }
         }
         consumeRateLimit(reporter.getId(), now);
