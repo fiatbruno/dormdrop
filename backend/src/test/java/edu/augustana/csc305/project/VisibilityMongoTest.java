@@ -84,7 +84,7 @@ class VisibilityMongoTest {
         ObjectId legacy = new ObjectId();
         mongo.getCollection("listings").insertOne(new Document("_id",legacy).append("title","Legacy")
                 .append("status","DONATED").append("ownerId",owner.getId()));
-        var browse = service.getListings(null,null,null,null,null,null,null);
+        var browse = service.getListings(null,null,null,null,null,null,null,null);
         assertEquals(Set.of(visible.getId(),legacy),new HashSet<>(browse.stream().map(Listing::getId).toList()));
         ModerationSchema.initialize(mongo); ModerationSchema.initialize(mongo);
         assertEquals("DONATED",mongo.getCollection("listings").find(new Document("_id",legacy)).first().getString("status"));
