@@ -17,10 +17,10 @@ import Profile from "./pages/Profile/Profile";
 import EditListing from "./pages/EditListing/EditListing";
 
 import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
-
 import CheckYourInbox from "./pages/CheckYourInbox/CheckYourInbox";
 import ResetPassword from "./pages/ResetPassword/ResetPassword";
 import PasswordUpdated from "./pages/PasswordUpdated/PasswordUpdated";
+import PasswordResetExpired from "./pages/PasswordResetExpired/PasswordResetExpired";
 
 /*
  * We use the react-router-dom library to load pages based
@@ -128,12 +128,10 @@ const router = createBrowserRouter([
     ),
   },
 
-
   {
     path: "/forgot-password",
     element: <ForgotPassword />,
   },
-
   {
     path: "/check-your-inbox",
     element: <CheckYourInbox />,
@@ -143,14 +141,18 @@ const router = createBrowserRouter([
     element: <ResetPassword />,
   },
   {
+    path: "/password-reset-expired",
+    element: <PasswordResetExpired />,
+  },
+  {
     path: "/password-updated",
     element: <PasswordUpdated />,
   },
 
   {
-      path: "*",
-      element: <NotFound />,
-    },
+    path: "*",
+    element: <NotFound />,
+  },
 ]);
 
 function App() {

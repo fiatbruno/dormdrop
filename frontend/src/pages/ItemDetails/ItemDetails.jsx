@@ -324,7 +324,6 @@ function ItemDetailsContent({ id }) {
                    <button type="button" onClick={handleReport}>
                      Report item
                    </button>
-
                  </div>
 
                  {reportMessage && (

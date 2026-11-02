@@ -51,12 +51,23 @@ export default function ResetPassword() {
           body: JSON.stringify({
             token,
             newPassword: password,
+            confirmPassword,
           }),
         }
       );
 
+      const result = await response.json();
+
+      if (
+        !response.ok &&
+        result.message === "Invalid or expired password reset link."
+      ) {
+        navigate("/password-reset-expired", { replace: true });
+        return;
+      }
+
       if (!response.ok) {
-        throw new Error("Password reset failed.");
+        throw new Error(result.message || "Password reset failed.");
       }
 
       navigate("/password-updated", {
@@ -95,7 +106,7 @@ export default function ResetPassword() {
           </p>
 
           <Link
-            to="/forgot-password"
+            to="/password-reset-expired"
             className="passwordResetPage__button"
           >
             Request a new link
