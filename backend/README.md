@@ -45,6 +45,22 @@ commit this file to git**.
 
 ## Project Structure
 
+### Listing search
+
+`GET /api/v1/home` accepts an optional `q` parameter. After trimming,
+an empty or absent `q` applies no search filter. Nonempty queries are split
+into words, each of which must appear as a case-insensitive literal substring
+in the title, description, or category. Words can appear in any order and in
+different fields. Queries over 200 characters
+after trimming receive HTTP 400. Search combines with the existing filters;
+the response remains the same listing array in the same order.
+
+MongoDB evaluates the substring search along with the existing filters and
+sort. Case-insensitive substring matching can require scanning candidates;
+inspect query plans on representative data before adding indexes. Database-backed
+search tests run when `MONGODB_TEST_URI` points
+to a MongoDB instance; they create and drop an isolated test database.
+
 The starter code ships with the following packages:
 
 ### Config

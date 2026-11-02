@@ -110,6 +110,35 @@ public class ImageStorageService {
         return path;
     }
 
+    /** Read only our local listing uploads; never fetch an arbitrary URL supplied by a listing. */
+    public edu.augustana.csc305.project.model.RetainedImage retain(String imageUrl) {
+        String prefix = apiPrefix + "/images/";
+        if (imageUrl == null || !imageUrl.startsWith(prefix)) {
+            throw new IllegalStateException("Listing image is not a supported local upload.");
+        }
+        String filename = imageUrl.substring(prefix.length());
+        Path source = getImage(filename);
+        try {
+            if (!source.toRealPath().startsWith(uploadDirectory.toRealPath())) {
+                throw new IOException("Image is outside upload storage.");
+            }
+            byte[] bytes;
+            try (InputStream input = Files.newInputStream(source)) {
+                bytes = input.readNBytes(5 * 1024 * 1024 + 1);
+            }
+            if (bytes.length == 0 || bytes.length > 5 * 1024 * 1024) {
+                throw new IOException("Invalid evidence image size.");
+            }
+            String type = isJpeg(bytes) ? "image/jpeg" : isPng(bytes) ? "image/png"
+                    : isWebp(bytes) ? "image/webp" : null;
+            if (type == null) throw new IOException("Invalid evidence image format.");
+            // This opaque key is resolved only within a case-scoped snapshot endpoint.
+            return new edu.augustana.csc305.project.model.RetainedImage("image", type, bytes);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Cannot retain listing evidence.", exception);
+        }
+    }
+
     private boolean isJpeg(byte[] b) {
         return b.length >= 3 &&
                 (b[0] & 255) == 255 &&
