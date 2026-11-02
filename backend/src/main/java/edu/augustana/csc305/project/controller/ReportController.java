@@ -36,4 +36,14 @@ public class ReportController {
                 .header(HttpHeaders.RETRY_AFTER, Long.toString(exception.retryAfter()))
                 .cacheControl(CacheControl.noStore()).body(Map.of("message", exception.getReason()));
     }
+
+    @ExceptionHandler(ReportSubmissionService.ReportConflict.class)
+    public ResponseEntity<Map<String, Object>> conflict(ReportSubmissionService.ReportConflict exception) {
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("code", exception.code());
+        body.put("message", exception.getReason());
+        body.put("detailsSaved", false);
+        if (exception.existingReport() != null) body.put("report", exception.existingReport());
+        return ResponseEntity.status(HttpStatus.CONFLICT).cacheControl(CacheControl.noStore()).body(body);
+    }
 }
