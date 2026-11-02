@@ -45,8 +45,11 @@ public class SecurityConfig {
                                 "/api/v1/ws"
                         ).permitAll()
 
-                        .requestMatchers("/api/v1/admin/reports", "/api/v1/admin/reports/**", "/api/v1/staff/**")
-                        .hasAnyRole("MODERATOR", "ADMIN")
+                        .requestMatchers(
+                                "/api/v1/admin/reports",
+                                "/api/v1/admin/reports/**",
+                                "/api/v1/staff/cases/*/snapshots/**"
+                        ).hasAnyRole("MODERATOR", "ADMIN")
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/staff/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
