@@ -21,6 +21,8 @@ public class User {
 
     private UserRole role = UserRole.STUDENT;
 
+    private long roleVersion;
+
     // Email verification
     private boolean emailVerified;
     private String verificationToken;
@@ -93,6 +95,10 @@ public class User {
     public void setRole(UserRole role) {
         this.role = role;
     }
+
+    public long getRoleVersion() { return roleVersion; }
+
+    public void setRoleVersion(long roleVersion) { this.roleVersion = roleVersion; }
 
     // Password hash
     public String getPasswordHash() {
