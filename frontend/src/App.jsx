@@ -21,6 +21,7 @@ import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
 import CheckYourInbox from "./pages/CheckYourInbox/CheckYourInbox";
 import ResetPassword from "./pages/ResetPassword/ResetPassword";
 import PasswordUpdated from "./pages/PasswordUpdated/PasswordUpdated";
+import PasswordResetExpired from "./pages/PasswordResetExpired/PasswordResetExpired";
 
 /*
  * We use the react-router-dom library to load pages based
@@ -141,6 +142,10 @@ const router = createBrowserRouter([
   {
     path: "/reset-password",
     element: <ResetPassword />,
+  },
+  {
+    path: "/password-reset-expired",
+    element: <PasswordResetExpired />,
   },
   {
     path: "/password-updated",
