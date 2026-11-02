@@ -1,12 +1,6 @@
-
 import AuthProvider from "./auth/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
-import AdminProtectedRoute from "./components/AdminProtectedRoute";
-
-import {
-  createBrowserRouter,
-  RouterProvider,
-} from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import Login from "./pages/Login/Login";
 import Signup from "./pages/Signup/Signup";
@@ -14,7 +8,6 @@ import NotFound from "./pages/NotFound";
 import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
 import VerificationSuccess from "./pages/EmailVerificationSuccess/EmailVerificationSuccess";
 import EmailVerificationExpired from "./pages/EmailVerificationExpired/EmailVerificationExpired";
-
 import ListItem from "./pages/ListItem/ListItem";
 import ItemDetails from "./pages/ItemDetails/ItemDetails";
 import Messages from "./pages/Messages/Messages";
@@ -22,51 +15,23 @@ import Home from "./pages/Home/Home";
 import SavedItem from "./pages/SavedItems/SavedItem";
 import Profile from "./pages/Profile/Profile";
 import EditListing from "./pages/EditListing/EditListing";
-import OfferDetails from "./pages/Offers/OfferDetails";
 
-import AdminUserDetails from "./pages/Admin/AdminUserDetails";
-import AdminLogin from "./pages/Admin/AdminLogin";
-import AdminUsers from "./pages/Admin/AdminUsers";
+import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
+
+import CheckYourInbox from "./pages/CheckYourInbox/CheckYourInbox";
+import ResetPassword from "./pages/ResetPassword/ResetPassword";
+import PasswordUpdated from "./pages/PasswordUpdated/PasswordUpdated";
+
+/*
+ * We use the react-router-dom library to load pages based
+ * on path. This object configures which paths map to which
+ * page.
+ *
+ * Matching happens from top to bottom; the last path is "*",
+ * which is the fall-through case when no other path matches.
+ */
 
 const router = createBrowserRouter([
-
-
-  {
-    path: "/",
-    element: (
-      <ProtectedRoute>
-        <Home />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/home",
-    element: (
-      <ProtectedRoute>
-        <Home />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/signup",
-    element: <Signup />,
-  },
-  {
-    path: "/verify-email",
-    element: <VerifyEmail />,
-  },
-  {
-    path: "/verification-success",
-    element: <VerificationSuccess />,
-  },
-  {
-    path: "/verification-expired",
-    element: <EmailVerificationExpired />,
-  },
   {
     path: "/messages",
     element: (
@@ -82,6 +47,37 @@ const router = createBrowserRouter([
         <Messages />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "/",
+    element: (
+      <ProtectedRoute>
+        <Home />
+      </ProtectedRoute>
+    ),
+  },
+
+  {
+    path: "/verify-email",
+    element: <VerifyEmail />,
+  },
+
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/signup",
+    element: <Signup />,
+  },
+
+  {
+    path: "/verification-success",
+    element: <VerificationSuccess />,
+  },
+  {
+    path: "/verification-expired",
+    element: <EmailVerificationExpired />,
   },
   {
     path: "/list-an-item",
@@ -124,44 +120,37 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/offers/:offerId",
+    path: "/home",
     element: (
       <ProtectedRoute>
-        <OfferDetails />
+        <Home />
       </ProtectedRoute>
     ),
   },
 
 
-
   {
-    path: "/admin/login",
-    element: <AdminLogin />,
+    path: "/forgot-password",
+    element: <ForgotPassword />,
   },
 
-
-
   {
-    element: <AdminProtectedRoute />,
-    children: [
-      {
-        path: "/admin/users",
-        element: <AdminUsers />,
-      },
-      {
-        path: "/admin/users/:userId",
-        element: <AdminUserDetails />,
-      },
-    ],
+    path: "/check-your-inbox",
+    element: <CheckYourInbox />,
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPassword />,
+  },
+  {
+    path: "/password-updated",
+    element: <PasswordUpdated />,
   },
 
-
-
-
   {
-    path: "*",
-    element: <NotFound />,
-  },
+      path: "*",
+      element: <NotFound />,
+    },
 ]);
 
 function App() {
