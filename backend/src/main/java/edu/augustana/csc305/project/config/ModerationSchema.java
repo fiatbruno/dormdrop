@@ -38,6 +38,8 @@ public class ModerationSchema implements ApplicationRunner {
         mongo.getCollection("listings").updateMany(new Document("version", null), new Document("$set", new Document("version", 0L)));
 
         var cases = mongo.getCollection("moderationCases");
+        cases.updateMany(new Document("version", null),
+                new Document("$set", new Document("version", 0L)));
 
         // Support case records created before referenceNumber was added.
         try (var cursor = cases.find(new Document("referenceNumber", null)).iterator()) {
