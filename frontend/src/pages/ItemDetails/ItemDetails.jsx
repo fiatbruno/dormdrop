@@ -7,6 +7,7 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ListingImage from "../../components/ListingImage";
 import ProductCard from "../../components/ProductCard/ProductCard";
+import OfferForm from "../../components/OfferForm/OfferForm";
 import {
   getListingById,
   getListings,
@@ -176,6 +177,30 @@ function ItemDetailsContent({ id }) {
     setReportMessage("Item reported successfully.");
   }
 
+const ownerId =
+  typeof listing?.ownerId === "string"
+    ? listing.ownerId
+    : listing?.ownerId?.$oid ||
+      listing?.ownerId?.hexString ||
+      null;
+
+const isOwner =
+  currentUserId != null &&
+  ownerId != null &&
+  String(currentUserId) === String(ownerId);
+
+const canMakeOffer =
+  Boolean(token) &&
+  currentUserId != null &&
+  ownerId != null &&
+  !isOwner &&
+  listing?.status === "AVAILABLE" &&
+  listing?.listingType !== "Free / Donate" &&
+  listing?.listingType !== "Trade" &&
+  listing?.price != null &&
+  Number.isFinite(Number(listing.price)) &&
+  Number(listing.price) > 0;
+
   const recommendations = listing
     ? related
         .filter((item) => item.id !== id && item.status === "AVAILABLE")
@@ -296,6 +321,16 @@ function ItemDetailsContent({ id }) {
                         : "Contact seller"}
                     </button>
                   )}
+
+
+{canMakeOffer && (
+  <OfferForm
+    key={listing.id}
+    listingId={listing.id}
+    listingPrice={listing.price}
+  />
+)}
+
                  <div className="item-actions">
                    <button
                      type="button"
