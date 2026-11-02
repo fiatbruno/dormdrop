@@ -21,6 +21,7 @@ import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
 import CheckYourInbox from "./pages/CheckYourInbox/CheckYourInbox";
 import ResetPassword from "./pages/ResetPassword/ResetPassword";
 import PasswordUpdated from "./pages/PasswordUpdated/PasswordUpdated";
+import Notifications from "./pages/Notifications/Notifications";
 
 
 /*
@@ -46,6 +47,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Messages />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/notifications",
+    element: (
+      <ProtectedRoute>
+        <Notifications />
       </ProtectedRoute>
     ),
   },

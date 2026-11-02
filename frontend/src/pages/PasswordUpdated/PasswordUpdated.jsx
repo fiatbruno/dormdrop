@@ -1,6 +1,7 @@
+import { Link, useLocation, Navigate } from "react-router-dom";
 import { Check } from "lucide-react";
 import PasswordResetLayout from "../../components/PasswordResetLayout/PasswordResetLayout.jsx";
-import { Link, useLocation, Navigate } from "react-router-dom";
+
 export default function PasswordUpdated() {
     const location = useLocation();
 

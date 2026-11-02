@@ -155,11 +155,19 @@ function ItemDetailsContent({ id }) {
 
   async function share() {
     try {
-      await navigator.clipboard.writeText(
-        new URL(`/items/${encodeURIComponent(id)}`, window.location.origin)
-          .href,
+      const baseUrl =
+        import.meta.env.VITE_PUBLIC_APP_URL?.trim() || window.location.origin;
+      const shareUrl = new URL(
+        `/items/${encodeURIComponent(id)}`,
+        baseUrl,
       );
-      setShareMessage("Listing link copied!");
+      await navigator.clipboard.writeText(shareUrl.href);
+      setShareMessage(
+        !import.meta.env.VITE_PUBLIC_APP_URL &&
+          shareUrl.hostname.includes("localhost")
+          ? "Copied a local-only link. Set VITE_PUBLIC_APP_URL to your deployed site URL to share it."
+          : "Listing link copied!",
+      );
     } catch {
       setShareMessage(
         "Couldn't copy the link. Copy this page's address to share it.",
