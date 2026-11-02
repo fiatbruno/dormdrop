@@ -9,22 +9,44 @@ const formatMoney = (amount) =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(amount);
+
+function getSuggestedAmount(offer, listing) {
+  const buyerAmount = Number(offer?.amount);
+  const askingPrice = Number(listing?.price);
+
+  if (
+    !Number.isFinite(buyerAmount) ||
+    !Number.isFinite(askingPrice) ||
+    askingPrice <= 0
+  ) {
+    return "";
+  }
+
+  const suggestion =
+    buyerAmount < askingPrice
+      ? Math.round(((buyerAmount + askingPrice) / 2) * 100) / 100
+      : askingPrice;
+
+  return suggestion > 0 && suggestion !== buyerAmount
+    ? suggestion.toFixed(2)
+    : "";
+}
 
 export default function CounterofferModal({
   offer,
   listing,
+  buyerName,
   onClose,
   onSuccess,
 }) {
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(() =>
+    getSuggestedAmount(offer, listing),
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    setAmount("");
-    setError("");
-  }, [offer?.id, listing?.id]);
 
   useEffect(() => {
     const handleEscape = (event) => {
@@ -45,13 +67,15 @@ export default function CounterofferModal({
   const buyerAmount = Number(offer.amount);
   const askingPrice = Number(listing.price);
   const counterAmount = Number(amount);
+  const counterpartyName = offer.buyerName || buyerName;
 
-const validAmount =
-  amount.trim() !== "" &&
-  /^\d+(\.\d{1,2})?$/.test(amount) &&
-  Number.isFinite(counterAmount) &&
-  counterAmount > 0 &&
-  counterAmount !== buyerAmount;
+  const validAmount =
+    amount.trim() !== "" &&
+    /^\d+(\.\d{1,2})?$/.test(amount) &&
+    Number.isFinite(counterAmount) &&
+    counterAmount > 0 &&
+    counterAmount <= askingPrice &&
+    counterAmount !== buyerAmount;
   const canSubmit =
     Number.isFinite(buyerAmount) &&
     Number.isFinite(askingPrice) &&
@@ -114,8 +138,8 @@ const validAmount =
         </h2>
 
         <p className="counteroffer-subtitle">
-          {offer.buyerName
-            ? `${offer.buyerName}'s offer`
+          {counterpartyName
+            ? `${counterpartyName}'s offer`
             : "Buyer's offer"}
           : {formatMoney(buyerAmount)} · Your asking price:{" "}
           {formatMoney(askingPrice)}
@@ -158,6 +182,7 @@ const validAmount =
               id="counteroffer-amount"
               type="number"
               min="0.01"
+              max={askingPrice}
               step="0.01"
               value={amount}
               onChange={(event) => {
@@ -174,8 +199,9 @@ const validAmount =
             id="counteroffer-help"
             className="counteroffer-help"
           >
-            Buyer offered {formatMoney(buyerAmount)}.
-            Enter a different price you would like to propose.
+            {counterpartyName || "Buyer"} offered{" "}
+            {formatMoney(buyerAmount)}. Enter your counter price, up to{" "}
+            {formatMoney(askingPrice)}.
           </p>
 
           <div className="counteroffer-notice">

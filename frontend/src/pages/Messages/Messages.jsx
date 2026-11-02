@@ -259,6 +259,7 @@ export default function Messages() {
                           chat.conversation.listing.ownerId && (
                           <button
                             type="button"
+                            className="messages-counteroffer-button"
                             onClick={() => setCounterofferOpen(true)}
                           >
                             Send counteroffer
@@ -367,8 +368,10 @@ export default function Messages() {
           </section>
           {counterofferOpen && chat.conversation?.offer && chat.conversation?.listing && (
             <CounterofferModal
+              key={`${chat.conversation.offer.id}-${chat.conversation.offer.amount}-${chat.conversation.listing.id}-${chat.conversation.listing.price}`}
               offer={chat.conversation.offer}
               listing={chat.conversation.listing}
+              buyerName={chat.conversation.participant.name}
               onClose={() => setCounterofferOpen(false)}
               onSuccess={() => {
                 chat.refresh();
