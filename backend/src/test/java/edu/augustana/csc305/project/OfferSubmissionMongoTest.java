@@ -1,0 +1,222 @@
+package edu.augustana.csc305.project;
+
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import edu.augustana.csc305.project.config.OfferSchema;
+import edu.augustana.csc305.project.config.ReportTransactionConfig;
+import edu.augustana.csc305.project.model.Listing;
+import edu.augustana.csc305.project.model.ListingStatus;
+import edu.augustana.csc305.project.model.OfferNegotiation;
+import edu.augustana.csc305.project.model.User;
+import edu.augustana.csc305.project.repository.UserRepository;
+import edu.augustana.csc305.project.service.OfferService;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import org.bson.types.ObjectId;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.web.server.ResponseStatusException;
+import static org.junit.jupiter.api.Assertions.*;
+
+/** Uses a disposable database on a transaction-capable MongoDB test server. */
+@EnabledIfEnvironmentVariable(named = "MODERATION_TEST_MONGODB_URI", matches = ".+")
+class OfferSubmissionMongoTest {
+    private MongoClient client;
+    private MongoTemplate mongo;
+    private UserRepository users;
+    private OfferService offers;
+    private User buyer;
+    private User seller;
+    private User outsider;
+    private Listing listing;
+
+    @BeforeEach void setup() {
+        client = MongoClients.create(System.getenv("MODERATION_TEST_MONGODB_URI"));
+        mongo = new MongoTemplate(client, "offers_test_" + new ObjectId().toHexString());
+        OfferSchema.initialize(mongo);
+        users = new UserRepository(mongo);
+        offers = new OfferService(mongo, users,
+                new ReportTransactionConfig().reportTransactions(mongo.getMongoDatabaseFactory()));
+        buyer = user(true, "augustana.edu");
+        seller = user(true, "augustana.edu");
+        outsider = user(true, "augustana.edu");
+        listing = listing(seller);
+    }
+
+    @AfterEach void cleanup() {
+        if (mongo != null) mongo.getDb().drop();
+        if (client != null) client.close();
+    }
+
+    private User user(boolean verified, String domain) {
+        ObjectId id = new ObjectId();
+        User user = new User(id, "Test", id.toHexString() + "@" + domain, "password-hash");
+        user.setEmailVerified(verified);
+        users.storeUser(user);
+        return user;
+    }
+
+    private Listing listing(User owner) {
+        Listing value = new Listing();
+        value.setId(new ObjectId());
+        value.setOwnerId(owner.getId());
+        value.setTitle("Desk");
+        value.setListingType("For sale");
+        value.setPrice(new BigDecimal("50.00"));
+        return mongo.insert(value);
+    }
+
+    private UsernamePasswordAuthenticationToken auth(User user) {
+        return new UsernamePasswordAuthenticationToken(user.getEmail(), null, List.of());
+    }
+
+    private static String id(ObjectId id) { return id.toHexString(); }
+
+    private static void status(int status, org.junit.jupiter.api.function.Executable action) {
+        assertEquals(status, assertThrows(ResponseStatusException.class, action).getStatusCode().value());
+    }
+
+    @Test void buyerAndSellerCanReadButOthersCannotAndSameKeyReplays() {
+        var original = offers.submit(auth(buyer), id(listing.getId()), new BigDecimal("19.99"), "submit-1");
+        assertTrue(original.created());
+        assertEquals(buyer.getId(), original.offer().buyerId());
+        assertEquals(seller.getId(), original.offer().sellerId());
+        assertEquals(OfferNegotiation.Status.PENDING, original.offer().status());
+        var replay = offers.submit(auth(buyer), id(listing.getId()), new BigDecimal("19.99"), "submit-1");
+        assertFalse(replay.created());
+        assertEquals(original.offer().id(), replay.offer().id());
+        assertEquals(original.offer().id(), offers.get(auth(buyer), id(original.offer().id())).id());
+        assertEquals(original.offer().id(), offers.get(auth(seller), id(original.offer().id())).id());
+        status(404, () -> offers.get(auth(outsider), id(original.offer().id())));
+        status(409, () -> offers.submit(auth(buyer), id(listing.getId()), new BigDecimal("20.00"), "submit-1"));
+        status(409, () -> offers.submit(auth(buyer), id(listing.getId()), new BigDecimal("19.99"), "other-key"));
+        assertEquals(1, mongo.count(new Query(), OfferNegotiation.class));
+    }
+
+    @Test void rejectsIneligibleAccountsListingsAndInvalidRequestsWithoutCreatingAnOffer() {
+        User unverified = user(false, "augustana.edu");
+        User external = user(true, "example.com");
+        status(401, () -> offers.submit(null, id(listing.getId()), BigDecimal.ONE, "key"));
+        status(403, () -> offers.submit(auth(unverified), id(listing.getId()), BigDecimal.ONE, "key"));
+        status(403, () -> offers.submit(auth(external), id(listing.getId()), BigDecimal.ONE, "key"));
+        status(403, () -> offers.submit(auth(seller), id(listing.getId()), BigDecimal.ONE, "key"));
+        status(400, () -> offers.submit(auth(buyer), "bad-id", BigDecimal.ONE, "key"));
+        status(400, () -> offers.submit(auth(buyer), id(listing.getId()), BigDecimal.ZERO, "key"));
+        status(400, () -> offers.submit(auth(buyer), id(listing.getId()), new BigDecimal("1.001"), "key"));
+        status(400, () -> offers.submit(auth(buyer), id(listing.getId()), BigDecimal.ONE, "bad key"));
+        status(404, () -> offers.submit(auth(buyer), id(new ObjectId()), BigDecimal.ONE, "key"));
+        Listing free = listing(seller);
+        free.setListingType("Free");
+        free.setPrice(BigDecimal.ZERO);
+        mongo.save(free);
+        status(409, () -> offers.submit(auth(buyer), id(free.getId()), BigDecimal.ONE, "key"));
+        Listing unavailable = listing(seller);
+        unavailable.setStatus(ListingStatus.SOLD);
+        mongo.save(unavailable);
+        status(409, () -> offers.submit(auth(buyer), id(unavailable.getId()), BigDecimal.ONE, "key"));
+        assertEquals(0, mongo.count(new Query(), OfferNegotiation.class));
+    }
+
+    @Test void auditLedgerFailureRollsBackOfferAndListingVersion() {
+        Long originalVersion = listing.getVersion();
+        mongo.getDb().createCollection("offerSubmissionRequests", new com.mongodb.client.model.CreateCollectionOptions()
+                .validationOptions(new com.mongodb.client.model.ValidationOptions()
+                        .validator(new org.bson.Document("impossible", new org.bson.Document("$exists", true)))));
+        assertThrows(ResponseStatusException.class,
+                () -> offers.submit(auth(buyer), id(listing.getId()), BigDecimal.ONE, "ledger-fails"));
+        assertEquals(0, mongo.count(new Query(), OfferNegotiation.class));
+        assertEquals(originalVersion, mongo.findById(listing.getId(), Listing.class).getVersion());
+        assertEquals(0, mongo.getCollection("offerSubmissionRequests").countDocuments());
+    }
+
+    @Test void legacyListingWithMissingVersionStatusAndVisibilityCanReceiveAnOffer() {
+        mongo.getCollection("listings").updateOne(new org.bson.Document("_id", listing.getId()),
+                new org.bson.Document("$unset", new org.bson.Document("version", "")
+                        .append("status", "").append("moderationVisibility", "")));
+        var submitted = offers.submit(auth(buyer), id(listing.getId()), BigDecimal.ONE, "legacy-listing");
+        assertTrue(submitted.created());
+        assertEquals(ListingStatus.AVAILABLE, mongo.findById(listing.getId(), Listing.class).getStatus());
+    }
+
+    private List<Object> concurrently(List<Callable<Object>> actions) throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(actions.size());
+        CountDownLatch ready = new CountDownLatch(actions.size());
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            List<Future<Object>> futures = new ArrayList<>();
+            for (var action : actions) futures.add(pool.submit(() -> {
+                ready.countDown();
+                if (!start.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("Timed out");
+                try { return action.call(); }
+                catch (ResponseStatusException failure) { return failure; }
+            }));
+            assertTrue(ready.await(10, TimeUnit.SECONDS));
+            start.countDown();
+            List<Object> result = new ArrayList<>();
+            for (var future : futures) result.add(future.get(60, TimeUnit.SECONDS));
+            return result;
+        } finally {
+            start.countDown();
+            pool.shutdownNow();
+            assertTrue(pool.awaitTermination(10, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test void simultaneousSameKeySubmitsReturnOneOfferAndOneReplay() throws Exception {
+        Callable<Object> submit = () -> offers.submit(auth(buyer), id(listing.getId()), new BigDecimal("19.99"), "same-key");
+        var results = concurrently(List.of(submit, submit));
+        assertTrue(results.stream().allMatch(OfferService.Submission.class::isInstance), results.toString());
+        var first = (OfferService.Submission) results.get(0);
+        var second = (OfferService.Submission) results.get(1);
+        assertEquals(first.offer().id(), second.offer().id());
+        assertNotEquals(first.created(), second.created());
+        assertEquals(1, mongo.count(new Query(), OfferNegotiation.class));
+    }
+
+    @Test void simultaneousDifferentKeysCannotCreateDuplicatePendingOffers() throws Exception {
+        var results = concurrently(List.of(
+                () -> offers.submit(auth(buyer), id(listing.getId()), BigDecimal.ONE, "key-a"),
+                () -> offers.submit(auth(buyer), id(listing.getId()), BigDecimal.ONE, "key-b")));
+        assertEquals(1, results.stream().filter(OfferService.Submission.class::isInstance).count(), results.toString());
+        var conflict = results.stream().filter(ResponseStatusException.class::isInstance)
+                .map(ResponseStatusException.class::cast).findFirst().orElseThrow();
+        assertEquals(409, conflict.getStatusCode().value());
+        assertEquals(1, mongo.count(new Query(), OfferNegotiation.class));
+    }
+
+    @Test void listsOnlyTheRequestedPerspectiveWithStableIdTieBreakingAndBounds() {
+        Instant sameTime = Instant.parse("2026-11-03T12:00:00Z");
+        Listing otherListing = listing(seller);
+        var first = OfferNegotiation.create(listing.getId(), buyer.getId(), seller.getId(), BigDecimal.ONE, sameTime);
+        var second = OfferNegotiation.create(otherListing.getId(), buyer.getId(), seller.getId(), BigDecimal.TEN, sameTime);
+        var irrelevant = OfferNegotiation.create(listing.getId(), outsider.getId(), seller.getId(), BigDecimal.ONE, sameTime);
+        mongo.insert(first);
+        mongo.insert(second);
+        mongo.insert(irrelevant);
+        var page0 = offers.list(auth(buyer), "buyer", 0, 1);
+        var page1 = offers.list(auth(buyer), "buyer", 1, 1);
+        assertEquals(2, page0.total());
+        assertEquals(2, page0.totalPages());
+        assertEquals(1, page0.items().size());
+        assertEquals(1, page1.items().size());
+        assertTrue(page0.items().get(0).id().compareTo(page1.items().get(0).id()) > 0);
+        assertEquals(3, offers.list(auth(seller), "seller", 0, 20).total());
+        assertEquals(0, offers.list(auth(outsider), "seller", 0, 20).total());
+        status(400, () -> offers.list(auth(buyer), "everyone", 0, 20));
+        status(400, () -> offers.list(auth(buyer), "buyer", -1, 20));
+        status(400, () -> offers.list(auth(buyer), "buyer", 0, 101));
+    }
+}
