@@ -330,6 +330,43 @@ test.describe("Authentication gaps", () => {
     await expect(page).toHaveURL("/home");
   });
 
+  test("login returns a shared-item visitor to the exact item", async ({
+    page,
+  }) => {
+    const token = makeSessionToken(Math.floor(Date.now() / 1000) + 3600);
+    await mockMarketplace(page);
+    await page.route("**/api/v1/home/shared-listing", (route) =>
+      route.fulfill({
+        json: {
+          id: "shared-listing",
+          title: "Shared Mini Fridge",
+          category: "Appliances",
+          description: "Compact fridge",
+          price: 80,
+          listingType: "For sale",
+          condition: "Good",
+          status: "AVAILABLE",
+          ownerId: "seller-id",
+          pickupArea: "Campus",
+        },
+      }),
+    );
+    await page.route("**/api/v1/auth/login", (route) =>
+      route.fulfill({ json: { token } }),
+    );
+
+    await page.goto("/items/shared-listing");
+    await expect(page).toHaveURL("/login");
+    await page.getByLabel("email").fill("sample@augustana.edu");
+    await page.getByLabel("Password", { exact: true }).fill("passwordsample");
+    await page.getByRole("button", { name: "Log In", exact: true }).click();
+
+    await expect(page).toHaveURL("/items/shared-listing");
+    await expect(
+      page.getByRole("heading", { name: "Shared Mini Fridge" }),
+    ).toBeVisible();
+  });
+
   test("a failed login can be corrected and retried successfully", async ({
     page,
   }) => {
