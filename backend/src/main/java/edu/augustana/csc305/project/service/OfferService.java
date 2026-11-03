@@ -1,0 +1,176 @@
+package edu.augustana.csc305.project.service;
+
+import com.mongodb.MongoException;
+import edu.augustana.csc305.project.model.Listing;
+import edu.augustana.csc305.project.model.ListingStatus;
+import edu.augustana.csc305.project.model.ModerationTypes.Visibility;
+import edu.augustana.csc305.project.model.OfferNegotiation;
+import edu.augustana.csc305.project.model.OfferSubmissionRequest;
+import edu.augustana.csc305.project.model.User;
+import edu.augustana.csc305.project.repository.UserRepository;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.locks.LockSupport;
+import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.web.server.ResponseStatusException;
+
+/** Authenticated offer commands and participant-only queries. */
+@Service
+public class OfferService {
+    private final MongoTemplate mongo;
+    private final UserRepository users;
+    private final TransactionOperations transactions;
+
+    public OfferService(MongoTemplate mongo, UserRepository users,
+                        @Qualifier("reportTransactions") TransactionOperations transactions) {
+        this.mongo = mongo;
+        this.users = users;
+        this.transactions = transactions;
+    }
+
+    public record Submission(OfferNegotiation offer, boolean created) { }
+    public record Page(List<OfferNegotiation> items, long total, int page, int size, long totalPages) { }
+
+    public Submission submit(Authentication auth, String listingId, BigDecimal amount, String key) {
+        User buyer = verified(auth);
+        ObjectId listing = parseId(listingId);
+        if (key == null || !key.matches("[A-Za-z0-9][A-Za-z0-9._:-]{0,127}"))
+            throw badRequest("Idempotency-Key must contain 1 to 128 letters, digits, dots, colons, underscores or hyphens.");
+        try { OfferNegotiation.validateAmount(amount); }
+        catch (IllegalArgumentException failure) { throw badRequest("Amount must be positive and have at most two decimal places."); }
+        // A key is scoped to the authenticated actor and this command, not a client-supplied identity.
+        String requestId = buyer.getId().toHexString() + ":submit-offer:" + key;
+        ObjectId offerId = new ObjectId();
+        for (int attempt = 0; attempt < 12; attempt++) {
+            try {
+                return Objects.requireNonNull(transactions.execute(status -> {
+                    User current = verified(auth);
+                    if (!current.getId().equals(buyer.getId()))
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User changed. Please sign in again.");
+                    return submitTransaction(current, listing, amount, requestId, offerId);
+                }));
+            } catch (DataAccessException | TransactionException failure) {
+                if (!retryable(failure)) throw unavailable(failure);
+                LockSupport.parkNanos(ThreadLocalRandom.current().nextLong(5, 51) * 1_000_000L);
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                "Offer could not be confirmed. Retry with the same Idempotency-Key.");
+    }
+
+    private Submission submitTransaction(User buyer, ObjectId listingId, BigDecimal amount,
+                                          String requestId, ObjectId offerId) {
+        OfferSubmissionRequest previous = mongo.findById(requestId, OfferSubmissionRequest.class);
+        if (previous != null) {
+            if (!listingId.equals(previous.listingId()) || previous.amount().compareTo(amount) != 0)
+                throw conflict("This Idempotency-Key was already used for a different offer.");
+            return new Submission(previous.result(), false);
+        }
+        Listing listing = mongo.findById(listingId, Listing.class);
+        if (listing == null || listing.getModerationVisibility() != Visibility.VISIBLE)
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found.");
+        if (listing.getOwnerId() == null)
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found.");
+        if (buyer.getId().equals(listing.getOwnerId()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot offer on your own listing.");
+        if (listing.getStatus() != ListingStatus.AVAILABLE || !"For sale".equals(listing.getListingType())
+                || listing.getPrice() == null || listing.getPrice().signum() <= 0)
+            throw conflict("Listing is not an available sale.");
+        if (mongo.exists(Query.query(Criteria.where("buyerId").is(buyer.getId()).and("listingId").is(listingId)
+                .and("status").is(OfferNegotiation.Status.PENDING)), OfferNegotiation.class))
+            throw conflict("A pending offer already exists for this listing.");
+
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        OfferNegotiation offer = OfferNegotiation.create(offerId, listingId, buyer.getId(), listing.getOwnerId(), amount, now);
+        mongo.insert(offer);
+        // Fence concurrent seller edits, deletion and visibility/status changes without changing listing lifecycle.
+        Criteria visible = new Criteria().orOperator(Criteria.where("moderationVisibility").is(Visibility.VISIBLE),
+                Criteria.where("moderationVisibility").is(null));
+        Criteria available = new Criteria().orOperator(Criteria.where("status").is(ListingStatus.AVAILABLE),
+                Criteria.where("status").exists(false));
+        Query versionedListing = Query.query(new Criteria().andOperator(Criteria.where("_id").is(listingId),
+                Criteria.where("version").is(listing.getVersion()), available,
+                Criteria.where("ownerId").is(listing.getOwnerId()), visible));
+        Update fence = listing.getVersion() == null ? new Update().set("version", 1L) : new Update().inc("version", 1L);
+        if (mongo.updateFirst(versionedListing, fence, Listing.class).getModifiedCount() != 1)
+            throw new OptimisticLockingFailureException("Listing changed while submitting offer.");
+        mongo.insert(new OfferSubmissionRequest(requestId, listingId, amount, offer, now));
+        return new Submission(offer, true);
+    }
+
+    public OfferNegotiation get(Authentication auth, String offerId) {
+        User user = verified(auth);
+        OfferNegotiation offer = mongo.findById(parseId(offerId), OfferNegotiation.class);
+        if (offer == null || (!user.getId().equals(offer.buyerId()) && !user.getId().equals(offer.sellerId())))
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Offer not found.");
+        return offer;
+    }
+
+    public Page list(Authentication auth, String perspective, int page, int size) {
+        User user = verified(auth);
+        if (page < 0 || size < 1 || size > 100) throw badRequest("Page must be nonnegative and size between 1 and 100.");
+        String field;
+        if ("buyer".equals(perspective)) field = "buyerId";
+        else if ("seller".equals(perspective)) field = "sellerId";
+        else throw badRequest("Perspective must be buyer or seller.");
+        Criteria owner = Criteria.where(field).is(user.getId());
+        long total = mongo.count(Query.query(owner), OfferNegotiation.class);
+        List<OfferNegotiation> items = mongo.find(Query.query(owner)
+                .with(Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("_id")))
+                .skip((long) page * size).limit(size), OfferNegotiation.class);
+        return new Page(List.copyOf(items), total, page, size, total == 0 ? 0 : (total - 1) / size + 1);
+    }
+
+    private User verified(Authentication auth) {
+        if (auth == null || !auth.isAuthenticated())
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required.");
+        User user = users.findByEmail(auth.getName()).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found."));
+        if (user.getId() == null || !user.isEmailVerified() || user.getEmail() == null
+                || !user.getEmail().trim().toLowerCase(Locale.ROOT).endsWith("@augustana.edu"))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Verified campus email required.");
+        return user;
+    }
+
+    private ObjectId parseId(String value) {
+        if (value == null || !ObjectId.isValid(value)) throw badRequest("Invalid ID.");
+        return new ObjectId(value);
+    }
+    private static ResponseStatusException badRequest(String message) {
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    }
+    private static ResponseStatusException conflict(String message) {
+        return new ResponseStatusException(HttpStatus.CONFLICT, message);
+    }
+    private static ResponseStatusException unavailable(Throwable cause) {
+        return new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                "Offer could not be confirmed. Retry with the same Idempotency-Key.", cause);
+    }
+    private static boolean retryable(Throwable failure) {
+        if (failure instanceof DuplicateKeyException || failure instanceof OptimisticLockingFailureException) return true;
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof MongoException mongoFailure && (mongoFailure.hasErrorLabel("TransientTransactionError")
+                    || mongoFailure.hasErrorLabel("UnknownTransactionCommitResult") || mongoFailure.getCode() == 112)) return true;
+        }
+        return false;
+    }
+}

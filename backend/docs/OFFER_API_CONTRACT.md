@@ -1,6 +1,6 @@
 # Offer negotiation API contract
 
-These examples are fixtures for frontend and backend development. The offer endpoints in this document are **planned**: issue #57 defines the model and contract but does not make the endpoints live. Submission and reads are planned in #60, decisions in #66, counteroffers in #71, and offer notification emission in later issues. The existing notification response shape shown below is already used by the notification API; offer-related emission is separate work.
+These examples describe the offer submission and read endpoints and provide fixtures for frontend and backend development. Decisions are planned in #66, counteroffers in #71, and offer notification emission in later issues. The existing notification response shape shown below is already used by the notification API; offer-related emission is separate work.
 
 All paths have the existing `/api/v1` prefix. Requests require a bearer token. The server determines the acting account from that token: never submit a buyer or seller ID to choose an identity. Offer details and history are visible only to the buyer and seller. The response includes only participant identifiers and negotiation data, not raw user records, email addresses, password hashes, tokens, or private messages. Object IDs in the examples are fictitious.
 
@@ -61,9 +61,14 @@ History actions are `PROPOSED`, `COUNTERED`, `ACCEPTED`, and `REJECTED`. The buy
 - `403`: authenticated actor is prohibited from submitting or performing an action, such as a self-offer.
 - `404`: listing or negotiation is unavailable/inaccessible, including attempts to read someone else's offer.
 - `409`: duplicate pending negotiation, changed payload with a reused key, stale version, terminal negotiation, or another conflicting state.
+- `503`: the transaction could not be confirmed; retry the same request with the same idempotency key.
 
 [conflict-response.json](offer-fixtures/conflict-response.json) is an illustrative body for a `409`; clients must rely on the HTTP status rather than treating that sample message as a stable error code.
 
 ## Notification response
 
 [notification-response.json](offer-fixtures/notification-response.json) matches the existing private `NotificationResponse` shape for an accepted offer. The authenticated recipient sees the notification ID, type, offer and listing IDs, safe payload, creation time, and optional read time. The offer reference should be used to fetch current participant-authorized state; a notification alone does not mean payment or listing sale. Notification delivery and deduplication are not implemented by #57.
+
+## Database requirement
+
+Submitting an offer uses a MongoDB transaction, so the deployment must use a transaction-capable replica set or sharded cluster. This branch was tested against a local replica set; the deployment topology still needs to be verified. The transaction stores the offer and idempotency record together and fences concurrent listing changes.
