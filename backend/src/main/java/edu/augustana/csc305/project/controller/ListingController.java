@@ -52,11 +52,11 @@ public class ListingController {
 
 
     @GetMapping("/{id}")
-    public ListingDetailsResponse getListingById(@PathVariable String id) {
+    public ListingDetailsResponse getListingById(@PathVariable String id, Authentication authentication) {
 
         ObjectId listingId = convertToObjectId(id);
 
-        return service.getListingById(listingId);
+        return service.getListingById(listingId, authentication == null ? null : authentication.getName());
     }
 
     @PostMapping
