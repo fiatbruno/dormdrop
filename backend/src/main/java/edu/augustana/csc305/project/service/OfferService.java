@@ -41,12 +41,14 @@ public class OfferService {
     private final MongoTemplate mongo;
     private final UserRepository users;
     private final TransactionOperations transactions;
+    private final OfferReceivedEventAppender notifications;
 
     public OfferService(MongoTemplate mongo, UserRepository users,
                         @Qualifier("reportTransactions") TransactionOperations transactions) {
         this.mongo = mongo;
         this.users = users;
         this.transactions = transactions;
+        this.notifications = new OfferReceivedEventAppender(mongo);
     }
 
     public record Submission(OfferNegotiation offer, boolean created) { }
@@ -115,6 +117,8 @@ public class OfferService {
         Update fence = listing.getVersion() == null ? new Update().set("version", 1L) : new Update().inc("version", 1L);
         if (mongo.updateFirst(versionedListing, fence, Listing.class).getModifiedCount() != 1)
             throw new OptimisticLockingFailureException("Listing changed while submitting offer.");
+        notifications.append(new OfferReceivedEventAppender.Submission(offer.id(), offer.listingId(),
+                offer.buyerId(), offer.sellerId(), buyer.getName(), offer.amount(), now));
         mongo.insert(new OfferSubmissionRequest(requestId, listingId, amount, offer, now));
         return new Submission(offer, true);
     }
