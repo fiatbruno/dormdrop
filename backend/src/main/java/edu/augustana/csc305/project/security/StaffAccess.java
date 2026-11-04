@@ -10,15 +10,14 @@ import org.springframework.web.server.ResponseStatusException;
 /** Case capabilities do not grant directory or unrestricted messaging access. */
 @Component
 public class StaffAccess {
-    public enum Capability { REVIEW_CASES, ASSIGN_CASES, DECIDE_CASES }
     private final UserRepository users;
     public StaffAccess(UserRepository users) { this.users = users; }
 
-    public static boolean permits(UserRole role, Capability capability) {
-        return capability != null && (role == UserRole.MODERATOR || role == UserRole.ADMIN);
+    public static boolean permits(UserRole role, PermissionPolicy.Capability capability) {
+        return PermissionPolicy.permits(role, capability);
     }
 
-    public User require(Authentication auth, Capability capability) {
+    public User require(Authentication auth, PermissionPolicy.Capability capability) {
         if (auth == null || !auth.isAuthenticated()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required.");
         }

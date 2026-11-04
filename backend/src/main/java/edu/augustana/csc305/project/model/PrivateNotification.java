@@ -1,0 +1,35 @@
+package edu.augustana.csc305.project.model;
+
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Objects;
+
+/** Private persistence model. Controllers return an explicit response DTO instead. */
+@Document("notifications")
+public record PrivateNotification(
+        @Id String id, ObjectId recipientId, String sourceEventKey,
+        Type type, ObjectId offerId, ObjectId listingId, Payload payload,
+        Instant createdAt, Instant readAt) {
+
+    public enum Type { OFFER_ACCEPTED, OFFER_REJECTED, OFFER_COUNTERED, MODERATION_NOTICE, REPORT_UPDATE }
+    public enum Status { ACCEPTED, REJECTED, COUNTERED, KEPT, HIDDEN, REMOVED }
+
+    /** Only recipient-safe content belongs here; never pass a domain object or arbitrary event map. */
+    public record Payload(String message, Status status, BigDecimal price, String reason,
+                          edu.augustana.csc305.project.dto.ModerationDtos.ReporterStatus report, String link) {
+        public Payload(String message, Status status, BigDecimal price) {
+            this(message, status, price, null, null, null);
+        }
+        public Payload {
+            Objects.requireNonNull(status, "Notification status is required.");
+            if (message == null || message.isBlank() || message.length() > 2000)
+                throw new IllegalArgumentException("Notification message must contain 1 to 2000 characters.");
+            if (price != null && (price.signum() < 0 || price.precision() > 18 || price.scale() > 2))
+                throw new IllegalArgumentException("Invalid notification price.");
+        }
+    }
+}

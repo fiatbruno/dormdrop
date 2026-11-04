@@ -197,6 +197,8 @@ class ListingEvidenceTest {
         var result = controller.media(reportCase.id().toHexString(), report.snapshotId().toHexString(), "image", auth);
         assertArrayEquals(IMAGE, result.getBody());
         assertEquals("no-store", result.getHeaders().getCacheControl());
+        admin.setRole(UserRole.MODERATOR);
+        assertArrayEquals(IMAGE, controller.media(reportCase.id().toHexString(), report.snapshotId().toHexString(), "image", auth).getBody());
         assertEquals(404, assertThrows(ResponseStatusException.class,
                 () -> controller.media(new ObjectId().toHexString(), report.snapshotId().toHexString(), "image", auth))
                 .getStatusCode().value());

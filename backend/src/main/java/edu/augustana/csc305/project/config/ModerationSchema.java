@@ -26,12 +26,7 @@ public class ModerationSchema implements ApplicationRunner {
     }
 
     public static void initialize(MongoTemplate mongo) {
-        mongo.getCollection("notificationInbox").createIndex(Indexes.compoundIndex(Indexes.ascending("recipientId"),
-                Indexes.descending("createdAt","_id")),new IndexOptions().name("own_notification_inbox"));
-        mongo.getCollection("notificationInbox").createIndex(Indexes.ascending("sourceEventId","recipientId","audience","reportStatus.reportId"),
-                new IndexOptions().name("one_notice_per_event_recipient_audience_report").unique(true));
-        mongo.getCollection("notificationInbox").createIndex(Indexes.ascending("status","nextAttemptAt","leaseUntil","createdAt"),
-                new IndexOptions().name("notification_delivery_queue"));
+        mongo.getCollection("notifications").createIndex(Indexes.ascending("status","nextAttemptAt","leaseUntil","createdAt"),new IndexOptions().name("notification_delivery_queue"));
         mongo.getCollection("moderationNotificationOutbox").createIndex(Indexes.ascending("status","nextAttemptAt","leaseUntil","createdAt"),
                 new IndexOptions().name("moderation_outbox_retry_queue"));
         mongo.getCollection("reportRequests").createIndex(Indexes.ascending("createdAt"), new IndexOptions().name("report_request_history"));

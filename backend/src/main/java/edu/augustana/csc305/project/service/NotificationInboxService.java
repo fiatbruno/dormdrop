@@ -39,12 +39,30 @@ public class NotificationInboxService {
                 || (entry.audience().equals("SELLER") && entry.reportStatus()!=null)
                 || (entry.audience().equals("REPORTER") && (entry.reportStatus()==null || entry.reason()!=null)))
             throw new IllegalArgumentException("Invalid notification audience contract.");
-        Update update=new Update().setOnInsert("recipientId",entry.recipientId()).setOnInsert("audience",entry.audience())
+        var payload = new PrivateNotification.Payload(entry.message(), switch (entry.outcome()) {
+            case KEEP -> PrivateNotification.Status.KEPT;
+            case HIDE -> PrivateNotification.Status.HIDDEN;
+            case REMOVE -> PrivateNotification.Status.REMOVED;
+        }, null, entry.reason(), entry.reportStatus(), apiPrefix+"/me/notifications/"+entry.id());
+        Update update=new Update().setOnInsert("sourceEventKey", "moderation:"+entry.id())
+                .setOnInsert("type", entry.audience().equals("SELLER") ? PrivateNotification.Type.MODERATION_NOTICE : PrivateNotification.Type.REPORT_UPDATE)
+                .setOnInsert("payload",payload)
+                .setOnInsert("recipientId",entry.recipientId()).setOnInsert("audience",entry.audience())
                 .setOnInsert("sourceEventId",entry.sourceEventId()).setOnInsert("outcome",entry.outcome())
                 .setOnInsert("reason",entry.reason()).setOnInsert("message",entry.message())
                 .setOnInsert("reportStatus",entry.reportStatus()).setOnInsert("createdAt",entry.createdAt())
-                .setOnInsert("readAt",null).setOnInsert("status","PENDING");
+                .setOnInsert("readAt",entry.readAt()).setOnInsert("status","PENDING");
         mongo.upsert(Query.query(Criteria.where("_id").is(entry.id())),update,NotificationInboxEntry.class);
+    }
+
+    /** Copy the former moderation inbox without changing IDs or existing acknowledgments. Safe on restart. */
+    public void migrateLegacyInbox() {
+        try (var cursor = mongo.getCollection("notificationInbox").find().iterator()) {
+            while (cursor.hasNext()) {
+                var document = cursor.next();
+                enqueue(mongo.getConverter().read(NotificationInboxEntry.class, document));
+            }
+        }
     }
     public Notice view(NotificationInboxEntry entry) {
         // Self link is an authenticated, owner-scoped API resource, usable even if the original listing is deleted.
