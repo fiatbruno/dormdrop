@@ -8,6 +8,7 @@ import edu.augustana.csc305.project.model.Listing;
 import edu.augustana.csc305.project.model.ListingStatus;
 import edu.augustana.csc305.project.model.OfferNegotiation;
 import edu.augustana.csc305.project.model.OfferDecisionRequest;
+import edu.augustana.csc305.project.model.OfferCounterRequest;
 import edu.augustana.csc305.project.model.ModerationTypes.Visibility;
 import edu.augustana.csc305.project.model.User;
 import edu.augustana.csc305.project.repository.UserRepository;
@@ -243,6 +244,74 @@ class OfferSubmissionMongoTest {
         assertEquals(results.get(0), results.get(1));
         assertEquals(2, mongo.findById(offer.id(), OfferNegotiation.class).history().size());
         assertEquals(1, mongo.count(new Query(), OfferDecisionRequest.class));
+    }
+
+    @Test void counterofferChainKeepsHistoryAndAcceptsTheLatestPrice() {
+        var original = offers.submit(auth(buyer), id(listing.getId()), new BigDecimal("20.00"), "submit").offer();
+        var sellerCounter = offers.counter(auth(seller), id(original.id()), new BigDecimal("25.00"), 0L, "seller");
+        assertEquals(seller.getId(), sellerCounter.currentProposerId());
+        var buyerCounter = offers.counter(auth(buyer), id(original.id()), new BigDecimal("22.00"), 1L, "buyer");
+        assertEquals(buyer.getId(), buyerCounter.currentProposerId());
+        var accepted = offers.decide(auth(seller), id(original.id()), "ACCEPT", 2L, "accept");
+        assertEquals(OfferNegotiation.Status.ACCEPTED, accepted.status());
+        var saved = mongo.findById(original.id(), OfferNegotiation.class);
+        assertEquals(0, new BigDecimal("22.00").compareTo(saved.amount()));
+        assertEquals(List.of(OfferNegotiation.Action.PROPOSED, OfferNegotiation.Action.COUNTERED,
+                        OfferNegotiation.Action.COUNTERED, OfferNegotiation.Action.ACCEPTED),
+                saved.history().stream().map(OfferNegotiation.HistoryEntry::action).toList());
+        assertEquals(List.of("20", "25", "22", "22"), saved.history().stream()
+                .map(entry -> entry.amount().stripTrailingZeros().toPlainString()).toList());
+        assertEquals(ListingStatus.AVAILABLE, mongo.findById(listing.getId(), Listing.class).getStatus());
+        assertEquals(sellerCounter, offers.counter(auth(seller), id(original.id()), new BigDecimal("25"), 0L, "seller"));
+        status(409, () -> offers.counter(auth(seller), id(original.id()), new BigDecimal("26"), 0L, "seller"));
+    }
+
+    @Test void rejectingACounterEndsNegotiationAndFurtherCountersFail() {
+        var original = offers.submit(auth(buyer), id(listing.getId()), BigDecimal.TEN, "submit").offer();
+        offers.counter(auth(seller), id(original.id()), new BigDecimal("15"), 0L, "counter");
+        var rejected = offers.decide(auth(buyer), id(original.id()), "REJECT", 1L, "reject");
+        assertEquals(OfferNegotiation.Status.REJECTED, rejected.status());
+        status(409, () -> offers.counter(auth(seller), id(original.id()), new BigDecimal("14"), 2L, "after"));
+        assertEquals(3, mongo.findById(original.id(), OfferNegotiation.class).history().size());
+    }
+
+    @Test void simultaneousCounterAndAcceptHaveExactlyOneWinner() throws Exception {
+        var original = offers.submit(auth(buyer), id(listing.getId()), BigDecimal.TEN, "submit").offer();
+        var results = concurrently(List.of(
+                () -> offers.counter(auth(seller), id(original.id()), new BigDecimal("15"), 0L, "counter"),
+                () -> offers.decide(auth(seller), id(original.id()), "ACCEPT", 0L, "accept")));
+        assertEquals(1, results.stream().filter(OfferNegotiation.class::isInstance).count(), results.toString());
+        var failure = results.stream().filter(ResponseStatusException.class::isInstance)
+                .map(ResponseStatusException.class::cast).findFirst().orElseThrow();
+        assertEquals(409, failure.getStatusCode().value());
+        assertEquals(2, mongo.findById(original.id(), OfferNegotiation.class).history().size());
+        assertEquals(1, mongo.count(new Query(), OfferCounterRequest.class)
+                + mongo.count(new Query(), OfferDecisionRequest.class));
+    }
+
+    @Test void simultaneousIdenticalCountersReplayOneSavedResult() throws Exception {
+        var original = offers.submit(auth(buyer), id(listing.getId()), BigDecimal.TEN, "submit").offer();
+        Callable<Object> counter = () -> offers.counter(auth(seller), id(original.id()), new BigDecimal("15"), 0L, "same");
+        var results = concurrently(List.of(counter, counter));
+        assertTrue(results.stream().allMatch(OfferNegotiation.class::isInstance), results.toString());
+        assertEquals(results.get(0), results.get(1));
+        assertEquals(2, mongo.findById(original.id(), OfferNegotiation.class).history().size());
+        assertEquals(1, mongo.count(new Query(), OfferCounterRequest.class));
+    }
+
+    @Test void failedCounterLedgerRollsBackOfferAndListingFence() {
+        var original = offers.submit(auth(buyer), id(listing.getId()), BigDecimal.TEN, "submit").offer();
+        Long version = mongo.findById(listing.getId(), Listing.class).getVersion();
+        mongo.getCollection("offerCounterRequests").drop();
+        mongo.getDb().createCollection("offerCounterRequests", new com.mongodb.client.model.CreateCollectionOptions()
+                .validationOptions(new com.mongodb.client.model.ValidationOptions()
+                        .validator(new org.bson.Document("impossible", new org.bson.Document("$exists", true)))));
+        assertThrows(ResponseStatusException.class,
+                () -> offers.counter(auth(seller), id(original.id()), new BigDecimal("15"), 0L, "fail"));
+        var saved = mongo.findById(original.id(), OfferNegotiation.class);
+        assertEquals(0, saved.version());
+        assertEquals(1, saved.history().size());
+        assertEquals(version, mongo.findById(listing.getId(), Listing.class).getVersion());
     }
 
     @Test void decisionLedgerFailureRollsBackOfferAndListingFence() {
