@@ -81,8 +81,7 @@ class StaffCaseMongoTest {
         if (client == null) return;
         try {
             if (database != null && database.startsWith("staff_test_")) {
-                for (String name : client.getDatabase(database).listCollectionNames())
-                    client.getDatabase(database).getCollection(name).deleteMany(new Document());
+                MongoTestCleanup.dropCollections(client,database,"staff_test_");
             }
         } finally { client.close(); }
     }
