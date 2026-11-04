@@ -170,7 +170,7 @@ public class OfferService {
 
         Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         OfferNegotiation result = offer.decide(actorId, decision, expectedVersion, now);
-        if (decision == OfferNegotiation.Status.ACCEPTED) fenceAvailableListing(offer);
+        if (decision == OfferNegotiation.Status.ACCEPTED) fenceAvailableListing(offer, false);
         Query expected = Query.query(Criteria.where("_id").is(offerId).and("version").is(expectedVersion)
                 .and("status").is(OfferNegotiation.Status.PENDING).and("currentProposerId").is(offer.currentProposerId()));
         Update update = new Update().set("status", decision).set("updatedAt", now).inc("version", 1L)
@@ -230,7 +230,7 @@ public class OfferService {
 
         Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         OfferNegotiation result = offer.counter(actorId, amount, expectedVersion, now);
-        fenceAvailableListing(offer);
+        fenceAvailableListing(offer, true);
         Query expected = Query.query(Criteria.where("_id").is(offerId).and("version").is(expectedVersion)
                 .and("status").is(OfferNegotiation.Status.PENDING).and("currentProposerId").is(offer.currentProposerId()));
         Update update = new Update().set("amount", amount).set("currentProposerId", actorId)
@@ -243,11 +243,13 @@ public class OfferService {
     }
 
     /** Ensure a concurrent listing change cannot slip between the availability check and commit. */
-    private void fenceAvailableListing(OfferNegotiation offer) {
+    private void fenceAvailableListing(OfferNegotiation offer, boolean requireSale) {
         Listing listing = mongo.findById(offer.listingId(), Listing.class);
         if (listing == null || listing.getStatus() != ListingStatus.AVAILABLE
                 || listing.getModerationVisibility() != Visibility.VISIBLE
-                || !offer.sellerId().equals(listing.getOwnerId()))
+                || !offer.sellerId().equals(listing.getOwnerId())
+                || (requireSale && (!"For sale".equals(listing.getListingType())
+                    || listing.getPrice() == null || listing.getPrice().signum() <= 0)))
             throw conflict("Listing is not available for this offer action.");
         Criteria visible = new Criteria().orOperator(Criteria.where("moderationVisibility").is(Visibility.VISIBLE),
                 Criteria.where("moderationVisibility").is(null));
