@@ -80,7 +80,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                     || !auth.isAuthenticated()
                     || auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken
                     || !("/user/queue/messages".equals(accessor.getDestination())
-                    || "/user/queue/notifications".equals(accessor.getDestination()))) {
+                            || "/user/queue/notifications".equals(accessor.getDestination()))) {
                 throw new AccessDeniedException(
                         "You cannot subscribe to this destination."
                 );
