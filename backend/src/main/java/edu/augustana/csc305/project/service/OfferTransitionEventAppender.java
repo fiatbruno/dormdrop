@@ -24,7 +24,7 @@ import java.util.Objects;
  * Commands own permission/state validation, request-key payload checks and transaction retries.
  * A same-key command replay must return its saved result, without updating the offer again.
  * Map OptimisticLockingFailureException to 409 at the command API boundary.
- * This component prepares #76; it does not implement or replace the missing D1/C1 commands.
+ * OfferService invokes this component for accept, reject and counteroffer commands.
  */
 @Service
 public class OfferTransitionEventAppender {
