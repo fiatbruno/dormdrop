@@ -8,6 +8,7 @@ function money(value) {
   if (value == null || !Number.isFinite(Number(value))) {
     return "Not available";
   }
+
   return Number(value).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
@@ -16,6 +17,7 @@ function money(value) {
 
 function timeLabel(date) {
   if (!date || Number.isNaN(Date.parse(date))) return "";
+
   return new Date(date).toLocaleTimeString(undefined, {
     hour: "numeric",
     minute: "2-digit",
@@ -24,6 +26,7 @@ function timeLabel(date) {
 
 function dateLabel(date) {
   if (!date || Number.isNaN(Date.parse(date))) return "";
+
   return new Date(date).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -31,10 +34,28 @@ function dateLabel(date) {
   });
 }
 
+function errorMessage(error) {
+  const status = error.response?.status;
+
+  if (status === 409) {
+    return "This offer has changed. The latest status will be loaded.";
+  }
+
+  if (status === 403) {
+    return "You do not have permission to respond to this offer.";
+  }
+
+  return (
+    error.response?.data?.message ||
+    error.message ||
+    "Could not update the offer."
+  );
+}
+
 export default function ConversationOffers({
   conversationId,
   currentUserId,
-  messages,
+  messages = [],
   scrollRef,
   nearBottomRef,
   onNearBottom,
@@ -46,11 +67,13 @@ export default function ConversationOffers({
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
   const generation = useRef(0);
   const busyRef = useRef(false);
 
   useEffect(() => {
     const version = ++generation.current;
+
     setOffers([]);
     setLoading(true);
     setError("");
@@ -60,6 +83,7 @@ export default function ConversationOffers({
     async function load() {
       try {
         const data = await getConversationOffers(conversationId);
+
         if (generation.current !== version) return;
 
         if (!Array.isArray(data)) {
@@ -69,26 +93,36 @@ export default function ConversationOffers({
         setOffers(data);
       } catch (err) {
         if (generation.current === version) {
-          setError(
-            err.response?.data?.message ||
-            err.message ||
-            "Could not load offers."
-          );
+          setError(errorMessage(err));
         }
       } finally {
-        if (generation.current === version) setLoading(false);
+        if (generation.current === version) {
+          setLoading(false);
+        }
       }
     }
 
-    void load();
-    return () => { generation.current++; };
+    if (conversationId) {
+      void load();
+    } else {
+      setLoading(false);
+    }
+
+    return () => {
+      generation.current++;
+    };
   }, [conversationId, refreshKey]);
 
   async function decide(offer, decision) {
-    if (
-      busyRef.current ||
-      String(offer.status).toUpperCase() !== "PENDING"
-    ) return;
+    const status = String(offer.status || "").toUpperCase();
+
+    const canRespond =
+      status === "PENDING" &&
+      currentUserId != null &&
+      String(currentUserId) === String(offer.sellerId) &&
+      String(currentUserId) !== String(offer.currentProposerId);
+
+    if (busyRef.current || !canRespond) return;
 
     const version = generation.current;
     busyRef.current = true;
@@ -97,9 +131,9 @@ export default function ConversationOffers({
 
     try {
       if (decision === "accept") {
-        await acceptOffer(offer.id);
+        await acceptOffer(offer.id, offer.version);
       } else {
-        await rejectOffer(offer.id);
+        await rejectOffer(offer.id, offer.version);
       }
 
       if (generation.current === version) {
@@ -108,10 +142,7 @@ export default function ConversationOffers({
       }
     } catch (err) {
       if (generation.current === version) {
-        setError(
-          err.response?.data?.message ||
-          "Could not update the offer. Check its status before retrying."
-        );
+        setError(errorMessage(err));
         setRefreshKey((value) => value + 1);
       }
     } finally {
@@ -122,9 +153,6 @@ export default function ConversationOffers({
     }
   }
 
-  // Only timestamped events are sorted chronologically.
-  // Offers missing createdAt appear afterward rather
-  // than being assigned an invented date.
   const events = [
     ...messages.map((message) => ({
       kind: "message",
@@ -141,12 +169,14 @@ export default function ConversationOffers({
   ].sort((a, b) => {
     const aTime = Date.parse(a.at);
     const bTime = Date.parse(b.at);
+
     const aValid = Number.isFinite(aTime);
     const bValid = Number.isFinite(bTime);
 
     if (!aValid && !bValid) return 0;
     if (!aValid) return 1;
     if (!bValid) return -1;
+
     return aTime - bTime;
   });
 
@@ -154,7 +184,9 @@ export default function ConversationOffers({
     <>
       {error && (
         <div className="messages-offer-feedback">
-          <p role="alert" className="messages-error">{error}</p>
+          <p role="alert" className="messages-error">
+            {error}
+          </p>
           <button
             type="button"
             onClick={() => setRefreshKey((n) => n + 1)}
@@ -169,15 +201,19 @@ export default function ConversationOffers({
         ref={scrollRef}
         aria-label="Message and offer history"
         onScroll={() => {
-          const node = scrollRef.current;
+          const node = scrollRef?.current;
           if (!node) return;
 
           const near =
             node.scrollHeight -
-            node.scrollTop -
-            node.clientHeight < 90;
+              node.scrollTop -
+              node.clientHeight <
+            90;
 
-          nearBottomRef.current = near;
+          if (nearBottomRef) {
+            nearBottomRef.current = near;
+          }
+
           if (near) onNearBottom?.();
         }}
       >
@@ -196,11 +232,14 @@ export default function ConversationOffers({
         {events.map((event, index) => {
           const previous = events[index - 1];
           const day = dateLabel(event.at);
+
           const showDate =
-            day && (!previous || day !== dateLabel(previous.at));
+            day &&
+            (!previous || day !== dateLabel(previous.at));
 
           if (event.kind === "message") {
             const message = event.data;
+
             const outgoing =
               String(message.senderId) === String(currentUserId);
 
@@ -226,17 +265,24 @@ export default function ConversationOffers({
 
           const offer = event.data;
           const status = String(offer.status || "").toUpperCase();
+
           const seller =
             currentUserId != null &&
             String(currentUserId) === String(offer.sellerId);
+
           const buyer =
             currentUserId != null &&
             String(currentUserId) === String(offer.buyerId);
 
           const pending = status === "PENDING";
           const accepted = status === "ACCEPTED";
-          const declined =
-            status === "REJECTED" || status === "DECLINED";
+          const declined = status === "REJECTED";
+
+          const canRespond =
+            pending &&
+            seller &&
+            String(currentUserId) !==
+              String(offer.currentProposerId);
 
           return (
             <div key={`offer-${event.id}`}>
@@ -263,9 +309,13 @@ export default function ConversationOffers({
                   {money(offer.amount)}
                 </strong>
 
-                <p>Listing price: {money(offer.listingPrice)}</p>
+                {offer.listingPrice != null && (
+                  <p>
+                    Listing price: {money(offer.listingPrice)}
+                  </p>
+                )}
 
-                {pending && seller && (
+                {canRespond && (
                   <div className="messages-offer-actions">
                     <button
                       type="button"
@@ -276,6 +326,7 @@ export default function ConversationOffers({
                         ? "Processing..."
                         : "Accept offer"}
                     </button>
+
                     <button
                       type="button"
                       disabled={busyId !== null}
@@ -287,17 +338,31 @@ export default function ConversationOffers({
                 )}
 
                 {pending && buyer && (
-                  <p>Waiting for the seller's decision.</p>
+                  <p>
+                    {String(currentUserId) ===
+                    String(offer.currentProposerId)
+                      ? "Waiting for the seller's decision."
+                      : "You can respond to this counteroffer."}
+                  </p>
                 )}
+
+                {pending &&
+                  seller &&
+                  !canRespond && (
+                    <p>
+                      Waiting for the buyer's response.
+                    </p>
+                  )}
 
                 {accepted && (
                   <>
                     <p>
                       {seller
                         ? "You accepted this offer."
-                        : "Your offer was accepted."}
+                        : "Your offer was accepted."}{" "}
                       You can now arrange pickup in chat.
                     </p>
+
                     <button
                       type="button"
                       className="messages-pickup-button"
@@ -311,18 +376,24 @@ export default function ConversationOffers({
                 {declined && (
                   <p>
                     {seller
-                      ? "You declined this offer."
-                      : "Your offer was declined."}
+                      ? "This offer was declined."
+                      : "This offer was declined."}
                   </p>
                 )}
 
                 {declined && buyer && offer.listingId && (
-                  <Link to={`/items/${encodeURIComponent(offer.listingId)}`}>
+                  <Link
+                    to={`/items/${encodeURIComponent(
+                      offer.listingId
+                    )}`}
+                  >
                     Make another offer
                   </Link>
                 )}
 
-                <Link to={`/offers/${encodeURIComponent(offer.id)}`}>
+                <Link
+                  to={`/offers/${encodeURIComponent(offer.id)}`}
+                >
                   View offer details
                 </Link>
 
