@@ -215,7 +215,7 @@ class VisibilityApiTest {
                 Object status = query.getQueryObject().get("status");
                 if (owner != null && !owner.equals(listing.getOwnerId())) return List.of();
                 if (status != null && status != listing.getStatus()) return List.of();
-                if (query.getQueryObject().containsKey("moderationVisibility") && !policy.visible(listing)) return List.of();
+                if (query.getQueryObject().containsKey("$or") && !policy.visible(listing)) return List.of();
                 return List.of(listing);
             });
             when(mongo.findOne(any(Query.class),eq(Listing.class))).thenAnswer(call -> {

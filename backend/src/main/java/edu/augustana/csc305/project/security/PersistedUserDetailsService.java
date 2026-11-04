@@ -15,6 +15,19 @@ public class PersistedUserDetailsService implements UserDetailsService {
         this.users = users;
     }
 
+    public static class VersionedUserDetails extends org.springframework.security.core.userdetails.User {
+        private final org.bson.types.ObjectId id;
+        private final long roleVersion;
+        VersionedUserDetails(edu.augustana.csc305.project.model.User user) {
+            super(user.getEmail(), user.getPasswordHash(),
+                    java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
+            this.id = user.getId();
+            this.roleVersion = user.getRoleVersion();
+        }
+        public org.bson.types.ObjectId id() { return id; }
+        public long roleVersion() { return roleVersion; }
+    }
+
     @Override
     public UserDetails loadUserByUsername(String email) {
         if (email == null || email.isBlank()) {
@@ -22,10 +35,6 @@ public class PersistedUserDetailsService implements UserDetailsService {
         }
         var user = users.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getEmail())
-                .password(user.getPasswordHash())
-                .roles(user.getRole().name())
-                .build();
+        return new VersionedUserDetails(user);
     }
 }

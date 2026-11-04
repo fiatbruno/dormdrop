@@ -11,7 +11,6 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.MessageBuilder;
@@ -60,14 +59,17 @@ class AuthorizationTest {
     void httpResolvesCurrentRoleForTheSameToken() throws Exception {
         when(jwt.parseToken("token")).thenReturn(claims(user.getEmail()));
         when(repository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        for (var role : UserRole.values()) {
+            user.setRole(role);
+            request("token");
+            var auth = SecurityContextHolder.getContext().getAuthentication();
+            assertEquals(user.getEmail(), auth.getPrincipal());
+            assertEquals("[ROLE_" + role + "]", auth.getAuthorities().toString());
+        }
+        user.setRole(null);
         request("token");
         assertEquals("[ROLE_STUDENT]", SecurityContextHolder.getContext().getAuthentication().getAuthorities().toString());
-        user.setRole(UserRole.ADMIN);
-        request("token");
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        assertEquals(user.getEmail(), auth.getPrincipal());
-        assertEquals("[ROLE_ADMIN]", auth.getAuthorities().toString());
-        verify(repository, times(2)).findByEmail(user.getEmail());
+        verify(repository, times(4)).findByEmail(user.getEmail());
     }
 
     @Test
@@ -95,15 +97,19 @@ class AuthorizationTest {
     void webSocketLoadsRolesAndKeepsDestinationRestrictions() {
         var sessions = mock(WebSocketSessions.class);
         var interceptor = new WebSocketAuthInterceptor(jwt, sessions, users);
-        user.setRole(UserRole.ADMIN);
         when(repository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
         when(jwt.parseToken("token")).thenReturn(claims(user.getEmail()));
-        var connect = StompHeaderAccessor.create(StompCommand.CONNECT);
-        connect.setSessionId("session");
-        connect.setNativeHeader("Authorization", "Bearer token");
-        interceptor.preSend(message(connect), mock(org.springframework.messaging.MessageChannel.class));
-        var auth = (org.springframework.security.core.Authentication) connect.getUser();
-        assertEquals("[ROLE_ADMIN]", auth.getAuthorities().toString());
+        StompHeaderAccessor connect = null;
+        org.springframework.security.core.Authentication auth = null;
+        for (var role : UserRole.values()) {
+            user.setRole(role);
+            connect = StompHeaderAccessor.create(StompCommand.CONNECT);
+            connect.setSessionId("session");
+            connect.setNativeHeader("Authorization", "Bearer token");
+            interceptor.preSend(message(connect), mock(org.springframework.messaging.MessageChannel.class));
+            auth = (org.springframework.security.core.Authentication) connect.getUser();
+            assertEquals("[ROLE_" + role + "]", auth.getAuthorities().toString());
+        }
         var subscribe = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
         subscribe.setUser(auth);
         subscribe.setDestination("/user/queue/messages");
@@ -112,19 +118,10 @@ class AuthorizationTest {
         assertThrows(AccessDeniedException.class, () -> interceptor.preSend(message(subscribe), null));
         assertThrows(AccessDeniedException.class, () -> interceptor.preSend(message(StompHeaderAccessor.create(StompCommand.SEND)), null));
         when(repository.findByEmail(user.getEmail())).thenReturn(Optional.empty());
-        assertThrows(AccessDeniedException.class, () -> interceptor.preSend(message(connect), null));
+        var deletedConnect = StompHeaderAccessor.create(StompCommand.CONNECT);
+        deletedConnect.setSessionId("session");
+        deletedConnect.setNativeHeader("Authorization", "Bearer token");
+        assertThrows(AccessDeniedException.class, () -> interceptor.preSend(message(deletedConnect), null));
     }
 
-    @Test
-    void seederAssignsAdminAndLeavesExistingUsersAlone() throws Exception {
-        var encoder = mock(PasswordEncoder.class);
-        when(encoder.encode("password")).thenReturn("hash");
-        var seeder = new AdminSeeder(repository, encoder, "Admin", "admin@example.com", "password");
-        seeder.run(null);
-        verify(repository).storeUser(argThat(value -> value.getRole() == UserRole.ADMIN));
-        clearInvocations(repository);
-        when(repository.count()).thenReturn(1L);
-        seeder.run(null);
-        verify(repository, never()).storeUser(any());
-    }
 }

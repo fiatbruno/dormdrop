@@ -39,7 +39,7 @@ public class ModerationDecisionService {
     }
 
     public Outcome decide(Target target, String id, Request request, String key, Authentication auth) {
-        User staff = access.require(auth, StaffAccess.Capability.DECIDE_CASES);
+        User staff = access.require(auth, edu.augustana.csc305.project.security.PermissionPolicy.Capability.MODERATE_LISTINGS);
         if (target == null || id == null || !ObjectId.isValid(id)) throw badRequest("Invalid decision target.");
         if (key == null || !key.matches("[A-Za-z0-9][A-Za-z0-9._:-]{0,127}")) throw badRequest("A valid Idempotency-Key is required.");
         Request normalized = validate(request);
