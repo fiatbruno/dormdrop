@@ -5,6 +5,7 @@ import edu.augustana.csc305.project.model.Listing;
 import edu.augustana.csc305.project.model.ListingStatus;
 import edu.augustana.csc305.project.model.ModerationTypes.Visibility;
 import edu.augustana.csc305.project.model.OfferNegotiation;
+import edu.augustana.csc305.project.model.OfferDecisionRequest;
 import edu.augustana.csc305.project.model.OfferSubmissionRequest;
 import edu.augustana.csc305.project.model.User;
 import edu.augustana.csc305.project.repository.UserRepository;
@@ -115,6 +116,86 @@ public class OfferService {
             throw new OptimisticLockingFailureException("Listing changed while submitting offer.");
         mongo.insert(new OfferSubmissionRequest(requestId, listingId, amount, offer, now));
         return new Submission(offer, true);
+    }
+
+    /** Accept or reject the current proposal, returning the original result on an exact retry. */
+    public OfferNegotiation decide(Authentication auth, String offerId, String action, Long expectedVersion, String key) {
+        User actor = verified(auth);
+        ObjectId target = parseId(offerId);
+        if (key == null || !key.matches("[A-Za-z0-9][A-Za-z0-9._:-]{0,127}"))
+            throw badRequest("Idempotency-Key must contain 1 to 128 letters, digits, dots, colons, underscores or hyphens.");
+        if (expectedVersion == null || expectedVersion < 0) throw badRequest("A nonnegative expectedVersion is required.");
+        OfferNegotiation.Status decision;
+        if ("ACCEPT".equals(action)) decision = OfferNegotiation.Status.ACCEPTED;
+        else if ("REJECT".equals(action)) decision = OfferNegotiation.Status.REJECTED;
+        else throw badRequest("Action must be ACCEPT or REJECT.");
+        String requestId = actor.getId().toHexString() + ":decide-offer:" + key;
+        for (int attempt = 0; attempt < 12; attempt++) {
+            try {
+                return Objects.requireNonNull(transactions.execute(status -> {
+                    User current = verified(auth);
+                    if (!current.getId().equals(actor.getId()))
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User changed. Please sign in again.");
+                    return decideTransaction(current, target, decision, expectedVersion, requestId);
+                }));
+            } catch (DataAccessException | TransactionException failure) {
+                if (!retryable(failure)) throw unavailable(failure);
+                LockSupport.parkNanos(ThreadLocalRandom.current().nextLong(5, 51) * 1_000_000L);
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                "Offer decision could not be confirmed. Retry with the same Idempotency-Key.");
+    }
+
+    private OfferNegotiation decideTransaction(User actor, ObjectId offerId, OfferNegotiation.Status decision,
+                                                long expectedVersion, String requestId) {
+        OfferDecisionRequest previous = mongo.findById(requestId, OfferDecisionRequest.class);
+        if (previous != null) {
+            if (!offerId.equals(previous.offerId()) || decision != previous.decision()
+                    || expectedVersion != previous.expectedVersion())
+                throw conflict("This Idempotency-Key was already used for a different decision.");
+            return previous.result();
+        }
+        OfferNegotiation offer = mongo.findById(offerId, OfferNegotiation.class);
+        if (offer == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Offer not found.");
+        ObjectId actorId = actor.getId();
+        if ((!actorId.equals(offer.buyerId()) && !actorId.equals(offer.sellerId()))
+                || actorId.equals(offer.currentProposerId()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the other participant may respond.");
+        if (offer.version() != expectedVersion || offer.status() != OfferNegotiation.Status.PENDING
+                || offer.version() == Long.MAX_VALUE)
+            throw conflict("Offer changed or has already ended. Refresh and try again.");
+
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        OfferNegotiation result = offer.decide(actorId, decision, expectedVersion, now);
+        if (decision == OfferNegotiation.Status.ACCEPTED) fenceAvailableListing(offer);
+        Query expected = Query.query(Criteria.where("_id").is(offerId).and("version").is(expectedVersion)
+                .and("status").is(OfferNegotiation.Status.PENDING).and("currentProposerId").is(offer.currentProposerId()));
+        Update update = new Update().set("status", decision).set("updatedAt", now).inc("version", 1L)
+                .push("history", result.history().get(result.history().size() - 1));
+        if (mongo.updateFirst(expected, update, OfferNegotiation.class).getModifiedCount() != 1)
+            throw conflict("Offer changed or has already ended. Refresh and try again.");
+        mongo.insert(new OfferDecisionRequest(requestId, offerId, decision, expectedVersion, result, now));
+        return result;
+    }
+
+    /** Ensure a concurrent listing change cannot slip between the availability check and commit. */
+    private void fenceAvailableListing(OfferNegotiation offer) {
+        Listing listing = mongo.findById(offer.listingId(), Listing.class);
+        if (listing == null || listing.getStatus() != ListingStatus.AVAILABLE
+                || listing.getModerationVisibility() != Visibility.VISIBLE
+                || !offer.sellerId().equals(listing.getOwnerId()))
+            throw conflict("Listing is not available for acceptance.");
+        Criteria visible = new Criteria().orOperator(Criteria.where("moderationVisibility").is(Visibility.VISIBLE),
+                Criteria.where("moderationVisibility").is(null));
+        Criteria available = new Criteria().orOperator(Criteria.where("status").is(ListingStatus.AVAILABLE),
+                Criteria.where("status").exists(false));
+        Query fence = Query.query(new Criteria().andOperator(Criteria.where("_id").is(offer.listingId()),
+                Criteria.where("version").is(listing.getVersion()), Criteria.where("ownerId").is(offer.sellerId()),
+                visible, available));
+        Update update = listing.getVersion() == null ? new Update().set("version", 1L) : new Update().inc("version", 1L);
+        if (mongo.updateFirst(fence, update, Listing.class).getModifiedCount() != 1)
+            throw new OptimisticLockingFailureException("Listing changed while deciding offer.");
     }
 
     public OfferNegotiation get(Authentication auth, String offerId) {
