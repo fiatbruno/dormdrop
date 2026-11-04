@@ -42,7 +42,7 @@ class OfferDecisionTest {
         listing.setOwnerId(seller.getId());
         listing.setVersion(3L);
         offer = OfferNegotiation.create(listing.getId(), buyer.getId(), seller.getId(),
-                new BigDecimal("20.00"), Instant.parse("2026-11-03T12:00:00Z"));
+                new BigDecimal("20.00"), Instant.now());
         for (User user : List.of(buyer, seller, stranger)) when(users.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
         when(mongo.findById(offer.id(), OfferNegotiation.class)).thenReturn(offer);
         when(mongo.findById(listing.getId(), Listing.class)).thenReturn(listing);
