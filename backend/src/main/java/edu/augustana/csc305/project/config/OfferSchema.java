@@ -19,6 +19,8 @@ public class OfferSchema implements ApplicationRunner {
         // Create the ledger outside transactions, including on an empty database.
         mongo.getCollection("offerDecisionRequests").createIndex(Indexes.ascending("createdAt"),
                 new IndexOptions().name("offer_decision_request_history"));
+        mongo.getCollection("offerCounterRequests").createIndex(Indexes.ascending("createdAt"),
+                new IndexOptions().name("offer_counter_request_history"));
         var offers = mongo.getCollection("offerNegotiations");
         offers.createIndex(Indexes.ascending("buyerId", "listingId"), new IndexOptions()
                 .name("one_pending_offer_per_buyer_listing").unique(true)
