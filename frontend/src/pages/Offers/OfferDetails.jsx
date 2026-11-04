@@ -1,10 +1,6 @@
 
 import { useEffect, useState } from "react";
-import {
-  Link,
-  useParams,
-} from "react-router-dom";
-
+import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   CheckCircle,
@@ -25,17 +21,11 @@ import {
 import "./OfferDetails.css";
 
 function formatMoney(amount) {
-  if (amount === null || amount === undefined) {
+  if (amount == null || !Number.isFinite(Number(amount))) {
     return "Not available";
   }
 
-  const number = Number(amount);
-
-  if (!Number.isFinite(number)) {
-    return "Not available";
-  }
-
-  return number.toLocaleString("en-US", {
+  return Number(amount).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
   });
@@ -45,14 +35,12 @@ function getCurrentUserId(token) {
   if (!token) return null;
 
   try {
-    const payload = JSON.parse(
-      atob(
-        token.split(".")[1]
-          .replace(/-/g, "+")
-          .replace(/_/g, "/")
-      )
-    );
+    const encoded = token.split(".")[1];
+    const normalized = encoded
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
 
+    const payload = JSON.parse(atob(normalized));
     return payload.id || null;
   } catch {
     return null;
@@ -62,9 +50,7 @@ function getCurrentUserId(token) {
 function getErrorMessage(error) {
   const status = error.response?.status;
 
-  if (status === 401) {
-    return "Please log in again.";
-  }
+  if (status === 401) return "Please log in again.";
 
   if (status === 403) {
     return "You do not have permission to manage this offer.";
@@ -75,11 +61,12 @@ function getErrorMessage(error) {
   }
 
   if (status === 409) {
-    return "This offer has already been processed or is no longer available.";
+    return "This offer has changed. Its latest status has been loaded.";
   }
 
   return (
     error.response?.data?.message ||
+    error.message ||
     "Something went wrong. Please try again."
   );
 }
@@ -100,6 +87,7 @@ function OfferDetailsContent({ offerId }) {
     async function loadOffer() {
       setLoading(true);
       setError("");
+      setSuccess("");
       setOffer(null);
 
       try {
@@ -113,17 +101,13 @@ function OfferDetailsContent({ offerId }) {
 
         setOffer(data);
       } catch (err) {
-        if (active) {
-          setError(getErrorMessage(err));
-        }
+        if (active) setError(getErrorMessage(err));
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     }
 
-    loadOffer();
+    void loadOffer();
 
     return () => {
       active = false;
@@ -131,25 +115,31 @@ function OfferDetailsContent({ offerId }) {
   }, [offerId]);
 
   async function handleDecision(decision) {
-    if (saving || offer?.status !== "PENDING") {
-      return;
-    }
+    if (saving || !offer) return;
+
+    const isSeller =
+      currentUserId != null &&
+      String(currentUserId) === String(offer.sellerId);
+
+    const canRespond =
+      isSeller &&
+      offer.status === "PENDING" &&
+      String(currentUserId) !==
+        String(offer.currentProposerId);
+
+    if (!canRespond) return;
 
     setSaving(true);
     setError("");
     setSuccess("");
 
     try {
-      if (decision === "accept") {
-        await acceptOffer(offerId);
-      } else {
-        await rejectOffer(offerId);
-      }
+      const updated =
+        decision === "accept"
+          ? await acceptOffer(offer.id, offer.version)
+          : await rejectOffer(offer.id, offer.version);
 
-      // Fetch the authoritative updated state.
-      const updatedOffer = await getOfferById(offerId);
-
-      setOffer(updatedOffer);
+      setOffer(updated);
 
       setSuccess(
         decision === "accept"
@@ -159,13 +149,13 @@ function OfferDetailsContent({ offerId }) {
     } catch (err) {
       setError(getErrorMessage(err));
 
-      // A decision may have succeeded even if the
-      // follow-up fetch failed. Avoid blind retries.
       try {
         const latest = await getOfferById(offerId);
         setOffer(latest);
       } catch {
-        // Keep the existing offer until it can be reloaded.
+        setError(
+          "Could not confirm the latest offer status. Reload the page before trying again."
+        );
       }
     } finally {
       setSaving(false);
@@ -174,10 +164,19 @@ function OfferDetailsContent({ offerId }) {
 
   const isSeller =
     offer &&
-    currentUserId !== null &&
-    String(offer.sellerId) === String(currentUserId);
+    currentUserId != null &&
+    String(currentUserId) === String(offer.sellerId);
 
   const isPending = offer?.status === "PENDING";
+
+  const canRespond =
+    isSeller &&
+    isPending &&
+    String(currentUserId) !==
+      String(offer.currentProposerId);
+
+  const isAccepted = offer?.status === "ACCEPTED";
+  const isRejected = offer?.status === "REJECTED";
 
   return (
     <div className="offer-details-shell">
@@ -215,7 +214,7 @@ function OfferDetailsContent({ offerId }) {
               <div className="offer-details-row">
                 <span>Listing</span>
                 <strong>
-                  {offer.listingTitle || "Not available"}
+                  {offer.listingTitle || "Listing"}
                 </strong>
               </div>
 
@@ -226,12 +225,14 @@ function OfferDetailsContent({ offerId }) {
                 </strong>
               </div>
 
-              <div className="offer-details-row">
-                <span>Listed price</span>
-                <strong>
-                  {formatMoney(offer.listingPrice)}
-                </strong>
-              </div>
+              {offer.listingPrice != null && (
+                <div className="offer-details-row">
+                  <span>Listed price</span>
+                  <strong>
+                    {formatMoney(offer.listingPrice)}
+                  </strong>
+                </div>
+              )}
 
               <div className="offer-details-row">
                 <span>Offer amount</span>
@@ -243,7 +244,13 @@ function OfferDetailsContent({ offerId }) {
               <div className="offer-details-row">
                 <span>Status</span>
                 <strong>
-                  {offer.status || "Not available"}
+                  {isAccepted
+                    ? "Accepted"
+                    : isRejected
+                      ? "Declined"
+                      : isPending
+                        ? "Pending"
+                        : offer.status || "Not available"}
                 </strong>
               </div>
 
@@ -251,11 +258,8 @@ function OfferDetailsContent({ offerId }) {
                 <span>Submitted</span>
                 <strong>
                   {offer.createdAt &&
-                  !Number.isNaN(
-                    new Date(offer.createdAt).getTime()
-                  )
-                    ? new Date(offer.createdAt)
-                        .toLocaleString()
+                  !Number.isNaN(Date.parse(offer.createdAt))
+                    ? new Date(offer.createdAt).toLocaleString()
                     : "Not available"}
                 </strong>
               </div>
@@ -271,22 +275,29 @@ function OfferDetailsContent({ offerId }) {
                 </Link>
               )}
 
-              {!isSeller && (
-                <p className="offer-details-muted">
-                  Only the listing's seller can make
-                  a decision on this offer.
+              {isAccepted && (
+                <p className="offer-details-success">
+                  <CheckCircle size={18} />
+                  Offer accepted. You can arrange pickup
+                  through your conversation.
                 </p>
               )}
 
-              {isSeller && isPending && (
+              {isRejected && (
+                <p className="offer-details-muted">
+                  <XCircle size={18} />
+                  This offer was declined and can no
+                  longer be accepted.
+                </p>
+              )}
+
+              {isSeller && canRespond && (
                 <div className="offer-decision-actions">
                   <Button
                     type="button"
                     className="offer-accept-button"
                     disabled={saving}
-                    onClick={() =>
-                      handleDecision("accept")
-                    }
+                    onClick={() => handleDecision("accept")}
                   >
                     <CheckCircle size={18} />
                     {saving ? "Processing..." : "Accept offer"}
@@ -296,9 +307,7 @@ function OfferDetailsContent({ offerId }) {
                     type="button"
                     className="offer-reject-button"
                     disabled={saving}
-                    onClick={() =>
-                      handleDecision("reject")
-                    }
+                    onClick={() => handleDecision("reject")}
                   >
                     <XCircle size={18} />
                     Reject offer
@@ -306,9 +315,17 @@ function OfferDetailsContent({ offerId }) {
                 </div>
               )}
 
-              {isSeller && !isPending && (
+              {isSeller && isPending && !canRespond && (
                 <p className="offer-details-muted">
-                  This offer is no longer pending.
+                  Waiting for the buyer to respond to
+                  your counteroffer.
+                </p>
+              )}
+
+              {!isSeller && isPending && (
+                <p className="offer-details-muted">
+                  Only the participant responding to the
+                  current proposal can make a decision.
                 </p>
               )}
             </>
