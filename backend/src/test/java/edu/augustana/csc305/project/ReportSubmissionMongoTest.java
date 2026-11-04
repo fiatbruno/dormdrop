@@ -57,9 +57,7 @@ class ReportSubmissionMongoTest {
         if (client == null) return;
         try {
             if (database != null && database.startsWith("report_test_")) {
-                for (String collection : client.getDatabase(database).listCollectionNames()) {
-                    client.getDatabase(database).getCollection(collection).deleteMany(new Document());
-                }
+                MongoTestCleanup.dropCollections(client,database,"report_test_");
             }
         } finally { client.close(); }
     }
@@ -177,7 +175,7 @@ class ReportSubmissionMongoTest {
             service(5).submit(listing.getId().toHexString(),body,"report-during-edit",auth(reporter));
             return real.save(call.getArgument(0));
         });
-        var sellerService = new ListingService(interleaved,users,mongo);
+        var sellerService = new ListingService(interleaved,users,mongo,new ListingVisibilityPolicy());
         var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(
                 new edu.augustana.csc305.project.controller.ListingController(sellerService))
                 .setControllerAdvice(new edu.augustana.csc305.project.controller.ListingConflictAdvice()).build();

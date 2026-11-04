@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 
 class ListingSearchTest {
     private ListingService service(MongoTemplate mongo) {
-        return new ListingService(mock(ListingRepository.class), mock(UserRepository.class), mongo);
+        return new ListingService(mock(ListingRepository.class), mock(UserRepository.class), mongo, new ListingVisibilityPolicy());
     }
 
     private List<Listing> search(ListingService service, String q, String category, BigDecimal min, BigDecimal max) {
@@ -38,15 +38,16 @@ class ListingSearchTest {
         verify(mongo).find(argThat((Query query) -> {
             Document object = query.getQueryObject();
             List<Document> words = object.getList("$and", Document.class);
-            if (words == null || words.size() != 2 || !object.containsKey("category") || !object.containsKey("price")) {
+            if (words == null || words.size() != 3 || !object.containsKey("category") || !object.containsKey("price")) {
                 return false;
             }
-            for (int w = 0; w < words.size(); w++) {
+            if (!words.get(0).equals(new ListingVisibilityPolicy().visibleCriteria().getCriteriaObject())) return false;
+            for (int w = 1; w < words.size(); w++) {
                 List<Document> fields = words.get(w).getList("$or", Document.class);
                 if (fields == null || fields.size() != 3) return false;
                 for (int i = 0; i < fields.size(); i++) {
                     Object regex = fields.get(i).get(List.of("title", "description", "category").get(i));
-                    if (!(regex instanceof Pattern pattern) || !pattern.pattern().equals(Pattern.quote(List.of(".*", "ChAiR").get(w)))
+                    if (!(regex instanceof Pattern pattern) || !pattern.pattern().equals(Pattern.quote(List.of(".*", "ChAiR").get(w - 1)))
                             || (pattern.flags() & Pattern.CASE_INSENSITIVE) == 0) return false;
                 }
             }
@@ -56,7 +57,8 @@ class ListingSearchTest {
                 () -> search(service, "x".repeat(201), null, null, null)).getStatusCode().value());
         assertDoesNotThrow(() -> search(service, "  " + "x".repeat(200) + "  ", null, null, null));
         search(service, "  ", null, null, null);
-        verify(mongo).find(argThat((Query query) -> query.getQueryObject().isEmpty()), eq(Listing.class));
+        verify(mongo).find(argThat((Query query) -> query.getQueryObject()
+                .equals(new ListingVisibilityPolicy().visibleCriteria().getCriteriaObject())), eq(Listing.class));
     }
 
     private Listing listing(String title, String description, String category, String price) {
@@ -94,7 +96,7 @@ class ListingSearchTest {
                 assertEquals(1, search(service, "blue", "Furniture", BigDecimal.TEN, new BigDecimal("50")).size());
                 assertEquals(0, search(service, "blue", "Furniture", new BigDecimal("31"), new BigDecimal("50")).size());
             } finally {
-                mongo.getDb().drop();
+                edu.augustana.csc305.project.MongoTestCleanup.dropCollections(client,database,"search_test_");
             }
         }
     }

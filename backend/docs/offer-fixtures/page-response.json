@@ -1,0 +1,27 @@
+{
+  "items": [
+    {
+      "id": "64b000000000000000000004",
+      "listingId": "64b000000000000000000001",
+      "buyerId": "64b000000000000000000002",
+      "sellerId": "64b000000000000000000003",
+      "currentProposerId": "64b000000000000000000002",
+      "amount": 19.99,
+      "status": "PENDING",
+      "version": 0,
+      "createdAt": "2026-11-02T18:00:00Z",
+      "updatedAt": "2026-11-02T18:00:00Z",
+      "history": [
+        {
+          "action": "PROPOSED",
+          "actorId": "64b000000000000000000002",
+          "amount": 19.99,
+          "createdAt": "2026-11-02T18:00:00Z"
+        }
+      ]
+    }
+  ],
+  "total": 1,
+  "page": 0,
+  "size": 20
+}

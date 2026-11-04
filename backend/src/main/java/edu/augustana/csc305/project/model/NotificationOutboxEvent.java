@@ -31,6 +31,9 @@ public record NotificationOutboxEvent(
         if (status == null || !java.util.Set.of("PENDING", "PROCESSING", "RETRY", "DONE").contains(status))
             throw new IllegalArgumentException("Invalid outbox state.");
         boolean valid = switch (type) {
+            case OFFER_RECEIVED -> offerId != null && listingId != null
+                    && payload.status() == PrivateNotification.Status.PENDING
+                    && payload.price() != null && payload.price().signum() > 0 && payload.buyerDisplayName() != null;
             case OFFER_ACCEPTED -> offerId != null && payload.status() == PrivateNotification.Status.ACCEPTED && payload.price() != null;
             case OFFER_REJECTED -> offerId != null && payload.status() == PrivateNotification.Status.REJECTED && payload.price() != null;
             case OFFER_COUNTERED -> offerId != null && payload.status() == PrivateNotification.Status.COUNTERED && payload.price() != null;

@@ -18,8 +18,10 @@ public class PrivateNotificationController {
 
     @GetMapping
     public ResponseEntity<NotificationResponse.Page> list(Authentication authentication,
-            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(notifications.list(authentication, page, size));
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "false") boolean unreadOnly) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(unreadOnly
+                ? notifications.list(authentication, page, size, true) : notifications.list(authentication, page, size));
     }
 
     @GetMapping("/unread-count")
@@ -30,5 +32,10 @@ public class PrivateNotificationController {
     @PatchMapping("/{id}/read")
     public ResponseEntity<NotificationResponse> read(Authentication authentication, @PathVariable String id) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(notifications.read(authentication, id));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<NotificationResponse> get(Authentication authentication, @PathVariable String id) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(notifications.get(authentication, id));
     }
 }

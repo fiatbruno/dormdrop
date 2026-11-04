@@ -3,6 +3,13 @@ package edu.augustana.csc305.project.service;
 
 import edu.augustana.csc305.project.model.Conversation;
 import edu.augustana.csc305.project.dto.ConversationResponse;
+import edu.augustana.csc305.project.dto.OfferDtos;
+import edu.augustana.csc305.project.model.OfferNegotiation;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import edu.augustana.csc305.project.repository.MessageRepository;
 import edu.augustana.csc305.project.model.Listing;
 import edu.augustana.csc305.project.model.User;
@@ -25,17 +32,19 @@ public class ConversationService {
     private final UserRepository userRepository;
     private final MongoTemplate mongoTemplate;
     private final MessageRepository messageRepository;
+    private final ListingVisibilityPolicy visibility;
 
     public ConversationService(
             ConversationRepository conversationRepository,
             UserRepository userRepository,
             MongoTemplate mongoTemplate,
-            MessageRepository messageRepository
+            MessageRepository messageRepository, ListingVisibilityPolicy visibility
     ) {
         this.conversationRepository = conversationRepository;
         this.userRepository = userRepository;
         this.mongoTemplate = mongoTemplate;
         this.messageRepository = messageRepository;
+        this.visibility = visibility;
     }
 
     public Conversation startConversation(
@@ -65,6 +74,7 @@ public class ConversationService {
             );
         }
 
+        visibility.requireNewConversation(listing, buyer);
         ObjectId sellerId = listing.getOwnerId();
 
         if (sellerId == null) {
@@ -158,16 +168,25 @@ public class ConversationService {
         }
         User other = userRepository.findById(buyer ? conversation.getSellerId() : conversation.getBuyerId()).orElse(null);
         Listing listing = mongoTemplate.findById(conversation.getListingId(), Listing.class);
-        var summary = listing == null ? null : new ConversationResponse.ListingSummary(
+        var summary = !visibility.visible(listing) ? null : new ConversationResponse.ListingSummary(
                 listing.getIdString(), listing.getTitle(), listing.getPrice(), listing.getListingType(),
                 listing.getStatus().name(), listing.getImageUrl());
         String preview = messageRepository.findFirstByConversationIdOrderBySentAtDesc(conversation.getId())
                 .map(message -> message.getContent()).orElse("");
         long unread = messageRepository.countByConversationIdAndSenderIdNotAndReadAtIsNull(conversation.getId(), current.getId());
+        // Prefer an active offer; otherwise show the most recent completed or expired one.
+        Criteria participants = Criteria.where("listingId").is(conversation.getListingId())
+                .and("buyerId").is(conversation.getBuyerId()).and("sellerId").is(conversation.getSellerId());
+        Sort newest = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("_id"));
+        Query active = Query.query(new Criteria().andOperator(participants,
+                Criteria.where("status").is(OfferNegotiation.Status.PENDING),
+                Criteria.where("updatedAt").gt(Instant.now().minus(14, ChronoUnit.DAYS)))).with(newest);
+        OfferNegotiation offer = mongoTemplate.findOne(active, OfferNegotiation.class);
+        if (offer == null) offer = mongoTemplate.findOne(Query.query(participants).with(newest), OfferNegotiation.class);
         return new ConversationResponse(conversation.getId().toHexString(), current.getId().toHexString(),
                 new ConversationResponse.Participant(other == null ? "Member unavailable" : other.getName(),
                         other != null && other.isEmailVerified()), summary, preview,
-                conversation.getCreatedAt(), conversation.getLastMessageAt(), unread);
+                conversation.getCreatedAt(), conversation.getLastMessageAt(), unread, offer == null ? null : OfferDtos.from(offer));
     }
 
     private User getUserByEmail(String email) {
