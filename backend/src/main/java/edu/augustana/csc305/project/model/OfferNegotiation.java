@@ -19,7 +19,7 @@ public record OfferNegotiation(
         ObjectId currentProposerId, @Field(targetType = FieldType.DECIMAL128) BigDecimal amount,
         Status status, long version, Instant createdAt, Instant updatedAt, List<HistoryEntry> history) {
 
-    public enum Status { PENDING, ACCEPTED, REJECTED }
+    public enum Status { PENDING, ACCEPTED, REJECTED, EXPIRED }
     public enum Action { PROPOSED, COUNTERED, ACCEPTED, REJECTED }
 
     public record HistoryEntry(Action action, ObjectId actorId,
@@ -72,14 +72,14 @@ public record OfferNegotiation(
     }
 
     public OfferNegotiation counter(ObjectId actorId, BigDecimal newAmount, long expectedVersion, Instant now) {
-        requireResponse(actorId, expectedVersion);
+        requireResponse(actorId, expectedVersion, now);
         var next = append(new HistoryEntry(Action.COUNTERED, actorId, newAmount, now));
         return new OfferNegotiation(id, listingId, buyerId, sellerId, actorId, newAmount, Status.PENDING,
                 version + 1, createdAt, now, next);
     }
 
     public OfferNegotiation decide(ObjectId actorId, Status decision, long expectedVersion, Instant now) {
-        requireResponse(actorId, expectedVersion);
+        requireResponse(actorId, expectedVersion, now);
         if (decision != Status.ACCEPTED && decision != Status.REJECTED)
             throw new IllegalArgumentException("Decision must be ACCEPTED or REJECTED.");
         Action action = decision == Status.ACCEPTED ? Action.ACCEPTED : Action.REJECTED;
@@ -87,9 +87,19 @@ public record OfferNegotiation(
                 version + 1, createdAt, now, append(new HistoryEntry(action, actorId, amount, now)));
     }
 
-    private void requireResponse(ObjectId actorId, long expectedVersion) {
+    /** A counteroffer starts a new 14-day response window. */
+    public Instant expiresAt() {
+        return history.stream().filter(entry -> entry.action() == Action.PROPOSED || entry.action() == Action.COUNTERED)
+                .reduce((first, second) -> second).orElseThrow().createdAt().plus(14, java.time.temporal.ChronoUnit.DAYS);
+    }
+
+    public boolean isExpired(Instant now) {
+        return status == Status.PENDING && !now.isBefore(expiresAt());
+    }
+
+    private void requireResponse(ObjectId actorId, long expectedVersion, Instant now) {
         if (version != expectedVersion) throw new IllegalStateException("Stale negotiation version.");
-        if (status != Status.PENDING) throw new IllegalStateException("Negotiation has already ended.");
+        if (status != Status.PENDING || isExpired(now)) throw new IllegalStateException("Negotiation has already ended or expired.");
         if (actorId == null || (!actorId.equals(buyerId) && !actorId.equals(sellerId)) || actorId.equals(currentProposerId))
             throw new IllegalArgumentException("Only the other participant may respond.");
         if (version == Long.MAX_VALUE) throw new IllegalStateException("Negotiation version exhausted.");
