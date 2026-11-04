@@ -177,7 +177,7 @@ class ReportSubmissionMongoTest {
             service(5).submit(listing.getId().toHexString(),body,"report-during-edit",auth(reporter));
             return real.save(call.getArgument(0));
         });
-        var sellerService = new ListingService(interleaved,users,mongo);
+        var sellerService = new ListingService(interleaved,users,mongo,new edu.augustana.csc305.project.service.ListingVisibilityPolicy());
         var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(
                 new edu.augustana.csc305.project.controller.ListingController(sellerService))
                 .setControllerAdvice(new edu.augustana.csc305.project.controller.ListingConflictAdvice()).build();
