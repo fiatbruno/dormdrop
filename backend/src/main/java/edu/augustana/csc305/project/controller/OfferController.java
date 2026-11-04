@@ -34,6 +34,14 @@ public class OfferController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(OfferDtos.from(result));
     }
 
+    @PostMapping("/offers/{offerId}/counteroffers")
+    public ResponseEntity<OfferDtos.Offer> counter(Authentication auth, @PathVariable String offerId,
+            @RequestHeader("Idempotency-Key") String key, @RequestBody OfferDtos.Counter request) {
+        var result = offers.counter(auth, offerId, request == null ? null : request.amount(),
+                request == null ? null : request.expectedVersion(), key);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(OfferDtos.from(result));
+    }
+
     @GetMapping("/me/offers")
     public ResponseEntity<OfferDtos.Page> list(Authentication auth, @RequestParam String perspective,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {

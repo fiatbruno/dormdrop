@@ -5,6 +5,7 @@ import edu.augustana.csc305.project.model.Listing;
 import edu.augustana.csc305.project.model.ListingStatus;
 import edu.augustana.csc305.project.model.ModerationTypes.Visibility;
 import edu.augustana.csc305.project.model.OfferNegotiation;
+import edu.augustana.csc305.project.model.OfferCounterRequest;
 import edu.augustana.csc305.project.model.OfferDecisionRequest;
 import edu.augustana.csc305.project.model.OfferSubmissionRequest;
 import edu.augustana.csc305.project.model.User;
@@ -159,12 +160,13 @@ public class OfferService {
         OfferNegotiation offer = mongo.findById(offerId, OfferNegotiation.class);
         if (offer == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Offer not found.");
         ObjectId actorId = actor.getId();
-        if ((!actorId.equals(offer.buyerId()) && !actorId.equals(offer.sellerId()))
-                || actorId.equals(offer.currentProposerId()))
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the other participant may respond.");
+        if (!actorId.equals(offer.buyerId()) && !actorId.equals(offer.sellerId()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only participants may respond.");
         if (offer.version() != expectedVersion || offer.status() != OfferNegotiation.Status.PENDING
                 || offer.version() == Long.MAX_VALUE)
             throw conflict("Offer changed or has already ended. Refresh and try again.");
+        if (actorId.equals(offer.currentProposerId()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the other participant may respond.");
 
         Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         OfferNegotiation result = offer.decide(actorId, decision, expectedVersion, now);
@@ -179,13 +181,74 @@ public class OfferService {
         return result;
     }
 
+    /** Counter the other participant's proposal; exact retries return the original response. */
+    public OfferNegotiation counter(Authentication auth, String offerId, BigDecimal amount, Long expectedVersion, String key) {
+        User actor = verified(auth);
+        ObjectId target = parseId(offerId);
+        if (key == null || !key.matches("[A-Za-z0-9][A-Za-z0-9._:-]{0,127}"))
+            throw badRequest("Idempotency-Key must contain 1 to 128 letters, digits, dots, colons, underscores or hyphens.");
+        if (expectedVersion == null || expectedVersion < 0) throw badRequest("A nonnegative expectedVersion is required.");
+        try { OfferNegotiation.validateAmount(amount); }
+        catch (IllegalArgumentException failure) { throw badRequest("Amount must be positive and have at most two decimal places."); }
+        String requestId = actor.getId().toHexString() + ":counter-offer:" + key;
+        for (int attempt = 0; attempt < 12; attempt++) {
+            try {
+                return Objects.requireNonNull(transactions.execute(status -> {
+                    User current = verified(auth);
+                    if (!current.getId().equals(actor.getId()))
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User changed. Please sign in again.");
+                    return counterTransaction(current, target, amount, expectedVersion, requestId);
+                }));
+            } catch (DataAccessException | TransactionException failure) {
+                if (!retryable(failure)) throw unavailable(failure);
+                LockSupport.parkNanos(ThreadLocalRandom.current().nextLong(5, 51) * 1_000_000L);
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                "Counteroffer could not be confirmed. Retry with the same Idempotency-Key.");
+    }
+
+    private OfferNegotiation counterTransaction(User actor, ObjectId offerId, BigDecimal amount,
+                                                 long expectedVersion, String requestId) {
+        OfferCounterRequest previous = mongo.findById(requestId, OfferCounterRequest.class);
+        if (previous != null) {
+            if (!offerId.equals(previous.offerId()) || previous.amount().compareTo(amount) != 0
+                    || expectedVersion != previous.expectedVersion())
+                throw conflict("This Idempotency-Key was already used for a different counteroffer.");
+            return previous.result();
+        }
+        OfferNegotiation offer = mongo.findById(offerId, OfferNegotiation.class);
+        if (offer == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Offer not found.");
+        ObjectId actorId = actor.getId();
+        if (!actorId.equals(offer.buyerId()) && !actorId.equals(offer.sellerId()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only participants may respond.");
+        if (offer.version() != expectedVersion || offer.status() != OfferNegotiation.Status.PENDING
+                || offer.version() == Long.MAX_VALUE)
+            throw conflict("Offer changed or has already ended. Refresh and try again.");
+        if (actorId.equals(offer.currentProposerId()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the other participant may respond.");
+
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        OfferNegotiation result = offer.counter(actorId, amount, expectedVersion, now);
+        fenceAvailableListing(offer);
+        Query expected = Query.query(Criteria.where("_id").is(offerId).and("version").is(expectedVersion)
+                .and("status").is(OfferNegotiation.Status.PENDING).and("currentProposerId").is(offer.currentProposerId()));
+        Update update = new Update().set("amount", amount).set("currentProposerId", actorId)
+                .set("updatedAt", now).inc("version", 1L)
+                .push("history", result.history().get(result.history().size() - 1));
+        if (mongo.updateFirst(expected, update, OfferNegotiation.class).getModifiedCount() != 1)
+            throw conflict("Offer changed or has already ended. Refresh and try again.");
+        mongo.insert(new OfferCounterRequest(requestId, offerId, amount, expectedVersion, result, now));
+        return result;
+    }
+
     /** Ensure a concurrent listing change cannot slip between the availability check and commit. */
     private void fenceAvailableListing(OfferNegotiation offer) {
         Listing listing = mongo.findById(offer.listingId(), Listing.class);
         if (listing == null || listing.getStatus() != ListingStatus.AVAILABLE
                 || listing.getModerationVisibility() != Visibility.VISIBLE
                 || !offer.sellerId().equals(listing.getOwnerId()))
-            throw conflict("Listing is not available for acceptance.");
+            throw conflict("Listing is not available for this offer action.");
         Criteria visible = new Criteria().orOperator(Criteria.where("moderationVisibility").is(Visibility.VISIBLE),
                 Criteria.where("moderationVisibility").is(null));
         Criteria available = new Criteria().orOperator(Criteria.where("status").is(ListingStatus.AVAILABLE),
