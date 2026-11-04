@@ -46,6 +46,21 @@ class OfferNegotiationTest {
         assertEquals(1, initial.history().size());
     }
 
+    @Test void responseWindowExpiresAtFourteenDaysAndCounterStartsANewWindow() {
+        var initial = create();
+        var deadline = time.plusSeconds(14L * 24 * 60 * 60);
+        assertEquals(deadline, initial.expiresAt());
+        assertFalse(initial.isExpired(deadline.minusMillis(1)));
+        assertTrue(initial.isExpired(deadline));
+        assertThrows(IllegalStateException.class, () -> initial.decide(seller, Status.ACCEPTED, 0, deadline));
+        assertThrows(IllegalStateException.class, () -> initial.counter(seller, BigDecimal.TEN, 0, deadline));
+        var counter = initial.counter(seller, BigDecimal.TEN, 0, deadline.minusSeconds(1));
+        assertEquals(deadline.minusSeconds(1).plusSeconds(14L * 24 * 60 * 60), counter.expiresAt());
+        assertFalse(counter.isExpired(deadline));
+        var expired = OfferNegotiation.create(listing, buyer, seller, BigDecimal.ONE, Instant.now().minusSeconds(15L * 24 * 60 * 60));
+        assertEquals(Status.EXPIRED, edu.augustana.csc305.project.dto.OfferDtos.from(expired).status());
+    }
+
     @Test void validatesPricesAndParticipants() {
         for (String bad : new String[]{"0", "-1", "0.001"})
             assertThrows(IllegalArgumentException.class, () -> OfferNegotiation.create(listing, buyer, seller, new BigDecimal(bad), time));

@@ -21,6 +21,9 @@ public class OfferSchema implements ApplicationRunner {
                 new IndexOptions().name("offer_decision_request_history"));
         mongo.getCollection("offerCounterRequests").createIndex(Indexes.ascending("createdAt"),
                 new IndexOptions().name("offer_counter_request_history"));
+        // Conversation creation is part of offer submission, so prepare its collection and unique index here.
+        mongo.getCollection("conversations").createIndex(Indexes.ascending("listingId", "buyerId"),
+                new IndexOptions().name("unique_listing_buyer").unique(true));
         var offers = mongo.getCollection("offerNegotiations");
         offers.createIndex(Indexes.ascending("buyerId", "listingId"), new IndexOptions()
                 .name("one_pending_offer_per_buyer_listing").unique(true)
