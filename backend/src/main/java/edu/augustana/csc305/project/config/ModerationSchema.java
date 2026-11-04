@@ -26,11 +26,16 @@ public class ModerationSchema implements ApplicationRunner {
     }
 
     public static void initialize(MongoTemplate mongo) {
-        // Transactions must not need to implicitly create these collections on first submission.
-        mongo.getCollection("reportRequests").createIndex(Indexes.ascending("createdAt"),
-                new IndexOptions().name("report_request_history"));
-        mongo.getCollection("reportRateWindows").createIndex(Indexes.ascending("startedAt"),
-                new IndexOptions().name("report_rate_window_start"));
+        mongo.getCollection("notifications").createIndex(Indexes.ascending("status","nextAttemptAt","leaseUntil","createdAt"),new IndexOptions().name("notification_delivery_queue"));
+        mongo.getCollection("moderationNotificationOutbox").createIndex(Indexes.ascending("status","nextAttemptAt","leaseUntil","createdAt"),
+                new IndexOptions().name("moderation_outbox_retry_queue"));
+        mongo.getCollection("reportRequests").createIndex(Indexes.ascending("createdAt"), new IndexOptions().name("report_request_history"));
+        mongo.getCollection("reportRateWindows").createIndex(Indexes.ascending("startedAt"), new IndexOptions().name("report_rate_window_start"));
+        mongo.getCollection("moderationDecisionRequests").createIndex(Indexes.ascending("createdAt"), new IndexOptions().name("decision_request_history"));
+        mongo.getCollection("moderationNotificationOutbox").createIndex(Indexes.ascending("decisionId"),
+                new IndexOptions().name("one_notification_event_per_decision").unique(true));
+        mongo.getCollection("moderationNotificationOutbox").createIndex(Indexes.ascending("status", "createdAt"),
+                new IndexOptions().name("pending_moderation_notifications"));
         // Missing or null legacy fields receive defaults.
         // Lifecycle status is never changed.
         mongo.getCollection("listings").updateMany(new Document("moderationVisibility", null), new Document("$set", new Document("moderationVisibility", "VISIBLE")));
@@ -38,8 +43,7 @@ public class ModerationSchema implements ApplicationRunner {
         mongo.getCollection("listings").updateMany(new Document("version", null), new Document("$set", new Document("version", 0L)));
 
         var cases = mongo.getCollection("moderationCases");
-        cases.updateMany(new Document("version", null),
-                new Document("$set", new Document("version", 0L)));
+        cases.updateMany(new Document("version", null), new Document("$set",new Document("version",0L)));
 
         // Support case records created before referenceNumber was added.
         try (var cursor = cases.find(new Document("referenceNumber", null)).iterator()) {
