@@ -2,7 +2,7 @@ package edu.augustana.csc305.project;
 
 import com.mongodb.client.*;
 import edu.augustana.csc305.project.config.*;
-import edu.augustana.csc305.project.controller.NotificationController;
+import edu.augustana.csc305.project.controller.PrivateNotificationController;
 import edu.augustana.csc305.project.dto.*;
 import edu.augustana.csc305.project.dto.NotificationDtos.*;
 import edu.augustana.csc305.project.model.*;
@@ -63,7 +63,7 @@ class ModerationNoticeMongoTest {
     }
     @BeforeAll void connect() {
         database="notice_test_"+new ObjectId(); client=MongoClients.create(System.getenv("MODERATION_TEST_MONGODB_URI"));
-        mongo=new MongoTemplate(client,database); ModerationSchema.initialize(mongo);
+        mongo=new MongoTemplate(client,database); ModerationSchema.initialize(mongo); PrivateNotificationConfiguration.initialize(mongo);
         users=new UserRepository(mongo); listings=new MongoRepositoryFactory(mongo).getRepository(ListingRepository.class);
     }
     @BeforeEach void setup() throws Exception {
@@ -123,6 +123,7 @@ class ModerationNoticeMongoTest {
         denied(404,()->inbox.get(auth(reporter1),view.id())); denied(404,()->inbox.read(auth(staff),view.id()));
         assertEquals(0,consumer.processBatch()); assertEquals(3,count(NotificationInboxEntry.class));
     }
+
     @Test void failedLiveDeliveryRetriesWithoutRollingBackDecisionOrDuplicatingInbox() {
         remove(); consumer.processBatch(); AtomicBoolean fail=new AtomicBoolean(true); List<String> delivered=new ArrayList<>();
         NotificationPublisher publisher=(recipient,view)->{if(recipient.equals(owner.getId())&&fail.getAndSet(false))
@@ -134,7 +135,7 @@ class ModerationNoticeMongoTest {
         assertEquals(CaseStatus.RESOLVED,mongo.findById(reportCase.id(),ModerationCase.class).status());
         assertEquals(1,count(ModerationDecision.class)); assertEquals(3,count(NotificationInboxEntry.class));
         assertEquals(1,inbox.list(auth(owner),0,20,false).items().size());
-        assertEquals("RETRY",mongo.getCollection("notificationInbox").find(new Document("recipientId",owner.getId())).first().getString("status"));
+        assertEquals("RETRY",mongo.getCollection("notifications").find(new Document("recipientId",owner.getId())).first().getString("status"));
         clock.advance(2); assertEquals(1,worker.processBatch()); assertEquals(0,worker.processBatch());
         assertEquals(1,delivered.stream().filter(value->value.startsWith("seller:")).count());
         assertEquals(3,delivered.size()); for(String value:delivered)privateFieldsAbsent(value);
@@ -164,7 +165,7 @@ class ModerationNoticeMongoTest {
     @Test void replayDoesNotResetReadStateAndOwnerCanFetchLinkAfterListingDeletion() throws Exception {
         remove();mongo.remove(Query.query(Criteria.where("_id").is(listing.getId())),Listing.class);consumer.processBatch();
         var view=assertInstanceOf(SellerNotice.class,inbox.list(auth(owner),0,20,false).items().get(0));
-        var mvc=MockMvcBuilders.standaloneSetup(new NotificationController(inbox)).build();
+        var mvc=MockMvcBuilders.standaloneSetup(new PrivateNotificationController(new PrivateNotificationService(mongo,users,clock))).build();
         String path=view.link().substring("/api/v1".length());assertFalse(path.contains("/admin/"));assertFalse(path.contains("/staff/"));
         var response=mvc.perform(get(path).principal(auth(owner))).andExpect(status().isOk()).andReturn().getResponse();
         privateFieldsAbsent(response.getContentAsString());assertTrue(response.getContentAsString().contains("Safe seller message"));

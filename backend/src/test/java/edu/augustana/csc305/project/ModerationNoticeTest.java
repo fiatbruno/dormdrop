@@ -102,7 +102,7 @@ class ModerationNoticeTest {
         when(users.findById(seller.getId())).thenReturn(Optional.of(seller));
         var broker=mock(SimpMessagingTemplate.class); var view=inbox.view(sellerEntry());
         new WebSocketNotificationPublisher(users,broker).publish(seller.getId(),view);
-        verify(broker).convertAndSendToUser(seller.getEmail(),"/queue/notifications",view);
+        verify(broker).convertAndSendToUser(seller.getEmail(),"/queue/notifications",WebSocketNotificationPublisher.response(view));
     }
     @Test
     void websocketAllowsOnlyOwnNotificationSubscription() {

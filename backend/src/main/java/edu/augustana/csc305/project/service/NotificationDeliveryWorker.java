@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 /** Persist first, publish later. Failed/offline live delivery never rolls back moderation or hides the inbox entry. */
 @Service
 public class NotificationDeliveryWorker {
-    public static final String COLLECTION="notificationInbox";
+    public static final String COLLECTION="notifications";
     private final MongoTemplate mongo;
     private final NotificationLeaseQueue leases;
     private final NotificationInboxService inbox;

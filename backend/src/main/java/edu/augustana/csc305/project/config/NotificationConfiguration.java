@@ -11,8 +11,6 @@ import java.time.Clock;
 @Configuration
 @EnableScheduling
 public class NotificationConfiguration {
-    @Bean("notificationClock")
-    public Clock notificationClock() { return Clock.systemUTC(); }
     /** #58 can supply its transport adapter without changing moderation projection or retry behavior. */
     @Bean
     @ConditionalOnMissingBean(NotificationPublisher.class)
