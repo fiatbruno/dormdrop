@@ -65,9 +65,12 @@ public class StaffCaseService {
                             report.category(), report.description(), report.createdAt()));
             List<ReportGroup> groups = grouped.entrySet().stream()
                     .map(entry -> new ReportGroup(hex(entry.getKey()), List.copyOf(entry.getValue()))).toList();
-            // Both caseId and report-linked IDs are required: unrelated/orphan snapshots are excluded.
+            List<ModerationDecision> caseDecisions = mongo.find(caseQuery(caseId), ModerationDecision.class);
+            Set<ObjectId> snapshotIds = new LinkedHashSet<>(grouped.keySet());
+            caseDecisions.stream().map(ModerationDecision::snapshotId).filter(Objects::nonNull).forEach(snapshotIds::add);
+            // Include report evidence and direct staff decision evidence, but never orphan/unrelated snapshots.
             Query snapshotQuery = Query.query(Criteria.where("caseId").is(caseId)
-                    .and("listingId").is(reportCase.listingId()).and("_id").in(new ArrayList<>(grouped.keySet())))
+                    .and("listingId").is(reportCase.listingId()).and("_id").in(new ArrayList<>(snapshotIds)))
                     .with(Sort.by(Sort.Order.asc("capturedAt"), Sort.Order.asc("_id")));
             snapshotQuery.fields().exclude("retainedImages");
             List<ListingSnapshot> retained = mongo.find(snapshotQuery, ListingSnapshot.class);
@@ -77,9 +80,10 @@ public class StaffCaseService {
                     snapshot.capturedAt(), snapshot.privateEvidenceKeys())).toList();
             SellerContext seller = retained.isEmpty() ? null : new SellerContext(hex(retained.get(0).sellerId()),
                     retained.get(0).sellerDisplayName());
-            var decisions = mongo.find(caseQuery(caseId), ModerationDecision.class).stream().map(decision ->
+            var decisions = caseDecisions.stream().map(decision ->
                     new ModerationDtos.StaffDecision(hex(decision.id()), hex(decision.staffId()), decision.action(),
-                            decision.internalRationale(), hex(decision.correctsDecisionId()), decision.createdAt())).toList();
+                            decision.internalRationale(), hex(decision.correctsDecisionId()), decision.createdAt(),
+                            decision.policyReason(), hex(decision.snapshotId()), decision.reviewedReportIds().stream().map(StaffCaseService::hex).toList())).toList();
             var activity = mongo.find(caseQuery(caseId), ActivityEvent.class).stream().map(event ->
                     new StaffActivity(hex(event.id()), hex(event.actorId()), event.type(), hex(event.relatedRecordId()),
                             hex(event.correctsEventId()), event.internalNote(), event.createdAt())).toList();

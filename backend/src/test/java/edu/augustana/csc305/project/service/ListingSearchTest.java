@@ -96,7 +96,7 @@ class ListingSearchTest {
                 assertEquals(1, search(service, "blue", "Furniture", BigDecimal.TEN, new BigDecimal("50")).size());
                 assertEquals(0, search(service, "blue", "Furniture", new BigDecimal("31"), new BigDecimal("50")).size());
             } finally {
-                mongo.getDb().drop();
+                edu.augustana.csc305.project.MongoTestCleanup.dropCollections(client,database,"search_test_");
             }
         }
     }
