@@ -191,8 +191,7 @@ class StaffCaseTest {
         var conversation = new Conversation(new ObjectId(), new ObjectId(), new ObjectId());
         conversation.setId(new ObjectId());
         when(conversations.findById(conversation.getId())).thenReturn(Optional.of(conversation));
-        var service = new edu.augustana.csc305.project.service.ConversationService(conversations, users, mongo, messages,
-                new edu.augustana.csc305.project.service.ListingVisibilityPolicy());
+        var service = new edu.augustana.csc305.project.service.ConversationService(conversations, users, mongo, messages, new edu.augustana.csc305.project.service.ListingVisibilityPolicy());
         assertStatus(403, () -> service.getConversation(conversation.getId().toHexString(), staff.getEmail()));
         verifyNoInteractions(messages);
     }

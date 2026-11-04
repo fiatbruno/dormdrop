@@ -63,7 +63,10 @@ public final class ModerationDtos {
             DecisionAction action,
             String internalRationale,
             String correctsDecisionId,
-            Instant createdAt
+            Instant createdAt,
+            String policyReason,
+            String snapshotId,
+            List<String> reviewedReportIds
     ) {}
 
     public static ReporterStatus reporterStatus(
