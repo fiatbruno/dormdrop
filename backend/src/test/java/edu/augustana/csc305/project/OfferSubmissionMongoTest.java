@@ -5,6 +5,7 @@ import com.mongodb.client.MongoClients;
 import edu.augustana.csc305.project.config.OfferSchema;
 import edu.augustana.csc305.project.config.ReportTransactionConfig;
 import edu.augustana.csc305.project.model.Listing;
+import edu.augustana.csc305.project.model.Conversation;
 import edu.augustana.csc305.project.model.ListingStatus;
 import edu.augustana.csc305.project.model.OfferNegotiation;
 import edu.augustana.csc305.project.model.OfferDecisionRequest;
@@ -107,6 +108,25 @@ class OfferSubmissionMongoTest {
         status(409, () -> offers.submit(auth(buyer), id(listing.getId()), new BigDecimal("20.00"), "submit-1"));
         status(409, () -> offers.submit(auth(buyer), id(listing.getId()), new BigDecimal("19.99"), "other-key"));
         assertEquals(1, mongo.count(new Query(), OfferNegotiation.class));
+        assertEquals(1, mongo.count(new Query(), Conversation.class));
+        var conversation = mongo.findAll(Conversation.class).get(0);
+        assertEquals(listing.getId(), conversation.getListingId());
+        assertEquals(buyer.getId(), conversation.getBuyerId());
+        assertEquals(seller.getId(), conversation.getSellerId());
+    }
+
+    @Test void reusesExistingConversationAndAllowsNewOfferAfterExpiry() {
+        Conversation existing = mongo.insert(new Conversation(listing.getId(), buyer.getId(), seller.getId()));
+        var old = OfferNegotiation.create(listing.getId(), buyer.getId(), seller.getId(), BigDecimal.TEN,
+                Instant.now().minusSeconds(15L * 24 * 60 * 60));
+        mongo.insert(old);
+        status(409, () -> offers.decide(auth(seller), id(old.id()), "ACCEPT", 0L, "expired"));
+        status(409, () -> offers.counter(auth(seller), id(old.id()), BigDecimal.ONE, 0L, "expired-counter"));
+        var replacement = offers.submit(auth(buyer), id(listing.getId()), BigDecimal.ONE, "new-offer");
+        assertTrue(replacement.created());
+        assertEquals(OfferNegotiation.Status.EXPIRED, mongo.findById(old.id(), OfferNegotiation.class).status());
+        assertEquals(1, mongo.count(new Query(), Conversation.class));
+        assertEquals(existing.getId(), mongo.findAll(Conversation.class).get(0).getId());
     }
 
     @Test void rejectsIneligibleAccountsListingsAndInvalidRequestsWithoutCreatingAnOffer() {
@@ -143,6 +163,7 @@ class OfferSubmissionMongoTest {
         assertEquals(0, mongo.count(new Query(), OfferNegotiation.class));
         assertEquals(originalVersion, mongo.findById(listing.getId(), Listing.class).getVersion());
         assertEquals(0, mongo.getCollection("offerSubmissionRequests").countDocuments());
+        assertEquals(0, mongo.count(new Query(), Conversation.class));
     }
 
     @Test void legacyListingWithMissingVersionStatusAndVisibilityCanReceiveAnOffer() {
