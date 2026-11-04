@@ -27,7 +27,7 @@ class ListingVersionJsonTest {
         var mine = mock(MyListingsService.class);
         var auth = new UsernamePasswordAuthenticationToken("seller@augustana.edu", null, List.of());
         when(service.getListings(any(),any(),any(),any(),any(),any(),any(),any())).thenReturn(List.of(listing));
-        when(service.getListingById(listing.getId())).thenReturn(ListingDetailsResponse.from(listing, "Seller"));
+        when(service.getListingById(listing.getId(), "seller@augustana.edu")).thenReturn(ListingDetailsResponse.from(listing, "Seller"));
         when(service.createSecureListing(any(), anyString())).thenReturn(listing);
         when(service.updateListing(eq(listing.getId()), any(), anyString())).thenReturn(listing);
         when(service.updateStatus(eq(listing.getId()), any(), anyString())).thenReturn(listing);
