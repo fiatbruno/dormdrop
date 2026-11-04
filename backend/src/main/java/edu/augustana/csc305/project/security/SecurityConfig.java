@@ -1,14 +1,16 @@
 
 package edu.augustana.csc305.project.security;
 
-import edu.augustana.csc305.project.repository.UserRepository;
 import jakarta.servlet.DispatcherType;
+import edu.augustana.csc305.project.model.UserRole;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationManager;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -24,7 +26,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtService jwtService
+            JwtService jwtService,
+            PersistedUserDetailsService users
     ) throws Exception {
 
         http
@@ -46,12 +49,27 @@ public class SecurityConfig {
                                 "/api/v1/ws"
                         ).permitAll()
 
+                        .requestMatchers("/api/v1/admin/team/**", "/api/v1/admin/team")
+                        .access(requires(PermissionPolicy.Capability.MANAGE_ROLES))
+                        .requestMatchers("/api/v1/admin/settings/**", "/api/v1/admin/settings",
+                                "/api/v1/admin/policy/**", "/api/v1/admin/policy")
+                        .access(requires(PermissionPolicy.Capability.MANAGE_CAMPUS_POLICY))
+                        .requestMatchers("/api/v1/admin/suspensions/**", "/api/v1/admin/suspensions")
+                        .access(requires(PermissionPolicy.Capability.MANAGE_SUSPENSIONS))
+                        .requestMatchers("/api/v1/admin/appeals/**", "/api/v1/admin/appeals")
+                        .access(requires(PermissionPolicy.Capability.DECIDE_APPEALS))
+                        .requestMatchers("/api/v1/admin/users/**", "/api/v1/admin/users")
+                        .access(requires(PermissionPolicy.Capability.VIEW_MEMBER_DIRECTORY))
+                        .requestMatchers("/api/v1/admin/activity/**", "/api/v1/admin/activity")
+                        .access(requires(PermissionPolicy.Capability.VIEW_CAMPUS_ACTIVITY))
+                        .requestMatchers("/api/v1/admin/**", "/api/v1/staff/**")
+                        .access(requires(PermissionPolicy.Capability.REVIEW_REPORTS))
                         .anyRequest().authenticated()
                 )
 
                 .addFilterBefore(
                         new JwtAuthenticationFilter(
-                                jwtService
+                                jwtService, users
                         ),
                         UsernamePasswordAuthenticationFilter.class
                 )
@@ -106,29 +124,26 @@ public class SecurityConfig {
         return http.build();
     }
 
+    private static AuthorizationManager<RequestAuthorizationContext> requires(PermissionPolicy.Capability capability) {
+        return (authentication, context) -> {
+            var auth = authentication.get();
+            boolean allowed = auth != null && auth.isAuthenticated() && auth.getAuthorities().stream()
+                    .map(authority -> authority.getAuthority())
+                    .filter(authority -> authority.startsWith("ROLE_"))
+                    .anyMatch(authority -> {
+                        try {
+                            return PermissionPolicy.permits(UserRole.valueOf(authority.substring(5)), capability);
+                        } catch (IllegalArgumentException ignored) {
+                            return false;
+                        }
+                    });
+            return new AuthorizationDecision(allowed);
+        };
+    }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public UserDetailsService userDetailsService(
-            UserRepository repository
-    ) {
-        return email -> {
-
-            var user = repository.findByEmail(email)
-                    .orElseThrow(() ->
-                            new UsernameNotFoundException(
-                                    "User not found"
-                            )
-                    );
-
-            return org.springframework.security.core.userdetails.User
-                    .withUsername(user.getEmail())
-                    .password(user.getPasswordHash())
-                    .roles("STUDENT")
-                    .build();
-        };
-    }
 }

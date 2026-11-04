@@ -9,6 +9,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.mapping.FieldType;
+import org.springframework.data.annotation.Version;
+import edu.augustana.csc305.project.model.ModerationTypes.Visibility;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,6 +32,10 @@ public class Listing {
     private String pickupArea;
     private String listingType = "For sale";
     private String imageUrl;
+    private Visibility moderationVisibility = Visibility.VISIBLE;
+
+    @Version
+    private Long version;
 
     @CreatedDate
     private LocalDateTime listedOn;
@@ -128,6 +134,24 @@ public class Listing {
 
     public ListingStatus getStatus() {
         return status;
+    }
+    public Visibility getModerationVisibility() {
+        return moderationVisibility == null
+                ? Visibility.VISIBLE
+                : moderationVisibility;
+    }
+
+    public void setModerationVisibility(Visibility moderationVisibility) {
+        this.moderationVisibility = moderationVisibility;
+    }
+
+    @JsonIgnore
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     public void setStatus(ListingStatus status) {

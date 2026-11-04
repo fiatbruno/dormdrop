@@ -4,6 +4,7 @@ import AuthLeftPanel from "../AuthLeftPanel/AuthLeftPanel.jsx";
 import "../AuthLeftPanel/AuthPage.css";
 import Navbar from "../Navbar/Navbar.jsx";
 import "./PasswordResetLayout.css";
+import Footer from "../Footer/Footer.jsx";
 
 export default function PasswordResetLayout({
   children,
@@ -30,10 +31,7 @@ export default function PasswordResetLayout({
         </section>
       </main>
 
-      <footer className="passwordResetPage__footer">
-        <span>© 2026 DormDrop</span>
-        <span>Built for your campus community.</span>
-      </footer>
+      <Footer />
     </div>
   );
 }

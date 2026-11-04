@@ -31,12 +31,18 @@ to be set:
     32`, or by using a website like
     [this one](https://randomkeygen.com/jwt-secret).
 
-*Optionally*, you may also provide environment variables called
-`ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_NAME`. These will be
-inserted into the users collection when the application starts up
-if there are no users in the database. If you do not provide these
-environment variables, the application will insert a default user
-`admin@example.com` with password `admin` instead.
+First administrator provisioning is disabled by default. To bootstrap a new,
+empty database, set `ADMIN_BOOTSTRAP_ENABLED=true`, `ADMIN_EMAIL` to an
+Augustana address, and `ADMIN_PASSWORD` to a password of at least eight
+characters. `ADMIN_NAME` is optional and defaults to `Administrator`. Startup
+fails on invalid bootstrap configuration. Provisioning only runs when the user
+collection is empty; it never promotes or changes an existing account. Disable
+the flag after provisioning and keep the credentials out of source control.
+
+The bootstrapped administrator starts with an **unverified** email, just like
+other accounts. Use the normal resend-verification flow to send a verification
+link, and complete that flow before treating the account as a verified campus
+member. Bootstrap itself does not send a verification email.
 
 In your IDE, set environment variables in your run configuration. In
 the shell, set them with `export`. You may find it helpful to store
@@ -44,6 +50,39 @@ your environment variables in a `.env` file, **just be sure not to
 commit this file to git**.
 
 ## Project Structure
+
+### Current user and capabilities
+
+`GET /api/v1/users/me` requires a bearer JWT and returns `id`, `name`,
+`email`, `emailVerified`, `campus`, `aboutYou`, `role`, and `capabilities`.
+`role` is `STUDENT`, `MODERATOR`, or `ADMIN`; a legacy missing or null role
+is treated as `STUDENT`. `capabilities` is a stable, ordered array of names
+defined by `PermissionPolicy.Capability`. Students receive `MARKETPLACE`,
+`OWN_REPORTS`, and `OWN_APPEALS`. Moderators also receive `REVIEW_REPORTS`,
+`REVIEW_EVIDENCE`, `ASSIGN_CASES`, `MODERATE_LISTINGS`, `ISSUE_WARNINGS`,
+`VIEW_SELLER_CONTEXT`, `MANAGE_INTERNAL_NOTES`, and `VIEW_SCOPED_ACTIVITY`.
+Admins additionally receive `MANAGE_SUSPENSIONS`, `DECIDE_APPEALS`,
+`MANAGE_ROLES`, `MANAGE_CAMPUS_POLICY`, `VIEW_CAMPUS_ACTIVITY`, and
+`VIEW_MEMBER_DIRECTORY`. The role and capabilities come from the current
+stored account on each request, so an existing JWT reflects role changes.
+Unauthenticated requests return 401. Capabilities guide the UI; the server
+still enforces access. No restriction summary is included yet.
+
+### Listing search
+
+`GET /api/v1/home` accepts an optional `q` parameter. After trimming,
+an empty or absent `q` applies no search filter. Nonempty queries are split
+into words, each of which must appear as a case-insensitive literal substring
+in the title, description, or category. Words can appear in any order and in
+different fields. Queries over 200 characters
+after trimming receive HTTP 400. Search combines with the existing filters;
+the response remains the same listing array in the same order.
+
+MongoDB evaluates the substring search along with the existing filters and
+sort. Case-insensitive substring matching can require scanning candidates;
+inspect query plans on representative data before adding indexes. Database-backed
+search tests run when `MONGODB_TEST_URI` points
+to a MongoDB instance; they create and drop an isolated test database.
 
 The starter code ships with the following packages:
 
@@ -120,9 +159,8 @@ applications.
 The `security` package contains some code to get you started with user
 authentication:
 
-  + `AdminSeeder.java` runs once at server startup to add a default user
-    in cases where no users are defined in the database. You may want to
-    modify or remove this functionality as your project matures.
+  + `AdminSeeder.java` optionally provisions the first administrator for an
+    empty database when explicitly enabled and configured.
   + `JwtService.java` is responsible for generating and verifying
     [JWT tokens](https://en.wikipedia.org/wiki/JSON_Web_Token).
   + `JwtAuthenticationFilter.java` checks the token sent with each request

@@ -20,15 +20,17 @@ public class FavoriteService {
     private final FavoriteRepository favoriteRepository;
     private final UserRepository userRepository;
     private final ListingRepository listingRepository;
+    private final ListingVisibilityPolicy visibility;
 
     public FavoriteService(
             FavoriteRepository favoriteRepository,
             UserRepository userRepository,
-            ListingRepository listingRepository) {
+            ListingRepository listingRepository, ListingVisibilityPolicy visibility) {
 
         this.favoriteRepository = favoriteRepository;
         this.userRepository = userRepository;
         this.listingRepository = listingRepository;
+        this.visibility = visibility;
     }
 
     private User getUser(String email) {
@@ -47,13 +49,14 @@ public class FavoriteService {
         return favoriteRepository.findByUserId(user.getId())
                 .stream()
                 .map(Favorite::getListingId)
+                .filter(id -> listingRepository.findById(id).map(visibility::visible).orElse(false))
                 .toList();
     }
 
     public void addFavorite(ObjectId listingId, String email) {
         User user = getUser(email);
 
-        if (!listingRepository.existsById(listingId)) {
+        if (!listingRepository.findById(listingId).map(visibility::visible).orElse(false)) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
                     "Listing not found"
