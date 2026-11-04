@@ -7,6 +7,15 @@ export async function getOffer(offerId) {
   return data;
 }
 
+export async function submitOffer(listingId, amount, idempotencyKey) {
+  const { data } = await api.post(
+    `/home/${encodeURIComponent(listingId)}/offers`,
+    { amount },
+    { headers: { "Idempotency-Key": idempotencyKey } },
+  );
+  return data;
+}
+
 export async function sendCounteroffer(
   offerId,
   amount,
@@ -23,13 +32,13 @@ export async function sendCounteroffer(
 
 export async function decideOffer(
   offerId,
-  decision,
+  action,
   expectedVersion,
   idempotencyKey,
 ) {
   const { data } = await api.post(
     `${offerPath(offerId)}/decisions`,
-    { decision, expectedVersion },
+    { action, expectedVersion },
     { headers: { "Idempotency-Key": idempotencyKey } },
   );
   return data;

@@ -48,6 +48,17 @@
   color: #a3332d;
 }
 
+.offer-negotiation__status.is-expired {
+  background: #f1f3f5;
+  color: #526278;
+}
+
+.offer-negotiation__expiry {
+  margin: 10px 0 0;
+  color: #657b9b;
+  font-size: 12px;
+}
+
 .offer-negotiation__history {
   display: grid;
   margin: 14px 0 0;

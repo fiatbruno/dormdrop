@@ -1,13 +1,14 @@
 import { startConversation } from "../../api/messagingApi";
 import useAuth from "../../hooks/useAuth";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ImageOff, UserRound } from "lucide-react";
+import { ImageOff, Share2, UserRound } from "lucide-react";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ListingImage from "../../components/ListingImage";
 import ProductCard from "../../components/ProductCard/ProductCard";
 import ReportSubmission from "../../components/ReportSubmission/ReportSubmission";
+import { submitOffer } from "../../api/offersApi";
 import {
   getListingById,
   getListings,
@@ -65,6 +66,46 @@ function ItemDetailsContent({ id }) {
     }
   }
 
+  async function submitListingOffer(event) {
+    event.preventDefault();
+    if (offerPending) return;
+    if (
+      !offerSaved &&
+      (!/^\d+(\.\d{1,2})?$/.test(offerAmount) ||
+        !Number.isFinite(Number(offerAmount)) ||
+        Number(offerAmount) <= 0)
+    ) {
+      setOfferError("Enter a positive offer with no more than two decimal places.");
+      return;
+    }
+
+    setOfferPending(true);
+    setOfferError("");
+    let offerWasSaved = offerSaved;
+    try {
+      if (!offerSaved) {
+        offerIdempotencyKey.current ||= globalThis.crypto.randomUUID();
+        await submitOffer(id, Number(offerAmount), offerIdempotencyKey.current);
+        offerWasSaved = true;
+        setOfferSaved(true);
+      }
+      const conversation = await startConversation(id);
+      navigate(`/messages/${conversation.id}`);
+    } catch (requestError) {
+      setOfferError(
+        offerWasSaved
+          ? "Your offer is saved, but its conversation could not be opened. Please retry."
+          : requestError.response?.status === 409 &&
+              String(requestError.response?.data?.message || "").includes("pending offer")
+            ? "A pending offer already exists for this listing. Open Messages to continue negotiating."
+            : requestError.response?.data?.message ||
+              "Couldn't submit your offer. Please try again.",
+      );
+    } finally {
+      setOfferPending(false);
+    }
+  }
+
   const [listing, setListing] = useState(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,6 +117,12 @@ function ItemDetailsContent({ id }) {
   const [actionError, setActionError] = useState("");
   const [shareMessage, setShareMessage] = useState("");
   const [reportFormOpen, setReportFormOpen] = useState(false);
+  const [offerFormOpen, setOfferFormOpen] = useState(false);
+  const [offerAmount, setOfferAmount] = useState("");
+  const [offerPending, setOfferPending] = useState(false);
+  const [offerError, setOfferError] = useState("");
+  const [offerSaved, setOfferSaved] = useState(false);
+  const offerIdempotencyKey = useRef(null);
   const [favoriteAttempt, setFavoriteAttempt] = useState(0);
 
   useEffect(() => {
@@ -194,6 +241,16 @@ function ItemDetailsContent({ id }) {
           timeZone: "UTC",
         }).format(date)
       : "";
+  const listingOwnerId =
+    typeof listing?.ownerId === "string"
+      ? listing.ownerId
+      : String(listing?.ownerId?.$oid || listing?.ownerId?.hexString || "");
+  const isOwner =
+    currentUserId != null && listingOwnerId === String(currentUserId);
+  const canMakeOffer =
+    listing?.status === "AVAILABLE" &&
+    String(listing.listingType || "").toLowerCase() === "for sale" &&
+    !isOwner;
 
   return (
     <div className="item-shell">
@@ -278,11 +335,7 @@ function ItemDetailsContent({ id }) {
                       Agree on a public meeting spot before pickup.
                     </p>
                   </div>
-                  {currentUserId !==
-                    (typeof listing.ownerId === "string"
-                      ? listing.ownerId
-                      : listing.ownerId?.$oid ||
-                        listing.ownerId?.hexString) && (
+                  {!isOwner && (
                     <button
                       className="item-primary"
                       type="button"
@@ -292,6 +345,21 @@ function ItemDetailsContent({ id }) {
                       {contactPending
                         ? "Opening conversation…"
                         : "Contact seller"}
+                    </button>
+                  )}
+                  {canMakeOffer && (
+                    <button
+                      className="item-primary item-make-offer"
+                      type="button"
+                      onClick={() => {
+                        setOfferAmount(String(listing.price));
+                        setOfferError("");
+                        setOfferFormOpen((open) => !open);
+                      }}
+                      aria-expanded={offerFormOpen}
+                      aria-controls="listing-offer-form"
+                    >
+                      Make an offer
                     </button>
                   )}
                  <div className="item-actions">
@@ -309,7 +377,12 @@ function ItemDetailsContent({ id }) {
                          : "Save item"}
                    </button>
 
-                   <button type="button" onClick={share}>
+                   <button
+                     type="button"
+                     className="item-share-button"
+                     onClick={share}
+                   >
+                     <Share2 size={18} aria-hidden="true" />
                      Share listing
                    </button>
 
@@ -322,6 +395,52 @@ function ItemDetailsContent({ id }) {
                      Report item
                    </button>
                  </div>
+                 {offerFormOpen && (
+                   <form
+                     id="listing-offer-form"
+                     className="item-offer-form"
+                     aria-label="Make an offer"
+                     onSubmit={submitListingOffer}
+                   >
+                     <label htmlFor="listing-offer-amount">Your offer price</label>
+                     <div className="item-offer-form__input">
+                       <span aria-hidden="true">$</span>
+                       <input
+                         id="listing-offer-amount"
+                         type="number"
+                         min="0.01"
+                         step="0.01"
+                         value={offerAmount}
+                         onChange={(event) => {
+                           setOfferAmount(event.target.value);
+                           setOfferError("");
+                           if (!offerSaved) offerIdempotencyKey.current = null;
+                         }}
+                         required
+                         disabled={offerPending || offerSaved}
+                       />
+                     </div>
+                     <p>Submitting creates or opens a private conversation with the seller.</p>
+                     {offerError && <p role="alert">{offerError}</p>}
+                     {offerError.includes("A pending offer already exists") && (
+                       <Link to="/messages">Open Messages</Link>
+                     )}
+                     <div className="item-offer-form__actions">
+                       <button
+                         type="button"
+                         onClick={() => setOfferFormOpen(false)}
+                         disabled={offerPending}
+                       >
+                         Cancel
+                       </button>
+                       <button type="submit" disabled={offerPending}>
+                         {offerPending
+                           ? offerSaved ? "Opening conversation…" : "Submitting…"
+                           : offerSaved ? "Open conversation" : "Submit offer"}
+                       </button>
+                     </div>
+                   </form>
+                 )}
                  {reportFormOpen && (
                    <ReportSubmission
                      id={id}
