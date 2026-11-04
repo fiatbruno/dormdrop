@@ -54,14 +54,14 @@ public class ListingService {
             String q) {
 
         Query query = new Query();
-        query.addCriteria(visibility.visibleCriteria());
+        List<Criteria> wordFilters = new ArrayList<>();
+        wordFilters.add(visibility.visibleCriteria());
 
         String search = q == null ? "" : q.trim();
         if (search.length() > 200) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Search must be at most 200 characters");
         }
         if (!search.isEmpty()) {
-            List<Criteria> wordFilters = new ArrayList<>();
             for (String word : search.split("\\s+")) {
                 String pattern = Pattern.quote(word);
                 wordFilters.add(new Criteria().orOperator(
@@ -70,8 +70,9 @@ public class ListingService {
                         Criteria.where("category").regex(pattern, "i")
                 ));
             }
-            query.addCriteria(new Criteria().andOperator(wordFilters.toArray(new Criteria[0])));
         }
+        query.addCriteria(wordFilters.size() == 1 ? wordFilters.get(0)
+                : new Criteria().andOperator(wordFilters.toArray(new Criteria[0])));
 
         if (category != null &&
                 !category.isBlank() &&

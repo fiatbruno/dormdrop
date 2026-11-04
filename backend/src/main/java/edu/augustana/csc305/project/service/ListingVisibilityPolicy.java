@@ -17,7 +17,8 @@ public class ListingVisibilityPolicy {
     }
     public Criteria visibleCriteria() {
         // Mongo null matches missing fields, so unmigrated legacy listings stay visible.
-        return Criteria.where("moderationVisibility").in("VISIBLE", null);
+        return new Criteria().orOperator(Criteria.where("moderationVisibility").is("VISIBLE"),
+                Criteria.where("moderationVisibility").is(null));
     }
     public boolean maySeeRestrictedSummary(Listing listing, User viewer) {
         return listing != null && viewer != null && accountAllowsMarketplace(viewer)

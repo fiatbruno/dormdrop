@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 
 import static edu.augustana.csc305.project.dto.StaffCaseDtos.*;
 import static edu.augustana.csc305.project.model.ModerationTypes.*;
-import static edu.augustana.csc305.project.security.StaffAccess.Capability.*;
+import static edu.augustana.csc305.project.security.PermissionPolicy.Capability.*;
 
 @Service
 public class StaffCaseService {
@@ -38,7 +38,7 @@ public class StaffCaseService {
     }
 
     public QueuePage queue(Authentication auth, CaseStatus status, Priority priority, int page, int size) {
-        access.require(auth, REVIEW_CASES);
+        access.require(auth, REVIEW_REPORTS);
         if (page < 0 || size < 1 || size > 100) throw badRequest("Page must be nonnegative; size must be 1 to 100.");
         return read(() -> {
             Criteria criteria = new Criteria();
@@ -54,7 +54,7 @@ public class StaffCaseService {
     }
 
     public CaseDetail detail(Authentication auth, String id) {
-        access.require(auth, REVIEW_CASES);
+        access.require(auth, REVIEW_REPORTS);
         ObjectId caseId = id(id);
         return read(() -> {
             ModerationCase reportCase = requireCase(caseId);
@@ -101,7 +101,7 @@ public class StaffCaseService {
         boolean claim = request.assigneeId() == null;
         ObjectId target = claim ? actor.getId() : id(request.assigneeId());
         User assignee = users.findById(target).orElseThrow(() -> badRequest("Assignee is not eligible staff."));
-        if (!StaffAccess.permits(assignee.getRole(), REVIEW_CASES)) throw badRequest("Assignee is not eligible staff.");
+        if (!StaffAccess.permits(assignee.getRole(), REVIEW_REPORTS)) throw badRequest("Assignee is not eligible staff.");
         try {
             return Objects.requireNonNull(transactions.execute(tx -> {
                 requireCase(caseId);
