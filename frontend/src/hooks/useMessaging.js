@@ -49,18 +49,21 @@ export default function useMessaging(id) {
   const refreshThread = useCallback(async () => {
     if (threadWork.current) { threadQueued.current = true; return threadWork.current; }
     const work = (async () => {
+      let refreshed = false;
       do {
         threadQueued.current = false;
         const current = selected.current;
-        if (!current) break;
+        if (!current) { refreshed = false; break; }
         const version = revision.current;
         try {
           const [conversation, messages] = await Promise.all([api.getConversation(current), api.getMessages(current)]);
           if (mounted.current && version === revision.current && selected.current === current) {
             setThread({ id: current, conversation, messages: uniqueMessages(messages) });
             setError('');
+            refreshed = true;
           }
         } catch (err) {
+          refreshed = false;
           if (mounted.current && version === revision.current) setError(
             err.response?.status === 403 ? 'You cannot access this conversation.' :
               err.response?.status === 404 ? 'Conversation not found.' : 'Could not load this conversation. Try refreshing.');
@@ -68,6 +71,7 @@ export default function useMessaging(id) {
           if (mounted.current && version === revision.current) setLoading(false);
         }
       } while (threadQueued.current && mounted.current);
+      return refreshed;
     })();
     threadWork.current = work;
     try { await work; } finally { threadWork.current = null; }
@@ -87,7 +91,16 @@ export default function useMessaging(id) {
     if (id) void refreshThread();
   }, [id, refreshThread]);
 
-  const refresh = useCallback(() => { void refreshList(); void refreshThread(); }, [refreshList, refreshThread]);
+  const refresh = useCallback(
+    async () => {
+      const [, threadRefreshed] = await Promise.all([
+        refreshList(),
+        refreshThread(),
+      ]);
+      return threadRefreshed;
+    },
+    [refreshList, refreshThread],
+  );
   const connection = useMessageSocket(event => {
     void refreshList();
     if (event.conversationId === selected.current) void refreshThread();

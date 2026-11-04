@@ -1,0 +1,151 @@
+.offer-negotiation {
+  margin: 14px 24px 0;
+  padding: 18px;
+  border: 1px solid #dce4ed;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.offer-negotiation__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.offer-negotiation__header h3 {
+  margin: 0 0 6px;
+  color: #10295c;
+  font-size: 17px;
+}
+
+.offer-negotiation__header p {
+  margin: 0;
+  color: #194278;
+  font-size: 15px;
+}
+
+.offer-negotiation__status {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border-radius: 20px;
+  background: #edf4fa;
+  color: #194278;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.offer-negotiation__status.is-accepted {
+  background: #e8f5ec;
+  color: #24633d;
+}
+
+.offer-negotiation__status.is-rejected,
+.offer-negotiation__status.is-declined {
+  background: #fff0ef;
+  color: #a3332d;
+}
+
+.offer-negotiation__history {
+  display: grid;
+  gap: 0;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.offer-negotiation__history li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  padding: 9px 0;
+  border-top: 1px solid #edf1f5;
+  color: #657b9b;
+  font-size: 13px;
+}
+
+.offer-negotiation__history-person {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.offer-negotiation__history strong {
+  color: #10295c;
+  white-space: nowrap;
+}
+
+.offer-negotiation__history-status {
+  margin-left: auto;
+  color: #657b9b;
+  font-size: 11px;
+}
+
+.offer-negotiation__hint,
+.offer-negotiation__confirmation,
+.offer-negotiation__error {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.offer-negotiation__hint {
+  color: #657b9b;
+}
+
+.offer-negotiation__confirmation {
+  color: #24633d;
+}
+
+.offer-negotiation__error {
+  color: #a3332d;
+}
+
+.messages-page .offer-negotiation__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.messages-page .offer-negotiation__actions button {
+  min-width: 86px;
+  padding: 9px 14px;
+}
+
+.messages-page .offer-negotiation__actions .offer-negotiation__accept {
+  border-color: #194278;
+  background: #194278;
+  color: #fff;
+}
+
+.messages-page .offer-negotiation__actions .offer-negotiation__accept:hover:not(:disabled) {
+  background: #12345f;
+}
+
+.messages-page .offer-negotiation__actions .offer-negotiation__reject {
+  border-color: #e2c6c4;
+  color: #a3332d;
+}
+
+.messages-page .offer-negotiation__actions .offer-negotiation__counter {
+  border-color: #194278;
+  color: #194278;
+}
+
+@media (max-width: 700px) {
+  .offer-negotiation {
+    margin: 12px 12px 0;
+    padding: 14px;
+  }
+
+  .messages-page .offer-negotiation__actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .messages-page .offer-negotiation__actions button {
+    min-width: 0;
+    padding: 9px 6px;
+  }
+}

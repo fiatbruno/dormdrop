@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { sendCounteroffer } from "../../api/offersApi";
 import ListingImage from "../ListingImage";
@@ -38,20 +38,55 @@ function getSuggestedAmount(offer, listing) {
 export default function CounterofferModal({
   offer,
   listing,
-  buyerName,
+  proposerName,
+  proposalLabel,
+  expectedVersion,
   onClose,
   onSuccess,
+  onConflict,
 }) {
   const [amount, setAmount] = useState(() =>
     getSuggestedAmount(offer, listing),
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const inputRef = useRef(null);
+  const previousFocus = useRef(null);
+  const requestKey = useRef(null);
+
+  useEffect(() => {
+    previousFocus.current = document.activeElement;
+    inputRef.current?.focus();
+    return () => {
+      if (previousFocus.current instanceof HTMLElement) {
+        previousFocus.current.focus();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const handleEscape = (event) => {
       if (event.key === "Escape" && !submitting) {
         onClose();
+        return;
+      }
+
+      if (event.key === "Tab") {
+        const dialog = document.querySelector(".counteroffer-modal");
+        const focusable = dialog?.querySelectorAll(
+          'button:not(:disabled), input:not(:disabled), [href], [tabindex]:not([tabindex="-1"])',
+        );
+        if (!focusable?.length) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
       }
     };
 
@@ -67,7 +102,7 @@ export default function CounterofferModal({
   const buyerAmount = Number(offer.amount);
   const askingPrice = Number(listing.price);
   const counterAmount = Number(amount);
-  const counterpartyName = offer.buyerName || buyerName;
+  const counterpartyName = proposerName || "The other person";
 
   const validAmount =
     amount.trim() !== "" &&
@@ -93,16 +128,25 @@ export default function CounterofferModal({
     try {
       const result = await sendCounteroffer(
         offer.id,
-        counterAmount
+        counterAmount,
+        expectedVersion,
+        requestKey.current ||
+          (requestKey.current = globalThis.crypto.randomUUID()),
       );
 
-      onSuccess?.(result);
+      requestKey.current = null;
+      await onSuccess?.(result);
       onClose();
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Could not send your counteroffer. Please try again."
-      );
+      if (err.response?.status === 409) {
+        await onConflict?.();
+        onClose();
+      } else {
+        setError(
+          err.response?.data?.message ||
+            "Could not send your counteroffer. Please try again.",
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -138,9 +182,7 @@ export default function CounterofferModal({
         </h2>
 
         <p className="counteroffer-subtitle">
-          {counterpartyName
-            ? `${counterpartyName}'s offer`
-            : "Buyer's offer"}
+          {proposalLabel || `${counterpartyName}'s proposal`}
           : {formatMoney(buyerAmount)} · Your asking price:{" "}
           {formatMoney(askingPrice)}
         </p>
@@ -179,6 +221,7 @@ export default function CounterofferModal({
             <span aria-hidden="true">$</span>
 
             <input
+              ref={inputRef}
               id="counteroffer-amount"
               type="number"
               min="0.01"

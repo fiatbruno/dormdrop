@@ -1,11 +1,33 @@
 
 import api from "./client";
 
-export async function sendCounteroffer(offerId, amount) {
+const offerPath = (offerId) => `/offers/${encodeURIComponent(offerId)}`;
+
+export async function sendCounteroffer(
+  offerId,
+  amount,
+  expectedVersion,
+  idempotencyKey,
+) {
   const response = await api.post(
-    `/offers/${encodeURIComponent(offerId)}/counteroffer`,
-    { amount }
+    `${offerPath(offerId)}/counteroffers`,
+    { amount, expectedVersion, idempotencyKey },
   );
+
+  return response.data;
+}
+
+export async function decideOffer(
+  offerId,
+  decision,
+  expectedVersion,
+  idempotencyKey,
+) {
+  const response = await api.post(`${offerPath(offerId)}/decisions`, {
+    decision,
+    expectedVersion,
+    idempotencyKey,
+  });
 
   return response.data;
 }

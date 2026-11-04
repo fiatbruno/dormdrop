@@ -3,9 +3,9 @@ import { Link, useParams } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ListingImage from "../../components/ListingImage";
+import OfferNegotiation from "../../components/OfferNegotiation/OfferNegotiation";
 import useMessaging from "../../hooks/useMessaging";
 import "./Messages.css";
-import CounterofferModal from "../../components/CounterofferModal/CounterofferModal";
 
 const initials = (name) =>
   (name || "Member")
@@ -78,8 +78,6 @@ export default function Messages() {
     (item) => item.unreadCount > 0,
   ).length;
   const item = chat.conversation?.listing;
-
-  const [counterofferOpen, setCounterofferOpen] = useState(false);
 
   return (
     <div className="messages-shell">
@@ -250,21 +248,15 @@ export default function Messages() {
                           </p>
                         )}
                       </div>
-
-
-                      {chat.conversation?.offer &&
-                        chat.conversation?.listing &&
-                        chat.conversation.offer.status === "PENDING" &&
-                        chat.conversation.currentUserId ===
-                          chat.conversation.listing.ownerId && (
-                          <button
-                            type="button"
-                            className="messages-counteroffer-button"
-                            onClick={() => setCounterofferOpen(true)}
-                          >
-                            Send counteroffer
-                          </button>
-                        )}
+                      {chat.conversation.offer && item && (
+                        <OfferNegotiation
+                          offer={chat.conversation.offer}
+                          listing={item}
+                          currentUserId={chat.conversation.currentUserId}
+                          participant={chat.conversation.participant}
+                          onRefresh={chat.refresh}
+                        />
+                      )}
                       <div
                         className="messages-thread"
                         ref={scroll}
@@ -366,18 +358,6 @@ export default function Messages() {
               </>
             )}
           </section>
-          {counterofferOpen && chat.conversation?.offer && chat.conversation?.listing && (
-            <CounterofferModal
-              key={`${chat.conversation.offer.id}-${chat.conversation.offer.amount}-${chat.conversation.listing.id}-${chat.conversation.listing.price}`}
-              offer={chat.conversation.offer}
-              listing={chat.conversation.listing}
-              buyerName={chat.conversation.participant.name}
-              onClose={() => setCounterofferOpen(false)}
-              onSuccess={() => {
-                chat.refresh();
-              }}
-            />
-          )}
         </div>
       </main>
       <Footer />
