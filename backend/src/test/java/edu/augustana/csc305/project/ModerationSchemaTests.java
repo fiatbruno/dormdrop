@@ -143,10 +143,7 @@ class ModerationSchemaTests {
                             && database.startsWith("moderation_test_")) {
                         // Atlas test users may delete records without permission to drop databases.
                         // Only touch collections inside this test's randomly generated database.
-                        for (String collection : client.getDatabase(database).listCollectionNames()) {
-                            client.getDatabase(database).getCollection(collection)
-                                    .deleteMany(new Document());
-                        }
+                        MongoTestCleanup.dropCollections(client,database,"moderation_test_");
                     }
                 } finally {
                     client.close();

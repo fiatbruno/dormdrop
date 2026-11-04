@@ -70,9 +70,7 @@ class ListingEvidenceMongoTest {
                 assertEquals(1, mongo.count(new Query(), ListingSnapshot.class));
             } finally {
                 // Clean only this run's isolated database, without requiring dropDatabase permission.
-                for (String collection : client.getDatabase(database).listCollectionNames()) {
-                    client.getDatabase(database).getCollection(collection).deleteMany(new Document());
-                }
+                MongoTestCleanup.dropCollections(client,database,"evidence_test_");
             }
         }
     }

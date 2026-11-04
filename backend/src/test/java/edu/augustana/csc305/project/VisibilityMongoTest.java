@@ -58,8 +58,7 @@ class VisibilityMongoTest {
         if (client == null) return;
         try {
             if (database != null && database.startsWith("vis_test_"))
-                for (String name : client.getDatabase(database).listCollectionNames())
-                    client.getDatabase(database).getCollection(name).deleteMany(new Document());
+                MongoTestCleanup.dropCollections(client,database,"vis_test_");
         } finally { client.close(); }
     }
     private Listing listing(ModerationTypes.Visibility visibility) throws Exception {

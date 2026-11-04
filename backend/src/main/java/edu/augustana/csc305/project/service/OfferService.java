@@ -2,6 +2,7 @@ package edu.augustana.csc305.project.service;
 
 import com.mongodb.MongoException;
 import edu.augustana.csc305.project.model.Listing;
+import edu.augustana.csc305.project.model.Conversation;
 import edu.augustana.csc305.project.model.ListingStatus;
 import edu.augustana.csc305.project.model.ModerationTypes.Visibility;
 import edu.augustana.csc305.project.model.OfferNegotiation;
@@ -41,12 +42,14 @@ public class OfferService {
     private final MongoTemplate mongo;
     private final UserRepository users;
     private final TransactionOperations transactions;
+    private final OfferReceivedEventAppender notifications;
 
     public OfferService(MongoTemplate mongo, UserRepository users,
                         @Qualifier("reportTransactions") TransactionOperations transactions) {
         this.mongo = mongo;
         this.users = users;
         this.transactions = transactions;
+        this.notifications = new OfferReceivedEventAppender(mongo);
     }
 
     public record Submission(OfferNegotiation offer, boolean created) { }
@@ -97,11 +100,16 @@ public class OfferService {
         if (listing.getStatus() != ListingStatus.AVAILABLE || !"For sale".equals(listing.getListingType())
                 || listing.getPrice() == null || listing.getPrice().signum() <= 0)
             throw conflict("Listing is not an available sale.");
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        // Free the unique pending-offer slot when the previous response window has ended.
+        mongo.updateMulti(Query.query(Criteria.where("buyerId").is(buyer.getId()).and("listingId").is(listingId)
+                .and("status").is(OfferNegotiation.Status.PENDING)
+                .and("updatedAt").lte(now.minus(14, ChronoUnit.DAYS))),
+                new Update().set("status", OfferNegotiation.Status.EXPIRED).inc("version", 1L), OfferNegotiation.class);
         if (mongo.exists(Query.query(Criteria.where("buyerId").is(buyer.getId()).and("listingId").is(listingId)
                 .and("status").is(OfferNegotiation.Status.PENDING)), OfferNegotiation.class))
             throw conflict("A pending offer already exists for this listing.");
 
-        Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         OfferNegotiation offer = OfferNegotiation.create(offerId, listingId, buyer.getId(), listing.getOwnerId(), amount, now);
         mongo.insert(offer);
         // Fence concurrent seller edits, deletion and visibility/status changes without changing listing lifecycle.
@@ -115,6 +123,15 @@ public class OfferService {
         Update fence = listing.getVersion() == null ? new Update().set("version", 1L) : new Update().inc("version", 1L);
         if (mongo.updateFirst(versionedListing, fence, Listing.class).getModifiedCount() != 1)
             throw new OptimisticLockingFailureException("Listing changed while submitting offer.");
+        Query conversationQuery = Query.query(Criteria.where("listingId").is(listingId).and("buyerId").is(buyer.getId()));
+        Conversation conversation = mongo.findOne(conversationQuery, Conversation.class);
+        if (conversation == null) {
+            mongo.insert(new Conversation(listingId, buyer.getId(), listing.getOwnerId()));
+        } else if (!listing.getOwnerId().equals(conversation.getSellerId())) {
+            throw conflict("The existing conversation has a different seller.");
+        }
+        notifications.append(new OfferReceivedEventAppender.Submission(offer.id(), offer.listingId(),
+                offer.buyerId(), offer.sellerId(), buyer.getName(), offer.amount(), now));
         mongo.insert(new OfferSubmissionRequest(requestId, listingId, amount, offer, now));
         return new Submission(offer, true);
     }
@@ -169,6 +186,7 @@ public class OfferService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the other participant may respond.");
 
         Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        if (offer.isExpired(now)) throw conflict("This offer has expired. Please make a new offer.");
         OfferNegotiation result = offer.decide(actorId, decision, expectedVersion, now);
         if (decision == OfferNegotiation.Status.ACCEPTED) fenceAvailableListing(offer, false);
         Query expected = Query.query(Criteria.where("_id").is(offerId).and("version").is(expectedVersion)
@@ -229,6 +247,7 @@ public class OfferService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the other participant may respond.");
 
         Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        if (offer.isExpired(now)) throw conflict("This offer has expired. Please make a new offer.");
         OfferNegotiation result = offer.counter(actorId, amount, expectedVersion, now);
         fenceAvailableListing(offer, true);
         Query expected = Query.query(Criteria.where("_id").is(offerId).and("version").is(expectedVersion)
