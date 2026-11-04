@@ -28,8 +28,8 @@ export default function ResetPassword() {
       return;
     }
 
-    if (password.length < 12) {
-      setError("Your password must contain at least 12 characters.");
+    if (password.length < 8) {
+      setError("Your password must contain at least 8 characters.");
       return;
     }
 
@@ -51,9 +51,20 @@ export default function ResetPassword() {
           body: JSON.stringify({
             token,
             newPassword: password,
+            confirmPassword,
           }),
         }
       );
+
+      const result = await response.json();
+
+      if (
+        !response.ok &&
+        result.message === "Invalid or expired password reset link."
+      ) {
+        navigate("/password-reset-expired", { replace: true });
+        return;
+      }
 
       if (!response.ok) {
         throw new Error("Password reset failed.");
@@ -64,9 +75,7 @@ export default function ResetPassword() {
         state: { resetSuccessful: true },
       });
     } catch {
-      setError(
-        "Unable to reset your password. Your link may be expired or invalid."
-      );
+      setError("Unable to reset your password. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -95,7 +104,7 @@ export default function ResetPassword() {
           </p>
 
           <Link
-            to="/forgot-password"
+            to="/password-reset-expired"
             className="passwordResetPage__button"
           >
             Request a new link
@@ -118,7 +127,7 @@ export default function ResetPassword() {
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete="new-password"
                 required
-                minLength={12}
+                minLength={8}
               />
 
               <button
@@ -132,7 +141,7 @@ export default function ResetPassword() {
           </div>
 
           <p className="passwordResetPage__hint">
-            Use at least 12 characters.
+            Use at least 8 characters.
           </p>
 
           <div className="passwordResetPage__field">

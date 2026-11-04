@@ -1,13 +1,14 @@
-import { Link, useLocation, Navigate } from "react-router-dom";
 import { Check } from "lucide-react";
 import PasswordResetLayout from "../../components/PasswordResetLayout/PasswordResetLayout.jsx";
+import { Link, useLocation, Navigate } from "react-router-dom";
 
 export default function PasswordUpdated() {
-    const location = useLocation();
+  const location = useLocation();
 
-    if (!location.state?.resetSuccessful) {
-      return <Navigate to="/forgot-password" replace />;
-    }
+  if (!location.state?.resetSuccessful) {
+    return <Navigate to="/forgot-password" replace />;
+  }
+
   return (
     <PasswordResetLayout>
       <div className="passwordResetPage__icon passwordResetPage__icon--success">
@@ -25,8 +26,8 @@ export default function PasswordUpdated() {
       </Link>
 
       <p className="passwordResetPage__hint" style={{ marginTop: 22 }}>
-        Keep your password private. DormDrop will never ask you
-        to send it in a message.
+        Keep your password private. DormDrop will never ask you to send it in a
+        message.
       </p>
     </PasswordResetLayout>
   );

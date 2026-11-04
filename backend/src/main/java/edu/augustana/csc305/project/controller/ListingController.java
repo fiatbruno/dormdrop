@@ -41,21 +41,22 @@ public class ListingController {
             LocalDate startDate,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate endDate) {
+            LocalDate endDate,
+            @RequestParam(required = false) String q) {
 
         return service.getListings(
                 category, minPrice, maxPrice,
-                condition, pickupArea, startDate, endDate
+                condition, pickupArea, startDate, endDate, q
         );
     }
 
 
     @GetMapping("/{id}")
-    public ListingDetailsResponse getListingById(@PathVariable String id) {
+    public ListingDetailsResponse getListingById(@PathVariable String id, Authentication authentication) {
 
         ObjectId listingId = convertToObjectId(id);
 
-        return service.getListingById(listingId);
+        return service.getListingById(listingId, authentication == null ? null : authentication.getName());
     }
 
     @PostMapping

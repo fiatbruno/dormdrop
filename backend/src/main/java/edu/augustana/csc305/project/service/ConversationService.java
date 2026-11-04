@@ -25,17 +25,19 @@ public class ConversationService {
     private final UserRepository userRepository;
     private final MongoTemplate mongoTemplate;
     private final MessageRepository messageRepository;
+    private final ListingVisibilityPolicy visibility;
 
     public ConversationService(
             ConversationRepository conversationRepository,
             UserRepository userRepository,
             MongoTemplate mongoTemplate,
-            MessageRepository messageRepository
+            MessageRepository messageRepository, ListingVisibilityPolicy visibility
     ) {
         this.conversationRepository = conversationRepository;
         this.userRepository = userRepository;
         this.mongoTemplate = mongoTemplate;
         this.messageRepository = messageRepository;
+        this.visibility = visibility;
     }
 
     public Conversation startConversation(
@@ -65,6 +67,7 @@ public class ConversationService {
             );
         }
 
+        visibility.requireNewConversation(listing, buyer);
         ObjectId sellerId = listing.getOwnerId();
 
         if (sellerId == null) {
@@ -158,7 +161,7 @@ public class ConversationService {
         }
         User other = userRepository.findById(buyer ? conversation.getSellerId() : conversation.getBuyerId()).orElse(null);
         Listing listing = mongoTemplate.findById(conversation.getListingId(), Listing.class);
-        var summary = listing == null ? null : new ConversationResponse.ListingSummary(
+        var summary = !visibility.visible(listing) ? null : new ConversationResponse.ListingSummary(
                 listing.getIdString(), listing.getTitle(), listing.getPrice(), listing.getListingType(),
                 listing.getStatus().name(), listing.getImageUrl());
         String preview = messageRepository.findFirstByConversationIdOrderBySentAtDesc(conversation.getId())
