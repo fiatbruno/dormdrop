@@ -7,6 +7,7 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ListingImage from "../../components/ListingImage";
 import ProductCard from "../../components/ProductCard/ProductCard";
+import ReportSubmission from "../../components/ReportSubmission/ReportSubmission";
 import {
   getListingById,
   getListings,
@@ -74,8 +75,7 @@ function ItemDetailsContent({ id }) {
   const [pending, setPending] = useState(false);
   const [actionError, setActionError] = useState("");
   const [shareMessage, setShareMessage] = useState("");
-  const [reported, setReported] = useState(false);
-  const [reportMessage, setReportMessage] = useState("");
+  const [reportFormOpen, setReportFormOpen] = useState(false);
   const [favoriteAttempt, setFavoriteAttempt] = useState(0);
 
   useEffect(() => {
@@ -174,16 +174,6 @@ function ItemDetailsContent({ id }) {
       );
     }
   }
-  function handleReport() {
-    if (reported) {
-      setReportMessage("Item already reported.");
-      return;
-    }
-
-    setReported(true);
-    setReportMessage("Item reported successfully.");
-  }
-
   const recommendations = listing
     ? related
         .filter((item) => item.id !== id && item.status === "AVAILABLE")
@@ -323,15 +313,20 @@ function ItemDetailsContent({ id }) {
                      Share listing
                    </button>
 
-                   <button type="button" onClick={handleReport}>
+                   <button
+                     type="button"
+                     onClick={() => setReportFormOpen((open) => !open)}
+                     aria-expanded={reportFormOpen}
+                     aria-controls="listing-report-form"
+                   >
                      Report item
                    </button>
                  </div>
-
-                 {reportMessage && (
-                   <p className="item-feedback" role="status">
-                     {reportMessage}
-                   </p>
+                 {reportFormOpen && (
+                   <ReportSubmission
+                     id={id}
+                     onClose={() => setReportFormOpen(false)}
+                   />
                  )}
                   {actionError && (
                     <p className="item-feedback" role="alert">

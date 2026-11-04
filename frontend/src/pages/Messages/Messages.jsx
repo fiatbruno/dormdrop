@@ -7,6 +7,7 @@ import ListingImage from "../../components/ListingImage";
 import useMessaging from "../../hooks/useMessaging";
 import "./Messages.css";
 import OfferCard from "../../components/OfferCard/OfferCard";
+import OfferNegotiation from "../../components/OfferNegotiation/OfferNegotiation";
 
 const initials = (name) =>
   (name || "Member")
@@ -287,6 +288,15 @@ export default function Messages() {
                           </p>
                         )}
                       </div>
+                      {offer && (
+                        <OfferNegotiation
+                          key={`${offer.id}-${offer.version}`}
+                          offer={offer}
+                          listing={item}
+                          currentUserId={chat.conversation.currentUserId}
+                          participant={chat.conversation.participant}
+                        />
+                      )}
                       <div
                         className="messages-thread"
                         ref={scroll}

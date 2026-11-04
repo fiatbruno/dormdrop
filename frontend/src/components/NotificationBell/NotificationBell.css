@@ -200,6 +200,86 @@
   color: #a32020;
 }
 
+.notification-bell__error button,
+.notification-bell__permission {
+  padding: 8px 12px;
+  border: 0;
+  background: #f7f9fc;
+  color: #194278;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+}
+
+.notification-bell__error button {
+  margin-left: 8px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.notification-bell__panel .notification-bell__permission {
+  display: block;
+  width: 100%;
+  margin: 0;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.notification-bell__panel button.notification-bell__permission {
+  cursor: pointer;
+}
+
+.notification-bell__toast {
+  position: fixed;
+  z-index: 2100;
+  right: 20px;
+  bottom: 20px;
+  width: min(360px, calc(100vw - 32px));
+  padding: 16px 42px 16px 16px;
+  border: 1px solid #dce4ed;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 28px #10295c24;
+  color: #10295c;
+}
+
+.notification-bell__toast strong {
+  display: block;
+  padding-right: 12px;
+  font-size: 14px;
+}
+
+.notification-bell__toast p {
+  margin: 8px 0;
+  color: #657b9b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.notification-bell__toast a {
+  color: #194278;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.notification-bell__toast-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #657b9b;
+  cursor: pointer;
+}
+
+.notification-bell__toast-close:focus-visible {
+  outline: 2px solid #19497e;
+  outline-offset: 2px;
+}
+
 .notification-bell__footer {
   min-height: 38px;
   padding: 11px 12px;

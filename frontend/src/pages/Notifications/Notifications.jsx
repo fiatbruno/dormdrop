@@ -2,35 +2,21 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Footer from "../../components/Footer/Footer";
 import Navbar from "../../components/Navbar/Navbar";
+import useAuth from "../../hooks/useAuth";
 import {
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
 } from "../../api/notificationsApi";
+import {
+  notificationBody,
+  notificationTarget,
+  notificationTitle,
+} from "../../utils/notifications";
 import "./Notifications.css";
 
 const PAGE_SIZE = 20;
 const REFRESH_INTERVAL_MS = 15_000;
-
-function notificationTitle(type) {
-  switch (type) {
-    case "OFFER_ACCEPTED":
-      return "Your offer was accepted";
-    case "OFFER_REJECTED":
-      return "Your offer was declined";
-    case "OFFER_COUNTERED":
-      return "You received a counteroffer";
-    case "OFFER_SENT":
-    case "OFFER_SUBMITTED":
-      return "You sent an offer";
-    case "OFFER_EXPIRED":
-      return "Your offer expired";
-    case "MESSAGE_CREATED":
-      return "New message";
-    default:
-      return "DormDrop update";
-  }
-}
 
 function dateLabel(value) {
   const date = new Date(value);
@@ -43,6 +29,11 @@ function dateLabel(value) {
 }
 
 export default function Notifications() {
+  const { token } = useAuth();
+  return <NotificationsContent key={token || "signed-out"} />;
+}
+
+function NotificationsContent() {
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -71,7 +62,13 @@ export default function Notifications() {
         }
         if (!active) return;
         setItems((previous) =>
-          page === 0 ? result.items : [...previous, ...result.items],
+          page === 0
+            ? [...new Map(result.items.map((item) => [item.id, item])).values()]
+            : [
+                ...new Map(
+                  [...previous, ...result.items].map((item) => [item.id, item]),
+                ).values(),
+              ],
         );
         setTotal(result.total);
         setUnreadCount(result.unreadCount);
@@ -92,14 +89,33 @@ export default function Notifications() {
   }, [page, refreshVersion]);
 
   useEffect(() => {
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === "visible" && page === 0) refresh();
+    const refreshInbox = () => {
+      setItems([]);
+      setPage(0);
+      refresh();
     };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible" && page === 0) refreshInbox();
+    };
+    const refreshOnReconnect = () => refreshInbox();
     const interval = window.setInterval(refreshWhenVisible, REFRESH_INTERVAL_MS);
     document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener(
+      "dormdrop:notifications-reconnected",
+      refreshOnReconnect,
+    );
+    window.addEventListener("dormdrop:notification-received", refreshOnReconnect);
     return () => {
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener(
+        "dormdrop:notifications-reconnected",
+        refreshOnReconnect,
+      );
+      window.removeEventListener(
+        "dormdrop:notification-received",
+        refreshOnReconnect,
+      );
     };
   }, [page, refresh]);
 
@@ -234,6 +250,7 @@ export default function Notifications() {
               {visibleItems.map((notification) => {
                 const pending = pendingIds.has(notification.id);
                 const title = notificationTitle(notification.type);
+                const body = notificationBody(notification);
                 return (
                   <li
                     className={`notification-card${notification.readAt ? "" : " notification-card--unread"}`}
@@ -249,27 +266,25 @@ export default function Notifications() {
                         )}
                       </div>
                       <p>
-                        {notification.payload?.message ||
-                          "There’s an update about your DormDrop activity."}
+                        {body}
                       </p>
-                      {notification.payload?.price != null && (
-                        <p className="notification-card__price">
-                          Offer:{" "}
-                          {new Intl.NumberFormat("en-US", {
-                            style: "currency",
-                            currency: "USD",
-                            maximumFractionDigits: 2,
-                          }).format(Number(notification.payload.price))}
-                        </p>
-                      )}
                       <time dateTime={notification.createdAt}>
                         {dateLabel(notification.createdAt)}
                       </time>
                     </div>
                     <div className="notification-card__actions">
-                      {notification.listingId && (
-                        <Link to={`/items/${encodeURIComponent(notification.listingId)}`}>
-                          View listing
+                      {(notification.offerId ||
+                        notification.conversationId ||
+                        notification.listingId) && (
+                        <Link
+                          to={notificationTarget(notification)}
+                          onClick={() => void markRead(notification)}
+                        >
+                          {notification.offerId
+                            ? "Open current offer"
+                            : notification.conversationId
+                              ? "Open conversation"
+                              : "View listing"}
                         </Link>
                       )}
                       {!notification.readAt && (

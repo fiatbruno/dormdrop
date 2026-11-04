@@ -300,6 +300,34 @@ test.describe("Authentication gaps", () => {
     ).toBeVisible();
   });
 
+  test("a shared item does not bypass backend verification denial", async ({
+    page,
+  }) => {
+    let listingRequests = 0;
+    await page.route("**/api/v1/auth/login", (route) =>
+      route.fulfill({
+        status: 403,
+        json: { message: "Account verification required." },
+      }),
+    );
+    await page.route("**/api/v1/home/shared-item", (route) => {
+      listingRequests += 1;
+      return route.fulfill({
+        json: { id: "shared-item", title: "Private shared listing" },
+      });
+    });
+
+    await page.goto("/items/shared-item");
+    await expect(page).toHaveURL("/login");
+    await page.getByLabel("email").fill("unverified@augustana.edu");
+    await page.getByLabel("Password", { exact: true }).fill("passwordsample");
+    await page.getByRole("button", { name: "Log In", exact: true }).click();
+
+    await expect(page.getByRole("alert")).toHaveText("Invalid email or password.");
+    await expect(page).toHaveURL("/login");
+    expect(listingRequests).toBe(0);
+  });
+
   test("a failed login can be corrected and retried successfully", async ({
     page,
   }) => {
