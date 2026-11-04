@@ -5,12 +5,11 @@ import { getUnreadNotificationCount } from "../api/notificationsApi";
 const REFRESH_INTERVAL_MS = 15_000;
 
 export default function useUnreadNotificationCount(enabled = true) {
-  const { isAuthenticated } = useAuth();
-  const [count, setCount] = useState(0);
-  const [error, setError] = useState(false);
+  const { isAuthenticated, token } = useAuth();
+  const [result, setResult] = useState({ token: null, count: 0, error: false });
 
   useEffect(() => {
-    if (!enabled || !isAuthenticated) return undefined;
+    if (!enabled || !isAuthenticated || !token) return undefined;
 
     let active = true;
     let requestPending = false;
@@ -20,11 +19,12 @@ export default function useUnreadNotificationCount(enabled = true) {
       try {
         const nextCount = await getUnreadNotificationCount();
         if (active) {
-          setCount(nextCount);
-          setError(false);
+          setResult({ token, count: nextCount, error: false });
         }
       } catch {
-        if (active) setError(true);
+        if (active) {
+          setResult((current) => ({ ...current, token, error: true }));
+        }
       } finally {
         requestPending = false;
       }
@@ -34,16 +34,23 @@ export default function useUnreadNotificationCount(enabled = true) {
     const interval = window.setInterval(refresh, REFRESH_INTERVAL_MS);
     window.addEventListener("focus", refresh);
     window.addEventListener("dormdrop:notifications-updated", refresh);
+    window.addEventListener("dormdrop:notifications-reconnected", refresh);
     return () => {
       active = false;
       window.clearInterval(interval);
       window.removeEventListener("focus", refresh);
       window.removeEventListener("dormdrop:notifications-updated", refresh);
+      window.removeEventListener("dormdrop:notifications-reconnected", refresh);
     };
-  }, [enabled, isAuthenticated]);
+  }, [enabled, isAuthenticated, token]);
 
   return {
-    count: enabled && isAuthenticated ? count : 0,
-    error: enabled && isAuthenticated && error,
+    count:
+      enabled && isAuthenticated && result.token === token ? result.count : 0,
+    error:
+      enabled &&
+      isAuthenticated &&
+      result.token === token &&
+      result.error,
   };
 }

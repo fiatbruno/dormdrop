@@ -1,37 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Bell, Mail, Tag, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import useAuth from "../../hooks/useAuth";
+import useNotificationClient from "../../hooks/useNotificationClient";
 import {
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
 } from "../../api/notificationsApi";
 import useUnreadNotificationCount from "../../hooks/useUnreadNotificationCount";
+import {
+  notificationBody,
+  notificationTarget,
+  notificationTitle,
+} from "../../utils/notifications";
 import "./NotificationBell.css";
 
 const PREVIEW_SIZE = 5;
-
-function notificationTitle(type) {
-  switch (type) {
-    case "OFFER_COUNTERED":
-      return "Seller sent a counteroffer";
-    case "OFFER_ACCEPTED":
-      return "Seller accepted your offer";
-    case "OFFER_REJECTED":
-      return "Seller declined your offer";
-    case "OFFER_CREATED":
-    case "OFFER_SUBMITTED":
-      return "Seller sent you an offer";
-    case "OFFER_SENT":
-      return "You sent an offer";
-    case "OFFER_EXPIRED":
-      return "Your offer expired";
-    case "MESSAGE_CREATED":
-      return "New message";
-    default:
-      return "New notification";
-  }
-}
 
 function notificationIcon(type) {
   return type === "MESSAGE_CREATED" ? Mail : Tag;
@@ -52,18 +37,13 @@ function relativeTime(value) {
   );
 }
 
-function formatPrice(price) {
-  const value = Number(price);
-  return Number.isFinite(value)
-    ? new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 2,
-      }).format(value)
-    : "";
+export default function NotificationBell() {
+  const { token } = useAuth();
+  return <NotificationBellContent key={token || "signed-out"} />;
 }
 
-export default function NotificationBell() {
+function NotificationBellContent() {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("all");
   const [items, setItems] = useState([]);
@@ -71,11 +51,54 @@ export default function NotificationBell() {
   const [error, setError] = useState("");
   const [pendingIds, setPendingIds] = useState(() => new Set());
   const [markingAll, setMarkingAll] = useState(false);
+  const [liveNotice, setLiveNotice] = useState(null);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const [permission, setPermission] = useState(() =>
+    typeof window.Notification === "undefined"
+      ? "unsupported"
+      : window.Notification.permission,
+  );
   const rootRef = useRef(null);
   const { count, error: countError } = useUnreadNotificationCount();
   const unreadInPreview = items.filter((item) => !item.readAt).length;
   const visibleItems =
     filter === "unread" ? items.filter((item) => !item.readAt) : items;
+
+  const handleLiveNotice = useCallback(
+    (notification) => {
+      setLiveNotice(notification);
+      if (
+        document.visibilityState === "hidden" &&
+        typeof window.Notification !== "undefined" &&
+        window.Notification.permission === "granted"
+      ) {
+        try {
+          const popup = new window.Notification(
+            notificationTitle(notification.type),
+            { body: notificationBody(notification), tag: notification.id },
+          );
+          popup.onclick = () => {
+            if (notification.id && !notification.readAt) {
+              void markNotificationRead(notification.id)
+                .then(() => {
+                  window.dispatchEvent(new Event("dormdrop:notifications-updated"));
+                })
+                .catch(() => {
+                  setError("Couldn't mark that notification as read. It remains in your inbox.");
+                });
+            }
+            window.focus();
+            navigate(notificationTarget(notification));
+            popup.close();
+          };
+        } catch {
+          setPermission("unsupported");
+        }
+      }
+    },
+    [navigate],
+  );
+  useNotificationClient(handleLiveNotice);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -93,7 +116,7 @@ export default function NotificationBell() {
     return () => {
       active = false;
     };
-  }, [open]);
+  }, [open, refreshVersion]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -162,6 +185,20 @@ export default function NotificationBell() {
       setMarkingAll(false);
     }
   }
+
+  async function enableDesktopAlerts() {
+    if (typeof window.Notification === "undefined") {
+      setPermission("unsupported");
+      return;
+    }
+    try {
+      setPermission(await window.Notification.requestPermission());
+    } catch {
+      setPermission("denied");
+    }
+  }
+
+  const liveTarget = liveNotice ? notificationTarget(liveNotice) : null;
 
   return (
     <div className="notification-bell" ref={rootRef}>
@@ -236,8 +273,42 @@ export default function NotificationBell() {
             </button>
           </div>
           {error && (
-            <p className="notification-bell__error" role="alert">
-              {error}
+            <div className="notification-bell__error" role="alert">
+              <span>{error}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoading(true);
+                  setError("");
+                  setRefreshVersion((version) => version + 1);
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {permission === "default" && (
+            <button
+              type="button"
+              className="notification-bell__permission"
+              onClick={() => void enableDesktopAlerts()}
+            >
+              Enable desktop alerts
+            </button>
+          )}
+          {permission === "granted" && (
+            <p className="notification-bell__permission" role="status">
+              Desktop alerts enabled while DormDrop is open.
+            </p>
+          )}
+          {permission === "denied" && (
+            <p className="notification-bell__permission">
+              Desktop alerts are blocked. In-app notifications remain available.
+            </p>
+          )}
+          {permission === "unsupported" && (
+            <p className="notification-bell__permission">
+              Desktop alerts are unavailable in this browser.
             </p>
           )}
           <div className="notification-bell__list">
@@ -255,20 +326,15 @@ export default function NotificationBell() {
               visibleItems.map((notification) => {
                 const Icon = notificationIcon(notification.type);
                 const title = notificationTitle(notification.type);
-                const price = formatPrice(notification.payload?.price);
+                const body = notificationBody(notification);
                 const item = (
                   <>
                     <Icon size={15} aria-hidden="true" />
                     <span className="notification-bell__item-copy">
                       <strong>{title}</strong>
-                      {notification.payload?.message && (
+                      {body && (
                         <span className="notification-bell__detail">
-                          {notification.payload.message}
-                        </span>
-                      )}
-                      {price && (
-                        <span className="notification-bell__detail">
-                          Offer price · {price}
+                          {body}
                         </span>
                       )}
                       <time dateTime={notification.createdAt}>
@@ -280,11 +346,13 @@ export default function NotificationBell() {
                     )}
                   </>
                 );
-                return notification.listingId ? (
+                return notification.offerId ||
+                  notification.conversationId ||
+                  notification.listingId ? (
                   <Link
                     className={`notification-bell__item${notification.readAt ? "" : " is-unread"}`}
                     key={notification.id}
-                    to={`/items/${encodeURIComponent(notification.listingId)}`}
+                    to={notificationTarget(notification)}
                     onClick={() => {
                       void markRead(notification);
                       setOpen(false);
@@ -317,6 +385,42 @@ export default function NotificationBell() {
             )}
           </footer>
         </section>
+      )}
+      {liveNotice && (
+        <aside
+          className="notification-bell__toast"
+          role="status"
+          aria-live="polite"
+        >
+          <button
+            type="button"
+            className="notification-bell__toast-close"
+            aria-label="Dismiss notification"
+            onClick={() => setLiveNotice(null)}
+          >
+            <X size={14} aria-hidden="true" />
+          </button>
+          <strong>{notificationTitle(liveNotice.type)}</strong>
+          <p>{notificationBody(liveNotice)}</p>
+          <Link
+            to={liveTarget}
+            onClick={() => {
+              if (liveNotice.id && !liveNotice.readAt) {
+                void markNotificationRead(liveNotice.id)
+                  .then(() => {
+                    window.dispatchEvent(new Event("dormdrop:notifications-updated"));
+                  })
+                  .catch(() => {
+                    setError("Couldn't mark that notification as read. It remains in your inbox.");
+                  });
+              }
+              setLiveNotice(null);
+              setOpen(false);
+            }}
+          >
+            Open update
+          </Link>
+        </aside>
       )}
       <span className="notification-bell__sr-only" aria-live="polite">
         {countError ? "Unread count unavailable" : `${count} unread notifications`}
