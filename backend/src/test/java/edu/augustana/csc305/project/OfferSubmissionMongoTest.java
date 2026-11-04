@@ -7,6 +7,8 @@ import edu.augustana.csc305.project.config.ReportTransactionConfig;
 import edu.augustana.csc305.project.model.Listing;
 import edu.augustana.csc305.project.model.ListingStatus;
 import edu.augustana.csc305.project.model.OfferNegotiation;
+import edu.augustana.csc305.project.model.OfferDecisionRequest;
+import edu.augustana.csc305.project.model.ModerationTypes.Visibility;
 import edu.augustana.csc305.project.model.User;
 import edu.augustana.csc305.project.repository.UserRepository;
 import edu.augustana.csc305.project.service.OfferService;
@@ -173,6 +175,88 @@ class OfferSubmissionMongoTest {
             pool.shutdownNow();
             assertTrue(pool.awaitTermination(10, TimeUnit.SECONDS));
         }
+    }
+
+    @Test void sellerDecisionIsReplayableAndDoesNotChangeOtherOffersOrListingStatus() {
+        var first = offers.submit(auth(buyer), id(listing.getId()), new BigDecimal("19.99"), "first").offer();
+        var other = offers.submit(auth(outsider), id(listing.getId()), new BigDecimal("25.00"), "other").offer();
+        var accepted = offers.decide(auth(seller), id(first.id()), "ACCEPT", 0L, "decision");
+        assertEquals(OfferNegotiation.Status.ACCEPTED, accepted.status());
+        assertEquals(1, accepted.version());
+        assertEquals(accepted, offers.decide(auth(seller), id(first.id()), "ACCEPT", 0L, "decision"));
+        status(409, () -> offers.decide(auth(seller), id(first.id()), "REJECT", 0L, "decision"));
+        status(409, () -> offers.decide(auth(seller), id(first.id()), "ACCEPT", 0L, "new-key"));
+        var persisted = mongo.findById(first.id(), OfferNegotiation.class);
+        assertEquals(2, persisted.history().size());
+        assertEquals(OfferNegotiation.Action.ACCEPTED, persisted.history().get(1).action());
+        assertEquals(OfferNegotiation.Status.PENDING, mongo.findById(other.id(), OfferNegotiation.class).status());
+        assertEquals(ListingStatus.AVAILABLE, mongo.findById(listing.getId(), Listing.class).getStatus());
+        assertEquals(1, mongo.count(new Query(), OfferDecisionRequest.class));
+    }
+
+    @Test void rejectionIsAllowedWhenListingIsGoneButAcceptanceIsNot() {
+        var first = offers.submit(auth(buyer), id(listing.getId()), BigDecimal.ONE, "first").offer();
+        var second = offers.submit(auth(outsider), id(listing.getId()), BigDecimal.TEN, "second").offer();
+        mongo.remove(listing);
+        status(409, () -> offers.decide(auth(seller), id(first.id()), "ACCEPT", 0L, "accept"));
+        assertEquals(OfferNegotiation.Status.REJECTED,
+                offers.decide(auth(seller), id(second.id()), "REJECT", 0L, "reject").status());
+        assertEquals(OfferNegotiation.Status.PENDING, mongo.findById(first.id(), OfferNegotiation.class).status());
+    }
+
+    @Test void hiddenOrSoldListingCannotBeAcceptedAndBuyerCanAnswerSellerCounter() {
+        var first = offers.submit(auth(buyer), id(listing.getId()), BigDecimal.ONE, "first").offer();
+        Listing current = mongo.findById(listing.getId(), Listing.class);
+        current.setModerationVisibility(Visibility.HIDDEN);
+        mongo.save(current);
+        status(409, () -> offers.decide(auth(seller), id(first.id()), "ACCEPT", 0L, "hidden"));
+        current = mongo.findById(listing.getId(), Listing.class);
+        current.setModerationVisibility(Visibility.VISIBLE);
+        current.setStatus(ListingStatus.SOLD);
+        mongo.save(current);
+        status(409, () -> offers.decide(auth(seller), id(first.id()), "ACCEPT", 0L, "sold"));
+        var counter = first.counter(seller.getId(), new BigDecimal("2.00"), 0L, Instant.now());
+        mongo.save(counter);
+        status(403, () -> offers.decide(auth(seller), id(first.id()), "REJECT", 1L, "self"));
+        assertEquals(OfferNegotiation.Status.REJECTED,
+                offers.decide(auth(buyer), id(first.id()), "REJECT", 1L, "buyer").status());
+    }
+
+    @Test void simultaneousDecisionsHaveOneWinnerAndStaleConflict() throws Exception {
+        var offer = offers.submit(auth(buyer), id(listing.getId()), BigDecimal.ONE, "submit").offer();
+        var results = concurrently(List.of(
+                () -> offers.decide(auth(seller), id(offer.id()), "ACCEPT", 0L, "accept"),
+                () -> offers.decide(auth(seller), id(offer.id()), "REJECT", 0L, "reject")));
+        assertEquals(1, results.stream().filter(OfferNegotiation.class::isInstance).count(), results.toString());
+        var failure = results.stream().filter(ResponseStatusException.class::isInstance)
+                .map(ResponseStatusException.class::cast).findFirst().orElseThrow();
+        assertEquals(409, failure.getStatusCode().value());
+        assertEquals(2, mongo.findById(offer.id(), OfferNegotiation.class).history().size());
+        assertEquals(1, mongo.count(new Query(), OfferDecisionRequest.class));
+    }
+
+    @Test void simultaneousIdenticalDecisionRetriesReturnTheSameResult() throws Exception {
+        var offer = offers.submit(auth(buyer), id(listing.getId()), BigDecimal.ONE, "submit").offer();
+        Callable<Object> decide = () -> offers.decide(auth(seller), id(offer.id()), "REJECT", 0L, "same");
+        var results = concurrently(List.of(decide, decide));
+        assertTrue(results.stream().allMatch(OfferNegotiation.class::isInstance), results.toString());
+        assertEquals(results.get(0), results.get(1));
+        assertEquals(2, mongo.findById(offer.id(), OfferNegotiation.class).history().size());
+        assertEquals(1, mongo.count(new Query(), OfferDecisionRequest.class));
+    }
+
+    @Test void decisionLedgerFailureRollsBackOfferAndListingFence() {
+        var offer = offers.submit(auth(buyer), id(listing.getId()), BigDecimal.ONE, "submit").offer();
+        Long version = mongo.findById(listing.getId(), Listing.class).getVersion();
+        mongo.getCollection("offerDecisionRequests").drop();
+        mongo.getDb().createCollection("offerDecisionRequests", new com.mongodb.client.model.CreateCollectionOptions()
+                .validationOptions(new com.mongodb.client.model.ValidationOptions()
+                        .validator(new org.bson.Document("impossible", new org.bson.Document("$exists", true)))));
+        assertThrows(ResponseStatusException.class,
+                () -> offers.decide(auth(seller), id(offer.id()), "ACCEPT", 0L, "fail"));
+        assertEquals(OfferNegotiation.Status.PENDING, mongo.findById(offer.id(), OfferNegotiation.class).status());
+        assertEquals(1, mongo.findById(offer.id(), OfferNegotiation.class).history().size());
+        assertEquals(version, mongo.findById(listing.getId(), Listing.class).getVersion());
     }
 
     @Test void simultaneousSameKeySubmitsReturnOneOfferAndOneReplay() throws Exception {
