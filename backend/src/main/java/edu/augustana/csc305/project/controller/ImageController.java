@@ -27,14 +27,16 @@ public class ImageController {
     private final ImageStorageService storage;
     private final ListingRepository listings;
     private final UserRepository users;
+    private final edu.augustana.csc305.project.service.ListingVisibilityPolicy visibility;
 
     public ImageController(
             ImageStorageService storage,
             ListingRepository listings,
-            UserRepository users) {
+            UserRepository users, edu.augustana.csc305.project.service.ListingVisibilityPolicy visibility) {
         this.storage = storage;
         this.listings = listings;
         this.users = users;
+        this.visibility = visibility;
     }
 
     @PostMapping("/{listingId}")
@@ -77,9 +79,15 @@ public class ImageController {
             );
         }
 
+        visibility.requireSellerMutation(listing, user);
         String url = storage.store(file);
         listing.setImageUrl(url);
-        listings.save(listing);
+        try {
+            listings.save(listing);
+        } catch (RuntimeException failure) {
+            storage.discardNewUpload(url);
+            throw failure;
+        }
 
         return Map.of("imageUrl", url);
     }
@@ -88,6 +96,10 @@ public class ImageController {
     public ResponseEntity<Resource> getImage(
             @PathVariable String filename) throws IOException {
 
+        var linked = listings.findAllByImageUrl(storage.imageUrl(filename));
+        if (linked.isEmpty() || linked.stream().anyMatch(listing -> !visibility.visible(listing))) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image not found.");
+        }
         Path path = storage.getImage(filename);
         Resource resource = new UrlResource(path.toUri());
 
@@ -105,6 +117,8 @@ public class ImageController {
                 : "image/jpeg";
 
         return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .header("X-Content-Type-Options", "nosniff")
                 .contentType(MediaType.parseMediaType(type))
                 .body(resource);
     }
