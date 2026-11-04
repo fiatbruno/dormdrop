@@ -26,6 +26,9 @@ public class ModerationSchema implements ApplicationRunner {
     }
 
     public static void initialize(MongoTemplate mongo) {
+        mongo.getCollection("notifications").createIndex(Indexes.ascending("status","nextAttemptAt","leaseUntil","createdAt"),new IndexOptions().name("notification_delivery_queue"));
+        mongo.getCollection("moderationNotificationOutbox").createIndex(Indexes.ascending("status","nextAttemptAt","leaseUntil","createdAt"),
+                new IndexOptions().name("moderation_outbox_retry_queue"));
         mongo.getCollection("reportRequests").createIndex(Indexes.ascending("createdAt"), new IndexOptions().name("report_request_history"));
         mongo.getCollection("reportRateWindows").createIndex(Indexes.ascending("startedAt"), new IndexOptions().name("report_rate_window_start"));
         mongo.getCollection("moderationDecisionRequests").createIndex(Indexes.ascending("createdAt"), new IndexOptions().name("decision_request_history"));

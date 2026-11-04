@@ -17,8 +17,9 @@ public class PrivateNotificationConfiguration {
     public Clock notificationClock() { return Clock.systemUTC(); }
 
     @Bean
-    public ApplicationRunner notificationIndexes(MongoTemplate mongo) {
-        return args -> initialize(mongo);
+    public ApplicationRunner notificationIndexes(MongoTemplate mongo,
+            edu.augustana.csc305.project.service.NotificationInboxService moderation) {
+        return args -> { initialize(mongo); moderation.migrateLegacyInbox(); };
     }
 
     /** Additive v1 indexes; safe to rerun. No listing migration or historical date backfill. */

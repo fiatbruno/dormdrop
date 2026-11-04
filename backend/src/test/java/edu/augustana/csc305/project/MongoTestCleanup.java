@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 public final class MongoTestCleanup {
     private MongoTestCleanup() {}
     private static final Set<String> PREFIXES = Set.of("dec_test_", "report_test_", "staff_test_",
-            "vis_test_", "moderation_test_", "evidence_test_", "search_test_");
+            "vis_test_", "moderation_test_", "evidence_test_", "search_test_", "notice_test_");
     public static void dropCollections(MongoClient client, String database, String prefix) {
         if (client == null || database == null) return;
         if (!PREFIXES.contains(prefix) || !database.matches(Pattern.quote(prefix)+"[0-9a-f]{20,32}"))
