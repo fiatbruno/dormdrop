@@ -15,6 +15,19 @@ async function loginAs(page, claims = {}) {
   );
 }
 
+async function loginAsStaff(page, profile = {}) {
+  const identity = {
+    id: profile.id || "moderator-1",
+    role: profile.role || "MODERATOR",
+    capabilities:
+      profile.capabilities || ["REVIEW_REPORTS", "REVIEW_EVIDENCE", "ASSIGN_CASES"],
+  };
+  await loginAs(page, { id: identity.id });
+  await page.route("**/api/v1/users/me", (route) =>
+    route.fulfill({ json: identity }),
+  );
+}
+
 async function openReportForm(page) {
   await page.route("**/api/v1/home/listing-1", (route) =>
     route.fulfill({
@@ -95,7 +108,7 @@ function caseDetail(overrides = {}) {
 }
 
 async function setupStaffPage(page, start = "/staff/reports/case-1") {
-  await loginAs(page, { id: "moderator-1", roles: ["MODERATOR"] });
+  await loginAsStaff(page);
   let detailCalls = 0;
   await page.route("**/api/v1/admin/reports/case-1", (route) => {
     detailCalls += 1;
@@ -270,7 +283,7 @@ test("own report status displays only sanitized fields from the API", async ({
 test("staff queue filters and paginates; report detail shows grouped retained evidence safely", async ({
   page,
 }) => {
-  await loginAs(page, { id: "moderator-1", roles: ["MODERATOR"] });
+  await loginAsStaff(page);
   let queueRequests = [];
   await page.route("**/api/v1/admin/reports**", (route) => {
     const url = new URL(route.request().url());
@@ -316,7 +329,7 @@ test("staff queue filters and paginates; report detail shows grouped retained ev
 test("staff evidence media is fetched through the case-scoped authenticated endpoint", async ({
   page,
 }) => {
-  await loginAs(page, { id: "moderator-1", roles: ["MODERATOR"] });
+  await loginAsStaff(page);
   await page.route("**/api/v1/admin/reports/case-1", (route) =>
     route.fulfill({
       json: caseDetail({
@@ -357,8 +370,19 @@ test("staff evidence media is fetched through the case-scoped authenticated endp
   await expect(page.locator("body")).not.toContainText("private-media-key");
 });
 
-test("student deep link to staff reports is denied", async ({ page }) => {
-  await loginAs(page, { id: "student-1", roles: ["STUDENT"] });
+test("staff access trusts the profile rather than moderator claims in the login token", async ({
+  page,
+}) => {
+  await loginAs(page, { id: "student-1", roles: ["MODERATOR"] });
+  await page.route("**/api/v1/users/me", (route) =>
+    route.fulfill({
+      json: {
+        id: "student-1",
+        role: "STUDENT",
+        capabilities: ["MARKETPLACE", "OWN_REPORTS"],
+      },
+    }),
+  );
   let staffCalls = 0;
   await page.route("**/api/v1/admin/reports**", (route) => {
     staffCalls += 1;
@@ -373,7 +397,7 @@ test("student deep link to staff reports is denied", async ({ page }) => {
 test("staff-only responses and draft decision text are cleared after permission loss", async ({
   page,
 }) => {
-  await loginAs(page, { id: "moderator-1", roles: ["MODERATOR"] });
+  await loginAsStaff(page);
   await page.route("**/api/v1/admin/reports/case-1", (route) =>
     route.fulfill({ json: caseDetail() }),
   );
@@ -392,7 +416,7 @@ test("staff-only responses and draft decision text are cleared after permission 
 test("claim sends current expectedVersion and refreshes the case after a stale conflict", async ({
   page,
 }) => {
-  await loginAs(page, { id: "moderator-1", roles: ["MODERATOR"] });
+  await loginAsStaff(page);
   let detailCalls = 0;
   let version = 3;
   let latestAssignedTo = null;
@@ -477,7 +501,7 @@ for (const action of ["KEEP", "HIDE", "REMOVE"]) {
 test("decision conflict refreshes case without dropping entered private staff form values", async ({
   page,
 }) => {
-  await loginAs(page, { id: "moderator-1", roles: ["MODERATOR"] });
+  await loginAsStaff(page);
   let detailCalls = 0;
   await page.route("**/api/v1/admin/reports/case-1", (route) => {
     detailCalls += 1;

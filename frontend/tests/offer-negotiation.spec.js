@@ -26,6 +26,7 @@ const makeOffer = (overrides = {}) => ({
   amount: 60,
   status: "PENDING",
   version: 0,
+  expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
   history: [
     {
       action: "PROPOSED",
@@ -111,7 +112,7 @@ test("seller accepts buyer offer without implying payment or sale", async ({
 
   await expect(page.getByText("Agreed price: $60.00", { exact: true })).toBeVisible();
   await expect(page.getByText(/agreement only; no payment is taken/i)).toBeVisible();
-  expect(requestBody).toEqual({ decision: "ACCEPT", expectedVersion: 0 });
+  expect(requestBody).toEqual({ action: "ACCEPT", expectedVersion: 0 });
 });
 
 test("buyer counters seller proposal with version and idempotency header", async ({
@@ -279,7 +280,7 @@ test("the responder can reject the latest counteroffer", async ({ page }) => {
   await openMessageOffer(page, "buyer-1", offer);
   await page.getByRole("button", { name: "Reject", exact: true }).click();
   await expect(page.getByText("Offer rejected at $72.00", { exact: true })).toBeVisible();
-  expect(decision).toEqual({ decision: "REJECT", expectedVersion: 2 });
+  expect(decision).toEqual({ action: "REJECT", expectedVersion: 2 });
   await expect(page.getByRole("button", { name: "Accept", exact: true })).toHaveCount(0);
 });
 
@@ -345,4 +346,105 @@ test("a participant cannot respond to their own current proposal", async ({
   await expect(page.getByRole("button", { name: "Accept", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Reject", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Counter", exact: true })).toHaveCount(0);
+});
+
+test("expired offers show the backend status and cannot be answered", async ({
+  page,
+}) => {
+  await openMessageOffer(
+    page,
+    "seller-1",
+    makeOffer({
+      status: "EXPIRED",
+      expiresAt: new Date(Date.now() - 60_000).toISOString(),
+    }),
+  );
+  await expect(page.getByText("Offer expired at $60.00")).toBeVisible();
+  await expect(page.getByText("This offer has expired. No further responses are available.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Accept", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Reject", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Counter", exact: true })).toHaveCount(0);
+});
+
+test("a pending offer past expiresAt is treated as expired before the next refresh", async ({
+  page,
+}) => {
+  await openMessageOffer(
+    page,
+    "seller-1",
+    makeOffer({ expiresAt: new Date(Date.now() - 60_000).toISOString() }),
+  );
+  await expect(page.getByText("Offer expired at $60.00")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Accept", exact: true })).toHaveCount(0);
+});
+
+test("a buyer can submit an offer from a listing and land in that listing's conversation", async ({
+  page,
+}) => {
+  await page.addInitScript((token) => localStorage.setItem("token", token), makeToken("buyer-1"));
+  await page.route("**/api/v1/me/notifications/unread-count", (route) =>
+    route.fulfill({ json: { count: 0 } }),
+  );
+  await page.route("**/api/v1/home**", (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith("/listing-1")) {
+      return route.fulfill({
+        json: {
+          ...listing,
+          listingType: "For sale",
+          sellerName: "Sam Seller",
+        },
+      });
+    }
+    return route.fulfill({ json: [] });
+  });
+  await page.route("**/api/v1/favorites", (route) =>
+    route.fulfill({ json: [] }),
+  );
+  let submitRequest;
+  await page.route("**/api/v1/home/listing-1/offers", (route) => {
+    submitRequest = route.request();
+    return route.fulfill({ status: 201, json: makeOffer() });
+  });
+  let conversationRequest;
+  await page.route("**/api/v1/conversations", (route) => {
+    if (route.request().method() === "POST") {
+      conversationRequest = route.request();
+      return route.fulfill({
+        json: {
+          id: "conversation-1",
+          currentUserId: "buyer-1",
+          participant: { id: "seller-1", name: "Sam Seller", emailVerified: true },
+          listing,
+          offer: makeOffer(),
+        },
+      });
+    }
+    return route.fulfill({ json: [] });
+  });
+  await page.route("**/api/v1/conversations/conversation-1", (route) =>
+    route.fulfill({
+      json: {
+        id: "conversation-1",
+        currentUserId: "buyer-1",
+        participant: { id: "seller-1", name: "Sam Seller", emailVerified: true },
+        listing,
+        offer: makeOffer(),
+      },
+    }),
+  );
+  await page.route("**/api/v1/conversations/conversation-1/messages", (route) =>
+    route.fulfill({ json: [] }),
+  );
+
+  await page.goto("/items/listing-1");
+  await page.getByRole("button", { name: "Make an offer" }).click();
+  await page.getByLabel("Your offer price").fill("73.50");
+  await page.getByRole("button", { name: "Submit offer" }).click();
+
+  await expect(page).toHaveURL("/messages/conversation-1");
+  await expect(page.getByRole("heading", { name: "Offer negotiation" })).toBeVisible();
+  expect(submitRequest.postDataJSON()).toEqual({ amount: 73.5 });
+  expect(submitRequest.headers()["idempotency-key"]).toBeTruthy();
+  expect(conversationRequest.postDataJSON()).toEqual({ listingId: "listing-1" });
 });

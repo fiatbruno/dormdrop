@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import useAuth from "../../hooks/useAuth";
+import { getProfile } from "../../api/profileApi";
 import { getStaffIdentity } from "../../auth/staffCapabilities";
 import {
   assignStaffReportCase,
@@ -114,13 +115,76 @@ function StaffSnapshotMedia({ caseId, snapshot, onPermissionLoss }) {
 export default function StaffReports() {
   const { caseId } = useParams();
   const { token } = useAuth();
-  const staff = getStaffIdentity(token);
+  return <StaffReportsProfile key={token || "signed-out"} caseId={caseId} />;
+}
+
+function StaffReportsProfile({ caseId }) {
+  const [profile, setProfile] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [profileError, setProfileError] = useState("");
+  const [profileAttempt, setProfileAttempt] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    getProfile()
+      .then((currentProfile) => {
+        if (active) {
+          setProfile(currentProfile);
+          setProfileError("");
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setProfile(null);
+          setProfileError("Couldn't verify staff access. Please retry.");
+        }
+      })
+      .finally(() => {
+        if (active) setLoadingProfile(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [profileAttempt]);
+
+  const staff = getStaffIdentity(profile);
+  if (loadingProfile) {
+    return (
+      <div className="staff-reports-shell">
+        <Navbar showSearch={false} />
+        <main className="staff-reports-page">
+          <h1>Listing reports</h1>
+          <p role="status">Verifying staff access…</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+  if (profileError) {
+    return (
+      <div className="staff-reports-shell">
+        <Navbar showSearch={false} />
+        <main className="staff-reports-page">
+          <h1>Listing reports</h1>
+          <div role="alert">
+            <p>{profileError}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setLoadingProfile(true);
+                setProfileAttempt((attempt) => attempt + 1);
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
   return (
-    <StaffReportsContent
-      key={token || "signed-out"}
-      caseId={caseId}
-      staff={staff}
-    />
+    <StaffReportsContent caseId={caseId} staff={staff} />
   );
 }
 

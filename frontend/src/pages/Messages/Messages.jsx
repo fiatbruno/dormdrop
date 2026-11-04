@@ -288,15 +288,6 @@ export default function Messages() {
                           </p>
                         )}
                       </div>
-                      {offer && (
-                        <OfferNegotiation
-                          key={`${offer.id}-${offer.version}`}
-                          offer={offer}
-                          listing={item}
-                          currentUserId={chat.conversation.currentUserId}
-                          participant={chat.conversation.participant}
-                        />
-                      )}
                       <div
                         className="messages-thread"
                         ref={scroll}
@@ -342,6 +333,15 @@ export default function Messages() {
                             </div>
                           );
                         })}
+                        {offer && (
+                          <OfferNegotiation
+                            key={`${offer.id}-${offer.version}`}
+                            offer={offer}
+                            listing={item}
+                            currentUserId={chat.conversation.currentUserId}
+                            participant={chat.conversation.participant}
+                          />
+                        )}
                         {offerAccepted && formattedAgreedPrice && (
                           <article
                             className="offer-accepted-card"

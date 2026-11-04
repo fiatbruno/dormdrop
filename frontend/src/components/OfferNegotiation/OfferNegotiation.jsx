@@ -22,9 +22,21 @@ export default function OfferNegotiation({
   const [error, setError] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
+  const [clock, setClock] = useState(Date.now);
   const keys = useRef(new Map());
   const summaryRef = useRef(null);
   const restoreFocus = useRef(false);
+
+  const expiresAt = Date.parse(offer?.expiresAt || "");
+
+  useEffect(() => {
+    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return undefined;
+    const timer = window.setTimeout(
+      () => setClock(Date.now()),
+      expiresAt - Date.now(),
+    );
+    return () => window.clearTimeout(timer);
+  }, [expiresAt]);
 
   useEffect(() => {
     if (restoreFocus.current && !busy && !counterOpen) {
@@ -38,6 +50,10 @@ export default function OfferNegotiation({
   const amount = Number(offer.amount);
   const version = Number(offer.version);
   const status = String(offer.status || "").toUpperCase();
+  const expired =
+    status === "EXPIRED" ||
+    (status === "PENDING" && Number.isFinite(expiresAt) && expiresAt <= clock);
+  const currentStatus = expired ? "EXPIRED" : status;
   const userId = currentUserId == null ? "" : String(currentUserId);
   const buyerId = offer.buyerId == null ? "" : String(offer.buyerId);
   const sellerId = offer.sellerId == null ? "" : String(offer.sellerId);
@@ -47,7 +63,7 @@ export default function OfferNegotiation({
     Boolean(userId) && (userId === buyerId || userId === sellerId);
   const canRespond =
     isParticipant &&
-    status === "PENDING" &&
+    currentStatus === "PENDING" &&
     proposerId !== "" &&
     proposerId !== userId &&
     Number.isFinite(amount) &&
@@ -78,19 +94,19 @@ export default function OfferNegotiation({
     return latest;
   }
 
-  async function decide(decision) {
-    if (!canRespond || (decision === "ACCEPT" && !canAccept) || busy) return;
+  async function decide(action) {
+    if (!canRespond || (action === "ACCEPT" && !canAccept) || busy) return;
     setBusy(true);
-    setPendingAction(decision);
+    setPendingAction(action);
     setError("");
     setConfirmation("");
-    const { operationId, key } = operationKey(decision);
+    const { operationId, key } = operationKey(action);
     try {
-      const result = await decideOffer(offer.id, decision, version, key);
+      const result = await decideOffer(offer.id, action, version, key);
       keys.current.delete(operationId);
       setOffer(result);
       setConfirmation(
-        decision === "ACCEPT"
+        action === "ACCEPT"
           ? `Agreed price: ${formatMoney(amount)}. This records agreement only; no payment is taken and the listing is not marked sold.`
           : `Offer rejected at ${formatMoney(amount)}.`,
       );
@@ -155,11 +171,13 @@ export default function OfferNegotiation({
   }
 
   const statusLabel =
-    status === "ACCEPTED"
+    currentStatus === "ACCEPTED"
       ? `Agreed price: ${formatMoney(offer.agreedAmount ?? amount)}`
-      : status === "REJECTED"
+      : currentStatus === "REJECTED"
         ? `Offer rejected at ${formatMoney(amount)}`
-        : `Current proposal: ${formatMoney(amount)}`;
+        : currentStatus === "EXPIRED"
+          ? `Offer expired at ${formatMoney(amount)}`
+          : `Current proposal: ${formatMoney(amount)}`;
 
   return (
     <section className="offer-negotiation" aria-labelledby={`offer-title-${offer.id}`}>
@@ -168,8 +186,8 @@ export default function OfferNegotiation({
           <h2 id={`offer-title-${offer.id}`}>Offer negotiation</h2>
           <p ref={summaryRef} tabIndex={-1}>{statusLabel}</p>
         </div>
-        <span className={`offer-negotiation__status is-${status.toLowerCase()}`}>
-          {status}
+        <span className={`offer-negotiation__status is-${currentStatus.toLowerCase()}`}>
+          {currentStatus}
         </span>
       </header>
       <ol className="offer-negotiation__history" aria-label="Offer price history">
@@ -192,7 +210,20 @@ export default function OfferNegotiation({
           );
         })}
       </ol>
-      {status === "PENDING" && (
+      {currentStatus === "PENDING" && Number.isFinite(expiresAt) && (
+        <p className="offer-negotiation__expiry">
+          Respond by {new Intl.DateTimeFormat("en-US", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }).format(expiresAt)}
+        </p>
+      )}
+      {currentStatus === "EXPIRED" && (
+        <p className="offer-negotiation__hint" role="status">
+          This offer has expired. No further responses are available.
+        </p>
+      )}
+      {currentStatus === "PENDING" && (
         <p className="offer-negotiation__hint">
           {!isParticipant
             ? "Only the buyer and seller can view or respond to this negotiation."
@@ -203,7 +234,7 @@ export default function OfferNegotiation({
                 : "This offer cannot be acted on until its latest state is confirmed."}
         </p>
       )}
-      {status === "ACCEPTED" && (
+      {currentStatus === "ACCEPTED" && (
         <p className="offer-negotiation__hint">
           Agreement only—this does not confirm payment, reserve the listing, or mark it sold.
         </p>
