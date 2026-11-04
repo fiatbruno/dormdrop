@@ -26,15 +26,17 @@ public class SavedListingService {
     private final SavedListingRepository savedRepository;
     private final ListingRepository listingRepository;
     private final UserRepository userRepository;
+    private final ListingVisibilityPolicy visibility;
 
     public SavedListingService(
             SavedListingRepository savedRepository,
             ListingRepository listingRepository,
-            UserRepository userRepository
+            UserRepository userRepository, ListingVisibilityPolicy visibility
     ) {
         this.savedRepository = savedRepository;
         this.listingRepository = listingRepository;
         this.userRepository = userRepository;
+        this.visibility = visibility;
     }
 
     private User getUser(String email) {
@@ -60,6 +62,7 @@ public class SavedListingService {
 
     private boolean isAvailable(Listing listing) {
         return listing != null
+                && visibility.visible(listing)
                 && listing.getStatus() == ListingStatus.AVAILABLE;
     }
 
@@ -76,7 +79,7 @@ public class SavedListingService {
                     null,
                     "DELETED",
                     false,
-                    saved.getSavedAt()
+                    saved.getSavedAt(), null, false
             );
         }
 
@@ -90,7 +93,7 @@ public class SavedListingService {
                         ? "UNKNOWN"
                         : listing.getStatus().name(),
                 isAvailable(listing),
-                saved.getSavedAt()
+                saved.getSavedAt(), listing.getModerationVisibility(), !visibility.visible(listing)
         );
     }
 
@@ -127,6 +130,11 @@ public class SavedListingService {
                     .findById(bookmark.getListingId())
                     .orElse(null);
 
+            if (listing != null && !visibility.visible(listing)) {
+                if (!visibility.maySeeRestrictedSummary(listing, user)) continue;
+                listing = visibility.view(listing, user);
+            }
+
             boolean available = isAvailable(listing);
 
             if (selectedFilter.equals("available") && !available) {
@@ -158,6 +166,7 @@ public class SavedListingService {
                         )
                 );
 
+        visibility.requireVisible(listing);
         if (!isAvailable(listing)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
@@ -207,7 +216,7 @@ public class SavedListingService {
     public long getSavedCount(String email) {
         User user = getUser(email);
 
-        return savedRepository.countByUserId(user.getId());
+        return getSavedListings(email, "all").size();
     }
 
     public boolean isListingSaved(
@@ -216,6 +225,7 @@ public class SavedListingService {
     ) {
         User user = getUser(email);
         ObjectId id = parseId(listingId);
+        listingRepository.findById(id).ifPresent(listing -> visibility.view(listing, user));
 
         return savedRepository.existsByUserIdAndListingId(
                 user.getId(),
@@ -241,6 +251,8 @@ public class SavedListingService {
 
         Listing listing = listingRepository.findById(id)
                 .orElse(null);
+
+        if (listing != null) listing = visibility.view(listing, user);
 
         return toResponse(bookmark, listing);
     }
