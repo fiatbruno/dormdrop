@@ -45,7 +45,7 @@ public class PrivateNotificationService {
     }
 
     /** A replay cannot change the payload, timestamp or read state of an existing notice. */
-    public void persist(NotificationOutboxEvent event) {
+    public NotificationResponse persist(NotificationOutboxEvent event) {
         String id = notificationId(event.eventKey(), event.recipientId());
         Update fields = new Update().setOnInsert("recipientId", event.recipientId())
                 .setOnInsert("sourceEventId", event.id())
@@ -61,6 +61,8 @@ public class PrivateNotificationService {
                     .and("recipientId").is(event.recipientId()).and("sourceEventKey").is(event.eventKey())),
                     PrivateNotification.class)) throw race;
         }
+        return NotificationResponse.from(java.util.Objects.requireNonNull(
+                mongo.findById(id, PrivateNotification.class), "Persisted notification was not found."));
     }
 
     public NotificationResponse.Page list(Authentication authentication, int page, int size) {
