@@ -89,20 +89,18 @@ public class ImageStorageService {
     }
 
     public String imageUrl(String filename) {
-        if (!filename.matches("[a-fA-F0-9-]{36}\\.(jpg|png|webp)")) {
+        if (!filename.matches("[a-fA-F0-9-]{36}\\.(jpg|png|webp)"))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid filename");
-        }
         return apiPrefix + "/images/" + filename;
     }
 
-    /** Only called to roll back a newly created upload, never on old listing or retained evidence files. */
     public void discardNewUpload(String url) {
         String prefix = apiPrefix + "/images/";
         if (!url.startsWith(prefix)) return;
         String filename = url.substring(prefix.length());
         imageUrl(filename);
         try { Files.deleteIfExists(uploadDirectory.resolve(filename)); }
-        catch (IOException ignored) { /* An orphan cannot be served without a visible listing reference. */ }
+        catch (IOException ignored) { /* Unlinked files cannot be served by the listing image route. */ }
     }
 
     public Path getImage(String filename) {

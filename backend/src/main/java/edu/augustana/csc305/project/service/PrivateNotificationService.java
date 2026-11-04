@@ -66,12 +66,18 @@ public class PrivateNotificationService {
     }
 
     public NotificationResponse.Page list(Authentication authentication, int page, int size) {
+        return list(authentication, page, size, false);
+    }
+
+    public NotificationResponse.Page list(Authentication authentication, int page, int size, boolean unreadOnly) {
         ObjectId recipient = recipient(authentication);
         if (page < 0 || size < 1 || size > 100)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page must be nonnegative and size must be 1 to 100.");
-        long total = mongo.count(owned(recipient), PrivateNotification.class);
+        Query filter = owned(recipient);
+        if (unreadOnly) filter.addCriteria(Criteria.where("readAt").is(null));
+        long total = mongo.count(filter, PrivateNotification.class);
         long unread = unreadCount(recipient);
-        var items = mongo.find(owned(recipient).with(Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("_id")))
+        var items = mongo.find(filter.with(Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("_id")))
                 .skip((long) page * size).limit(size), PrivateNotification.class)
                 .stream().map(NotificationResponse::from).toList();
         return new NotificationResponse.Page(items, total, unread, page, size);
@@ -87,6 +93,14 @@ public class PrivateNotificationService {
         // The null predicate makes the first read time stable, including concurrent readers.
         mongo.updateFirst(owned(recipient).addCriteria(Criteria.where("_id").is(id).and("readAt").is(null)),
                 new Update().set("readAt", clock.instant()), PrivateNotification.class);
+        var notice = mongo.findOne(owned(recipient).addCriteria(Criteria.where("_id").is(id)), PrivateNotification.class);
+        if (notice == null) throw missing();
+        return NotificationResponse.from(notice);
+    }
+
+    public NotificationResponse get(Authentication authentication, String id) {
+        ObjectId recipient = recipient(authentication);
+        if (id == null || !id.matches("[a-f0-9]{64}")) throw missing();
         var notice = mongo.findOne(owned(recipient).addCriteria(Criteria.where("_id").is(id)), PrivateNotification.class);
         if (notice == null) throw missing();
         return NotificationResponse.from(notice);
