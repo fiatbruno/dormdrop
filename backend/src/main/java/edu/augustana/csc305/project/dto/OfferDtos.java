@@ -11,6 +11,7 @@ public final class OfferDtos {
 
     public record Submit(BigDecimal amount) {}
     public record Decision(String action, Long expectedVersion) {}
+    public record Counter(BigDecimal amount, Long expectedVersion) {}
     public record History(OfferNegotiation.Action action, String actorId, BigDecimal amount, Instant createdAt) {}
     public record Offer(String id, String listingId, String buyerId, String sellerId, String currentProposerId,
                         BigDecimal amount, OfferNegotiation.Status status, long version,
