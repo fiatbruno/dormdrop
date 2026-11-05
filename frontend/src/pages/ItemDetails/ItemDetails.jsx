@@ -8,7 +8,7 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ListingImage from "../../components/ListingImage";
 import ProductCard from "../../components/ProductCard/ProductCard";
-import ReportSubmission from "../../components/ReportSubmission/ReportSubmission";
+import ReportListing from "../../components/ReportListing/ReportListing";
 import { submitOffer } from "../../api/offersApi";
 import {
   getListingById,
@@ -117,7 +117,7 @@ function ItemDetailsContent({ id }) {
   const [pending, setPending] = useState(false);
   const [actionError, setActionError] = useState("");
   const [shareMessage, setShareMessage] = useState("");
-  const [reportFormOpen, setReportFormOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [offerFormOpen, setOfferFormOpen] = useState(false);
   const [offerAmount, setOfferAmount] = useState("");
   const [offerPending, setOfferPending] = useState(false);
@@ -385,9 +385,8 @@ function ItemDetailsContent({ id }) {
 
                    <button
                      type="button"
-                     onClick={() => setReportFormOpen((open) => !open)}
-                     aria-expanded={reportFormOpen}
-                     aria-controls="listing-report-form"
+                     onClick={() => setReportOpen(true)}
+                     aria-haspopup="dialog"
                    >
                      Report item
                    </button>
@@ -437,12 +436,6 @@ function ItemDetailsContent({ id }) {
                        </button>
                      </div>
                    </form>
-                 )}
-                 {reportFormOpen && (
-                   <ReportSubmission
-                     id={id}
-                     onClose={() => setReportFormOpen(false)}
-                   />
                  )}
                   {actionError && (
                     <p className="item-feedback" role="alert">
@@ -520,6 +513,12 @@ function ItemDetailsContent({ id }) {
           )
         )}
       </main>
+      {reportOpen && listing && (
+        <ReportListing
+          listing={listing}
+          onClose={() => setReportOpen(false)}
+        />
+      )}
       <Footer />
     </div>
   );
