@@ -2,7 +2,11 @@
 import AuthProvider from "./auth/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+
+import {
+  createBrowserRouter,
+  RouterProvider,
+} from "react-router-dom";
 
 import Login from "./pages/Login/Login";
 import Signup from "./pages/Signup/Signup";
@@ -20,8 +24,6 @@ import Profile from "./pages/Profile/Profile";
 import EditListing from "./pages/EditListing/EditListing";
 import OfferDetails from "./pages/Offers/OfferDetails";
 
-import AdminUserDetails from "./pages/Admin/AdminUserDetails";
-import AdminLogin from "./pages/Admin/AdminLogin";
 import AdminUsers from "./pages/Admin/AdminUsers";
 
 import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
@@ -116,19 +118,11 @@ const router = createBrowserRouter([
     element: protectedPage(<OfferDetails />),
   },
   {
-    path: "/admin/login",
-    element: <AdminLogin />,
-  },
-  {
     element: <AdminProtectedRoute />,
     children: [
       {
         path: "/admin/users",
         element: <AdminUsers />,
-      },
-      {
-        path: "/admin/users/:userId",
-        element: <AdminUserDetails />,
       },
     ],
   },

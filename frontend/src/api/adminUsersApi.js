@@ -1,87 +1,43 @@
 
-import { adminClient } from "./adminAuthApi";
+import api from "./client";
 
-const userPath = (userId) =>
-  `/admin/users/${encodeURIComponent(userId)}`;
+export async function getAdminUsers({
+  search = "",
+  page = 0,
+  size = 20,
+} = {}) {
+  const response = await api.get("/admin/users", {
+    params: {
+      ...(search.trim() ? { search: search.trim() } : {}),
+      page,
+      size,
+    },
+  });
 
-// Retrieve user account information
-export async function getAdminUserDetails(userId) {
-  const response = await adminClient.get(userPath(userId));
-  return response.data;
-}
+  const data = response.data;
 
-// Retrieve listings belonging to a user
-export async function getAdminUserListings(userId) {
-  const response = await adminClient.get(
-    `${userPath(userId)}/listings`
-  );
-  return response.data;
-}
-
-// Retrieve reports and moderation decisions
-export async function getModerationHistory(userId) {
-  const response = await adminClient.get(
-    `${userPath(userId)}/moderation-history`
-  );
-  return response.data;
-}
-
-// Retrieve internal moderator notes
-export async function getAdminNotes(userId) {
-  const response = await adminClient.get(
-    `${userPath(userId)}/notes`
-  );
-  return response.data;
-}
-
-// Save a new internal note
-export async function addAdminNote(userId, content) {
-  const response = await adminClient.post(
-    `${userPath(userId)}/notes`,
-    { content }
-  );
-  return response.data;
-}
-
-// Send a policy warning
-export async function sendPolicyWarning(userId, reason) {
-  const response = await adminClient.post(
-    `${userPath(userId)}/warnings`,
-    { reason }
-  );
-  return response.data;
-}
-
-// Suspend an account
-export async function suspendAdminUser(
-  userId,
-  reason,
-  durationDays
-) {
-  const response = await adminClient.post(
-    `${userPath(userId)}/suspensions`,
-    { reason, durationDays }
-  );
-  return response.data;
-}
-
-// Retrieve a listing for moderation
-export async function getAdminListingDetails(listingId) {
-  const response = await adminClient.get(
-    `/admin/listings/${encodeURIComponent(listingId)}`
-  );
-  return response.data;
-}
-
-
-export async function getAdminUsers() {
-  const response = await adminClient.get("/admin/users");
-
-  if (!Array.isArray(response.data)) {
-    throw new Error(
-      "Expected an array of users from GET /admin/users."
-    );
+  if (
+    !data ||
+    !Array.isArray(data.items) ||
+    !Number.isInteger(data.page)
+  ) {
+    throw new Error("Invalid admin directory response.");
   }
 
-  return response.data;
+  return data;
 }
+
+const unsupported = () => {
+  throw new Error(
+    "This admin feature is not available in the current backend."
+  );
+};
+
+export const getAdminUserDetails = unsupported;
+export const getAdminUserListings = unsupported;
+export const getModerationHistory = unsupported;
+export const getAdminNotes = unsupported;
+export const addAdminNote = unsupported;
+export const sendPolicyWarning = unsupported;
+export const suspendAdminUser = unsupported;
+export const getAdminListingDetails = unsupported;

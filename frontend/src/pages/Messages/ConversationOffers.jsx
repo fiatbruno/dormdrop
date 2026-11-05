@@ -1,7 +1,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { getConversationOffers } from "../../api/messagingApi";
+
 import { acceptOffer, rejectOffer } from "../../api/offerApi";
 
 function money(value) {
@@ -54,6 +54,7 @@ function errorMessage(error) {
 
 export default function ConversationOffers({
   conversationId,
+  offer,
   currentUserId,
   messages = [],
   scrollRef,
@@ -62,56 +63,20 @@ export default function ConversationOffers({
   onDecision,
   onArrangePickup,
 }) {
-  const [offers, setOffers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const offers = offer ? [offer] : [];
+  const loading = false;
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const generation = useRef(0);
   const busyRef = useRef(false);
 
   useEffect(() => {
-    const version = ++generation.current;
-
-    setOffers([]);
-    setLoading(true);
-    setError("");
-    setBusyId(null);
+    generation.current += 1;
     busyRef.current = false;
-
-    async function load() {
-      try {
-        const data = await getConversationOffers(conversationId);
-
-        if (generation.current !== version) return;
-
-        if (!Array.isArray(data)) {
-          throw new Error("Invalid conversation offers response.");
-        }
-
-        setOffers(data);
-      } catch (err) {
-        if (generation.current === version) {
-          setError(errorMessage(err));
-        }
-      } finally {
-        if (generation.current === version) {
-          setLoading(false);
-        }
-      }
-    }
-
-    if (conversationId) {
-      void load();
-    } else {
-      setLoading(false);
-    }
-
-    return () => {
-      generation.current++;
-    };
-  }, [conversationId, refreshKey]);
+    setBusyId(null);
+    setError("");
+  }, [conversationId]);
 
   async function decide(offer, decision) {
     const status = String(offer.status || "").toUpperCase();
@@ -137,13 +102,12 @@ export default function ConversationOffers({
       }
 
       if (generation.current === version) {
-        setRefreshKey((value) => value + 1);
         onDecision?.();
       }
     } catch (err) {
       if (generation.current === version) {
         setError(errorMessage(err));
-        setRefreshKey((value) => value + 1);
+        onDecision?.();
       }
     } finally {
       if (generation.current === version) {
@@ -187,12 +151,6 @@ export default function ConversationOffers({
           <p role="alert" className="messages-error">
             {error}
           </p>
-          <button
-            type="button"
-            onClick={() => setRefreshKey((n) => n + 1)}
-          >
-            Retry loading offers
-          </button>
         </div>
       )}
 
@@ -374,11 +332,7 @@ export default function ConversationOffers({
                 )}
 
                 {declined && (
-                  <p>
-                    {seller
-                      ? "This offer was declined."
-                      : "This offer was declined."}
-                  </p>
+                  <p>This offer was declined.</p>
                 )}
 
                 {declined && buyer && offer.listingId && (

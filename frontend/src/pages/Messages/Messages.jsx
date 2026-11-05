@@ -442,6 +442,7 @@ export default function Messages() {
                       <ConversationOffers
                         key={conversationId}
                         conversationId={conversationId}
+                        offer={chat.conversation.offer}
                         currentUserId={
                           chat.conversation.currentUserId
                         }

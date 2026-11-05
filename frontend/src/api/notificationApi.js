@@ -1,38 +1,42 @@
 
 import api from "./client";
 
-const notificationPath = (id) =>
-  `/notifications/${encodeURIComponent(id)}`;
+export async function getNotifications(
+  page = 0,
+  size = 20
+) {
+  const { data } = await api.get(
+    "/me/notifications",
+    {
+      params: { page, size },
+    }
+  );
 
-export async function getNotifications() {
-  const response = await api.get("/notifications");
-
-  if (!Array.isArray(response.data)) {
-    throw new Error("Invalid notifications response.");
+  if (!data || !Array.isArray(data.items)) {
+    throw new Error(
+      "Invalid notifications response."
+    );
   }
 
-  return response.data;
+  return data.items;
 }
 
 export async function getUnreadNotificationCount() {
-  const response = await api.get(
-    "/notifications/unread-count"
+  const { data } = await api.get(
+    "/me/notifications/unread-count"
   );
 
-  if (
-    !Number.isInteger(response.data?.count) ||
-    response.data.count < 0
-  ) {
-    throw new Error("Invalid unread count response.");
+  if (!Number.isInteger(data?.count)) {
+    throw new Error("Invalid unread count.");
   }
 
-  return response.data.count;
+  return data.count;
 }
 
 export async function markNotificationAsRead(id) {
-  const response = await api.patch(
-    `${notificationPath(id)}/read`
-  );
-
-  return response.data;
+  return (
+    await api.patch(
+      `/me/notifications/${encodeURIComponent(id)}/read`
+    )
+  ).data;
 }

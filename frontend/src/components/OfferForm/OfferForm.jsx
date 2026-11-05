@@ -1,7 +1,12 @@
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+
 import Button from "../Button/Button";
-import { createOffer } from "../../api/offerApi";
+import {
+  createOffer,
+  newOfferRequestKey,
+} from "../../api/offerApi";
+
 import "./OfferForm.css";
 
 export default function OfferForm({
@@ -13,29 +18,61 @@ export default function OfferForm({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const submittingRef = useRef(false);
+
+  const pendingKey = useRef(null);
+
+  function getStorageKey(value) {
+    return `dormdrop:pending-offer:${listingId}:${value}`;
+  }
+
+  function clearPendingRequest(storageKey) {
+    sessionStorage.removeItem(storageKey);
+    pendingKey.current = null;
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (saving) return;
+    if (submittingRef.current) return;
 
     setError("");
     setSuccess("");
 
-    const value = Number(amount);
+    const normalizedAmount = amount.trim();
+    const value = Number(normalizedAmount);
 
     if (
+      !/^\d+(\.\d{1,2})?$/.test(normalizedAmount) ||
       !Number.isFinite(value) ||
-      value <= 0 ||
-      !/^\d+(\.\d{1,2})?$/.test(amount.trim())
+      value <= 0
     ) {
       setError("Enter a valid offer greater than $0.");
       return;
     }
 
+    const storageKey = getStorageKey(value);
+
+    const requestKey =
+      pendingKey.current?.storageKey === storageKey
+        ? pendingKey.current.key
+        : sessionStorage.getItem(storageKey) ||
+          newOfferRequestKey();
+
+    pendingKey.current = {
+      storageKey,
+      key: requestKey,
+    };
+
+    sessionStorage.setItem(storageKey, requestKey);
+
+    submittingRef.current = true;
     setSaving(true);
 
     try {
-      await createOffer(listingId, value);
+      await createOffer(listingId, value, requestKey);
+
+      clearPendingRequest(storageKey);
 
       setSuccess(
         "Your offer was sent to the seller successfully."
@@ -46,20 +83,36 @@ export default function OfferForm({
       const status = err.response?.status;
 
       if (status === 409) {
+        clearPendingRequest(storageKey);
+
         setError(
           "This offer cannot be submitted. The listing may no longer be available or you may already have a pending offer."
         );
       } else if (status === 403) {
+        clearPendingRequest(storageKey);
+
         setError(
           "You are not allowed to make an offer on this listing."
+        );
+      } else if (status === 400 || status === 422) {
+        clearPendingRequest(storageKey);
+
+        setError(
+          err.response?.data?.message ||
+            "The offer could not be accepted. Please check the amount."
+        );
+      } else if (!err.response) {
+        setError(
+          "Your connection was interrupted. Your offer may have been sent. You can retry with the same request, but do not change the amount until its status is confirmed."
         );
       } else {
         setError(
           err.response?.data?.message ||
-          "Could not submit your offer. Please try again."
+            "We couldn't confirm whether your offer was sent. Please check your offers before retrying."
         );
       }
     } finally {
+      submittingRef.current = false;
       setSaving(false);
     }
   }
@@ -91,7 +144,12 @@ export default function OfferForm({
             step="0.01"
             placeholder="Enter amount"
             value={amount}
-            onChange={(event) => setAmount(event.target.value)}
+            onChange={(event) => {
+              setAmount(event.target.value);
+              pendingKey.current = null;
+              setError("");
+              setSuccess("");
+            }}
             disabled={saving}
             required
           />

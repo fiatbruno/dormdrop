@@ -4,66 +4,98 @@ import api from "./client";
 const offerPath = (id) =>
   `/offers/${encodeURIComponent(id)}`;
 
-function idempotencyKey() {
+export function newOfferRequestKey() {
   return crypto.randomUUID();
 }
 
-export async function createOffer(listingId, amount) {
-  const response = await api.post(
-    `/home/${encodeURIComponent(listingId)}/offers`,
-    { amount },
-    {
-      headers: {
-        "Idempotency-Key": idempotencyKey(),
-      },
-    }
-  );
+export async function createOffer(
+  listingId,
+  amount,
+  requestKey
+) {
+  if (!requestKey) {
+    throw new Error(
+      "An idempotency key is required for an offer submission."
+    );
+  }
 
-  return response.data;
+  return (
+    await api.post(
+      `/home/${encodeURIComponent(listingId)}/offers`,
+      { amount },
+      {
+        headers: {
+          "Idempotency-Key": requestKey,
+        },
+      }
+    )
+  ).data;
 }
 
-export async function getOfferById(offerId) {
-  const response = await api.get(offerPath(offerId));
-  return response.data;
+export async function getOfferById(id) {
+  return (await api.get(offerPath(id))).data;
 }
 
-export async function getMyOffers(perspective, page = 0, size = 20) {
-  const response = await api.get("/me/offers", {
-    params: { perspective, page, size },
-  });
-
-  return response.data;
+export async function getMyOffers(
+  perspective,
+  page = 0,
+  size = 20
+) {
+  return (
+    await api.get("/me/offers", {
+      params: { perspective, page, size },
+    })
+  ).data;
 }
 
-export async function decideOffer(offerId, action, expectedVersion) {
-  if (!["ACCEPTED", "REJECTED"].includes(action)) {
-    throw new Error("Invalid offer decision.");
+export async function decideOffer(
+  id,
+  action,
+  expectedVersion,
+  requestKey
+) {
+  if (!["ACCEPT", "REJECT"].includes(action)) {
+    throw new Error(
+      "Decision must be ACCEPT or REJECT."
+    );
   }
 
   if (
     !Number.isSafeInteger(expectedVersion) ||
     expectedVersion < 0
   ) {
-    throw new Error("A valid offer version is required.");
+    throw new Error(
+      "A valid offer version is required."
+    );
   }
 
+  const storageKey =
+    `dormdrop:offer-decision:${id}:${action}:${expectedVersion}`;
+
+  const key =
+    requestKey ||
+    sessionStorage.getItem(storageKey) ||
+    newOfferRequestKey();
+
+  sessionStorage.setItem(storageKey, key);
+
   const response = await api.post(
-    `${offerPath(offerId)}/decisions`,
+    `${offerPath(id)}/decisions`,
     { action, expectedVersion },
     {
       headers: {
-        "Idempotency-Key": idempotencyKey(),
+        "Idempotency-Key": key,
       },
     }
   );
 
+  sessionStorage.removeItem(storageKey);
+
   return response.data;
 }
 
-export async function acceptOffer(offerId, expectedVersion) {
-  return decideOffer(offerId, "ACCEPTED", expectedVersion);
-}
+export const acceptOffer = (id, version, key) =>
+  decideOffer(id, "ACCEPT", version, key);
 
-export async function rejectOffer(offerId, expectedVersion) {
-  return decideOffer(offerId, "REJECTED", expectedVersion);
-}
+export const rejectOffer = (id, version, key) =>
+  decideOffer(id, "REJECT", version, key);
