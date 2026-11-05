@@ -57,7 +57,7 @@ function errorMessage(error) {
 }
 
 export default function ReportListing({ listing, onClose }) {
-  const [category, setCategory] = useState(REASONS[0][0]);
+  const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -121,6 +121,14 @@ export default function ReportListing({ listing, onClose }) {
     if (submitting) return;
 
     const trimmedDescription = description.trim();
+    if (!category && !trimmedDescription) {
+      setError("Choose a reason and tell us what happened before submitting.");
+      return;
+    }
+    if (!category) {
+      setError("Choose a reason for your report.");
+      return;
+    }
     if (!trimmedDescription) {
       setError("Tell us what happened so our team can review it.");
       return;
@@ -203,9 +211,9 @@ export default function ReportListing({ listing, onClose }) {
                     setError("");
                     requestKeyRef.current = globalThis.crypto.randomUUID();
                   }}
-                  required
                   disabled={submitting}
                 >
+                  <option value="">Choose a reason</option>
                   {REASONS.map(([value, label]) => (
                     <option key={value} value={value}>
                       {label}
@@ -232,7 +240,6 @@ export default function ReportListing({ listing, onClose }) {
                   }}
                   maxLength={2000}
                   rows={4}
-                  required
                   disabled={submitting}
                 />
                 <span className="report-listing-field__count">
@@ -267,7 +274,7 @@ export default function ReportListing({ listing, onClose }) {
                 <button
                   type="submit"
                   className="report-listing-actions__submit"
-                  disabled={submitting || !description.trim()}
+                  disabled={submitting}
                 >
                   {submitting ? "Submitting…" : "Submit report"}
                 </button>

@@ -105,6 +105,33 @@ test("report dialog can be dismissed without submitting", async ({ page }) => {
   await expect(dialog).toHaveCount(0);
 });
 
+test("submit shows a validation message when required report fields are missing", async ({
+  page,
+}) => {
+  await openListing(page);
+  const dialog = page.getByRole("dialog", { name: "Report this listing" });
+
+  await dialog.getByRole("button", { name: "Submit report" }).click();
+  await expect(dialog.getByRole("alert")).toHaveText(
+    "Choose a reason and tell us what happened before submitting.",
+  );
+
+  await dialog
+    .getByLabel("What happened? *")
+    .fill("The listing appears misleading.");
+  await dialog.getByRole("button", { name: "Submit report" }).click();
+  await expect(dialog.getByRole("alert")).toHaveText(
+    "Choose a reason for your report.",
+  );
+
+  await dialog.getByLabel("Reason *").selectOption("OTHER");
+  await dialog.getByLabel("What happened? *").fill("");
+  await dialog.getByRole("button", { name: "Submit report" }).click();
+  await expect(dialog.getByRole("alert")).toHaveText(
+    "Tell us what happened so our team can review it.",
+  );
+});
+
 test("report submission errors keep the dialog open and preserve entered details", async ({
   page,
 }) => {
