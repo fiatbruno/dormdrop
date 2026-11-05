@@ -9,7 +9,7 @@ import Footer from "../../components/Footer/Footer";
 import ListingImage from "../../components/ListingImage";
 import ProductCard from "../../components/ProductCard/ProductCard";
 import ReportListing from "../../components/ReportListing/ReportListing";
-import { submitOffer } from "../../api/offersApi";
+import { getMyListingOffer, submitOffer } from "../../api/offersApi";
 import {
   getListingById,
   getListings,
@@ -86,13 +86,17 @@ function ItemDetailsContent({ id }) {
     try {
       if (!offerSaved) {
         offerIdempotencyKey.current ||= globalThis.crypto.randomUUID();
-        await submitOffer(id, Number(offerAmount), offerIdempotencyKey.current);
+        const createdOffer = await submitOffer(id, Number(offerAmount), offerIdempotencyKey.current);
+        setOwnOffer(createdOffer);
         offerWasSaved = true;
         setOfferSaved(true);
       }
       const conversation = await startConversation(id);
       navigate(`/messages/${conversation.id}`);
     } catch (requestError) {
+      if (!offerWasSaved && requestError.response?.status === 409) {
+        setOfferAttempt((value) => value + 1);
+      }
       setOfferError(
         offerWasSaved
           ? "Your offer is saved, but its conversation could not be opened. Please retry."
@@ -123,6 +127,10 @@ function ItemDetailsContent({ id }) {
   const [offerPending, setOfferPending] = useState(false);
   const [offerError, setOfferError] = useState("");
   const [offerSaved, setOfferSaved] = useState(false);
+  const [ownOffer, setOwnOffer] = useState(null);
+  const [offerStatusReady, setOfferStatusReady] = useState(false);
+  const [offerStatusError, setOfferStatusError] = useState(false);
+  const [offerAttempt, setOfferAttempt] = useState(0);
   const offerIdempotencyKey = useRef(null);
   const [favoriteAttempt, setFavoriteAttempt] = useState(0);
   useListingUpdates(() => setAttempt((value) => value + 1));
@@ -130,6 +138,30 @@ function ItemDetailsContent({ id }) {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [id]);
+
+  useEffect(() => {
+    let active = true;
+    getMyListingOffer(id)
+      .then((offer) => {
+        if (active) { setOwnOffer(offer); setOfferStatusError(false); }
+      })
+      .catch(() => { if (active) setOfferStatusError(true); })
+      .finally(() => { if (active) setOfferStatusReady(true); });
+    return () => { active = false; };
+  }, [id, token, offerAttempt]);
+
+  useEffect(() => {
+    const refreshOffer = () => setOfferAttempt((value) => value + 1);
+    const refreshVisible = () => { if (document.visibilityState === "visible") refreshOffer(); };
+    window.addEventListener("dormdrop:notification-received", refreshOffer);
+    window.addEventListener("dormdrop:notifications-reconnected", refreshOffer);
+    window.addEventListener("focus", refreshVisible);
+    return () => {
+      window.removeEventListener("dormdrop:notification-received", refreshOffer);
+      window.removeEventListener("dormdrop:notifications-reconnected", refreshOffer);
+      window.removeEventListener("focus", refreshVisible);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -248,7 +280,8 @@ function ItemDetailsContent({ id }) {
     listing?.status === "AVAILABLE" &&
     String(listing.listingType || "").toLowerCase() === "for sale" &&
     Number(listing.price) > 0 &&
-    !isOwner;
+    !isOwner && offerStatusReady && !offerStatusError &&
+    !["PENDING", "ACCEPTED"].includes(ownOffer?.status);
 
   return (
     <div className="item-shell">
@@ -360,6 +393,17 @@ function ItemDetailsContent({ id }) {
                       Make an offer
                     </button>
                   )}
+                  {!isOwner && offerStatusError && (
+                    <p className="item-feedback" role="alert">
+                      Couldn't check your offer status. <button type="button" onClick={() => setOfferAttempt((value) => value + 1)}>Retry</button>
+                    </p>
+                  )}
+                  {!isOwner && !offerStatusError && ["PENDING", "ACCEPTED"].includes(ownOffer?.status) && (
+                    <p className="item-feedback" role="status">
+                      {ownOffer.status === "ACCEPTED" ? "Your offer has been accepted." : "You already have a pending offer."}{" "}
+                      <Link to={`/offers/${encodeURIComponent(ownOffer.id)}`}>View offer</Link>
+                    </p>
+                  )}
                   {isOwner && listing.status === "AVAILABLE" && Number(listing.price) > 0 && String(listing.listingType || "").toLowerCase() === "for sale" && (
                     <p className="item-muted">Other users can make an offer on this listing.</p>
                   )}
@@ -397,7 +441,7 @@ function ItemDetailsContent({ id }) {
                      </button>
                    )}
                  </div>
-                 {offerFormOpen && (
+                 {offerFormOpen && (canMakeOffer || offerSaved) && (
                    <form
                      id="listing-offer-form"
                      className="item-offer-form"

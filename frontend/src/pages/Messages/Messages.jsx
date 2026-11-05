@@ -127,19 +127,9 @@ export default function Messages() {
             <h1>Messages</h1>
             <p>A good find starts with a conversation.</p>
           </div>
-          {offerAccepted ? (
-            <button
-              type="button"
-              className="messages-propose-pickup"
-              onClick={arrangePickup}
-            >
-              Propose pickup
-            </button>
-          ) : (
-            <div className="messages-connection">
-              <span role="status">{chat.connection}</span>
-            </div>
-          )}
+          <div className="messages-connection">
+            <span role="status">{chat.connection}</span>
+          </div>
         </header>
         <div
           className={`messages-workspace ${conversationId ? "has-selection" : ""}`}
@@ -337,7 +327,10 @@ export default function Messages() {
                               <Link to={`/offers/${encodeURIComponent(offer.id)}`}>
                                 View offer details
                               </Link>
-                              {offer.status === "REJECTED" && item?.id && (
+                              {["REJECTED", "EXPIRED"].includes(offer.status) && item?.id &&
+                                item.status === "AVAILABLE" &&
+                                String(item.listingType || "").toLowerCase() === "for sale" && Number(item.price) > 0 &&
+                                String(chat.conversation.currentUserId) === String(offer.buyerId) && (
                                 <Link to={`/items/${encodeURIComponent(item.id)}`}>
                                   Make another offer
                                 </Link>

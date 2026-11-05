@@ -194,7 +194,7 @@ function Profile({
         setMessage("Listing marked as sold.");
       } else {
         await onRelist(id);
-        setMessage("A new listing has been created. Your sold listing remains in your history.");
+        setMessage("Listing is available again.");
       }
     } catch {
       setActionError(
