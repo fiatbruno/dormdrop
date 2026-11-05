@@ -9,6 +9,6 @@ public final class AdminDirectoryDtos {
     private AdminDirectoryDtos() { }
 
     public record Member(String id, String name, String maskedEmail, boolean emailVerified,
-                         UserRole role, Instant createdAt, Instant updatedAt) { }
-    public record Page(List<Member> items, long total, int page, int size, long totalPages) { }
+                         UserRole role, Instant createdAt, Instant updatedAt, Instant lastActiveAt, boolean active) { }
+    public record Page(List<Member> items, long total, int page, int size, long totalPages, long activeCount) { }
 }
