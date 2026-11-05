@@ -9,6 +9,8 @@ import {
   markNotificationRead,
 } from "../../api/notificationsApi";
 import useUnreadNotificationCount from "../../hooks/useUnreadNotificationCount";
+import useUnreadMessages from "../../hooks/useUnreadMessages";
+import { markRead as markConversationRead } from "../../api/messagingApi";
 import {
   notificationBody,
   notificationTarget,
@@ -60,13 +62,25 @@ function NotificationBellContent() {
   );
   const rootRef = useRef(null);
   const { count, error: countError } = useUnreadNotificationCount();
-  const unreadInPreview = items.filter((item) => !item.readAt).length;
-  const visibleItems =
-    filter === "unread" ? items.filter((item) => !item.readAt) : items;
+  const { count: messageCount, conversations, error: messageError, refresh: refreshMessages } = useUnreadMessages();
+  const totalUnread = count + messageCount;
+  const messageItems = conversations.map((conversation) => ({
+    id: `message:${conversation.id}`,
+    type: "MESSAGE_CREATED",
+    conversationId: conversation.id,
+    createdAt: conversation.lastMessageAt,
+    payload: { message: `${conversation.participant?.name || "Someone"}: ${conversation.lastMessagePreview || `${conversation.unreadCount} unread message${conversation.unreadCount === 1 ? "" : "s"}`}` },
+  }));
+  const visibleItems = [...items, ...messageItems]
+    .filter((item) => filter !== "unread" || !item.readAt)
+    .sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0))
+    .slice(0, PREVIEW_SIZE);
+  const unreadInPreview = visibleItems.filter((item) => !item.readAt).length;
 
   const handleLiveNotice = useCallback(
     (notification) => {
       setLiveNotice(notification);
+      setRefreshVersion((version) => version + 1);
       if (
         document.visibilityState === "hidden" &&
         typeof window.Notification !== "undefined" &&
@@ -103,7 +117,7 @@ function NotificationBellContent() {
   useEffect(() => {
     if (!open) return undefined;
     let active = true;
-    getNotifications(0, PREVIEW_SIZE)
+    getNotifications(0, PREVIEW_SIZE, filter === "unread")
       .then((result) => {
         if (active) setItems(Array.isArray(result.items) ? result.items : []);
       })
@@ -116,7 +130,7 @@ function NotificationBellContent() {
     return () => {
       active = false;
     };
-  }, [open, refreshVersion]);
+  }, [open, refreshVersion, filter]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -136,6 +150,15 @@ function NotificationBellContent() {
 
   async function markRead(notification) {
     if (notification.readAt || pendingIds.has(notification.id)) return;
+    if (notification.type === "MESSAGE_CREATED" && notification.conversationId) {
+      try {
+        await markConversationRead(notification.conversationId);
+        window.dispatchEvent(new Event("dormdrop:messages-updated"));
+      } catch {
+        setError("Couldn't mark the conversation as read. Please retry.");
+      }
+      return;
+    }
     setPendingIds((previous) => new Set(previous).add(notification.id));
     try {
       const updated = await markNotificationRead(notification.id);
@@ -159,11 +182,16 @@ function NotificationBellContent() {
   }
 
   async function markAllRead() {
-    if (markingAll || count === 0) return;
+    if (markingAll || totalUnread === 0) return;
     setMarkingAll(true);
     setError("");
     try {
-      const { readIds, failedIds } = await markAllNotificationsRead();
+      const [notificationResult, ...messageResults] = await Promise.allSettled([
+        count ? markAllNotificationsRead() : Promise.resolve({ readIds: [], failedIds: [] }),
+        ...conversations.map((conversation) => markConversationRead(conversation.id)),
+      ]);
+      const { readIds, failedIds } = notificationResult.status === "fulfilled"
+        ? notificationResult.value : { readIds: [], failedIds: ["notifications"] };
 
       setItems((previous) =>
         previous.map((item) =>
@@ -173,9 +201,11 @@ function NotificationBellContent() {
         ),
       );
       window.dispatchEvent(new Event("dormdrop:notifications-updated"));
-      if (failedIds.length) {
+      window.dispatchEvent(new Event("dormdrop:messages-updated"));
+      const failures = failedIds.length + messageResults.filter((result) => result.status === "rejected").length;
+      if (failures) {
         setError(
-          `${failedIds.length} notification${failedIds.length === 1 ? "" : "s"} couldn't be marked as read. Please try again.`,
+          `${failures} update${failures === 1 ? "" : "s"} couldn't be marked as read. Please try again.`,
         );
       }
     } catch {
@@ -206,9 +236,9 @@ function NotificationBellContent() {
         type="button"
         className="notification-bell__toggle"
         aria-label={
-          countError
+          countError || messageError
             ? "Notifications, unread count unavailable"
-            : `Notifications${count ? `, ${count} unread` : ""}`
+            : `Notifications${totalUnread ? `, ${totalUnread} unread` : ""}`
         }
         aria-expanded={open}
         aria-controls="notification-bell-panel"
@@ -216,14 +246,15 @@ function NotificationBellContent() {
           if (!open) {
             setLoading(true);
             setError("");
+            void refreshMessages();
           }
           setOpen((value) => !value);
         }}
       >
         <Bell size={20} aria-hidden="true" />
-        {count > 0 && (
+        {totalUnread > 0 && (
           <span className="notification-bell__badge" aria-hidden="true">
-            {count > 99 ? "99+" : count}
+            {totalUnread > 99 ? "99+" : totalUnread}
           </span>
         )}
       </button>
@@ -239,7 +270,7 @@ function NotificationBellContent() {
               type="button"
               className="notification-bell__mark-all"
               onClick={() => void markAllRead()}
-              disabled={markingAll || count === 0}
+              disabled={markingAll || totalUnread === 0}
             >
               {markingAll ? "Marking…" : "Mark all as read"}
             </button>
@@ -269,7 +300,7 @@ function NotificationBellContent() {
               aria-pressed={filter === "unread"}
               onClick={() => setFilter("unread")}
             >
-              Unread ({count})
+              Unread ({totalUnread})
             </button>
           </div>
           {error && (
@@ -348,7 +379,8 @@ function NotificationBellContent() {
                 );
                 return notification.offerId ||
                   notification.conversationId ||
-                  notification.listingId ? (
+                  notification.listingId ||
+                  notificationTarget(notification) !== "/notifications" ? (
                   <Link
                     className={`notification-bell__item${notification.readAt ? "" : " is-unread"}`}
                     key={notification.id}
@@ -423,7 +455,7 @@ function NotificationBellContent() {
         </aside>
       )}
       <span className="notification-bell__sr-only" aria-live="polite">
-        {countError ? "Unread count unavailable" : `${count} unread notifications`}
+        {countError || messageError ? "Unread count unavailable" : `${totalUnread} unread notifications`}
       </span>
     </div>
   );

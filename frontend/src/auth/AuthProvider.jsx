@@ -14,12 +14,14 @@ import {
 } from "./session";
 
 import { verifyAdminSession } from "../api/adminAuthApi";
+import useActivityTracking from "../hooks/useActivityTracking";
 
 export default function AuthProvider({ children }) {
   const token = useSyncExternalStore(
     subscribe,
     getToken
   );
+  useActivityTracking(token);
 
   const [adminStatus, setAdminStatus] = useState({
     token: null,

@@ -93,6 +93,11 @@ export default function AdminUsers() {
     (result.page + 1) * PAGE_SIZE
   );
 
+  function activityLabel(user) {
+    if (!user.lastActiveAt) return "No activity recorded";
+    return user.active ? "Active" : "Inactive";
+  }
+
   return (
     <AdminLayout
       breadcrumb="Users"
@@ -104,9 +109,7 @@ export default function AdminUsers() {
           <div>
             <p className="community-eyebrow">Campus administration</p>
             <h1>Community members</h1>
-            <p>
-              Find and review registered DormDrop members.
-            </p>
+            <p>Find registered members and see who has been active in the last 30 days.</p>
           </div>
 
           <button
@@ -120,6 +123,12 @@ export default function AdminUsers() {
           </button>
         </div>
 
+        {!loading && !error && Number.isFinite(result.activeCount) && (
+          <div className="community-activity-summary">
+            <span className="community-activity-summary__dot" aria-hidden="true" />
+            <div><strong>{result.activeCount}</strong><span> active in the last 30 days</span></div>
+          </div>
+        )}
         <section className="community-directory">
           <div className="community-directory-header">
             <div><h2>Member directory</h2><p>Campus email addresses are masked to protect member privacy.</p></div>
@@ -153,8 +162,8 @@ export default function AdminUsers() {
                         <th>Member / User ID</th>
                         <th>Campus email</th>
                         <th>Verification</th>
+                        <th>Activity</th>
                         <th>Role</th>
-                        <th>Joined</th>
                       </tr>
                     </thead>
 
@@ -186,15 +195,16 @@ export default function AdminUsers() {
                           </td>
 
                           <td>
-                            {user.role || "—"}
+                            <span className={`community-activity ${user.lastActiveAt ? (user.active ? "is-active" : "is-inactive") : "is-unknown"}`}>
+                              {activityLabel(user)}
+                            </span>
+                            {user.lastActiveAt && (
+                              <span className="community-last-active">Last active {new Date(user.lastActiveAt).toLocaleDateString()}</span>
+                            )}
                           </td>
 
                           <td>
-                            {user.createdAt
-                              ? new Date(
-                                  user.createdAt
-                                ).toLocaleDateString()
-                              : "—"}
+                            {user.role || "—"}
                           </td>
 
                         </tr>

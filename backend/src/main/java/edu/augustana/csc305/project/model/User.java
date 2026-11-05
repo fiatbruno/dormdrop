@@ -5,6 +5,7 @@ import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import java.time.Instant;
 
 @Document(collection = "users")
 public class User {
@@ -34,6 +35,7 @@ public class User {
 
     // Profile and settings
     private String aboutYou;
+    private Instant lastActiveAt;
 
     // Default constructor required by MongoDB
     public User() {
@@ -162,4 +164,9 @@ public class User {
     public void setAboutYou(String aboutYou) {
         this.aboutYou = aboutYou;
     }
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public Instant getLastActiveAt() { return lastActiveAt; }
+
+    public void setLastActiveAt(Instant lastActiveAt) { this.lastActiveAt = lastActiveAt; }
 }
