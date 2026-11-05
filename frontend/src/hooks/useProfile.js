@@ -5,7 +5,6 @@ import {
   getMyListings,
   saveProfile,
   updateListingStatus,
-  relistItem,
   resetPassword,
 } from "../api/profileApi";
 
@@ -121,12 +120,7 @@ export default function useProfile() {
     refreshProfile,
     onSaveProfile: handleSaveProfile,
     onMarkSold: (id) => handleUpdateStatus(id, "SOLD"),
-    onRelist: async (id) => {
-      const listing = await relistItem(id);
-      setListings((previous) => previous.map((item) =>
-        String(item.id) === String(id) ? listing : item,
-      ));
-    },
+    onRelist: (id) => handleUpdateStatus(id, "AVAILABLE"),
     onResetPassword: handleResetPassword,
   };
 }
