@@ -1,0 +1,157 @@
+.offer-negotiation {
+  margin: 14px 24px;
+  padding: 18px;
+  border: 1px solid #dce4ed;
+  border-radius: 12px;
+  background: #fff;
+  color: #10295c;
+}
+
+.offer-negotiation__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.offer-negotiation__header h2 {
+  margin: 0 0 6px;
+  font-size: 17px;
+}
+
+.offer-negotiation__header p {
+  margin: 0;
+  color: #194278;
+}
+
+.offer-negotiation__header p:focus {
+  outline: 2px solid #194278;
+  outline-offset: 3px;
+}
+
+.offer-negotiation__status {
+  padding: 5px 9px;
+  border-radius: 20px;
+  background: #edf4fa;
+  color: #194278;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.offer-negotiation__status.is-accepted {
+  background: #e8f5ec;
+  color: #24633d;
+}
+
+.offer-negotiation__status.is-rejected {
+  background: #fff0ef;
+  color: #a3332d;
+}
+
+.offer-negotiation__status.is-expired {
+  background: #f1f3f5;
+  color: #526278;
+}
+
+.offer-negotiation__expiry {
+  margin: 10px 0 0;
+  color: #657b9b;
+  font-size: 12px;
+}
+
+.offer-negotiation__history {
+  display: grid;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.offer-negotiation__history li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 0;
+  border-top: 1px solid #edf1f5;
+  color: #657b9b;
+  font-size: 13px;
+}
+
+.offer-negotiation__history li strong {
+  color: #10295c;
+}
+
+.offer-negotiation__hint,
+.offer-negotiation__confirmation,
+.offer-negotiation__error {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.offer-negotiation__hint { color: #657b9b; }
+.offer-negotiation__confirmation { color: #24633d; }
+.offer-negotiation__error { color: #a3332d; }
+
+.offer-negotiation__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.offer-negotiation__actions button,
+.offer-negotiation__modal-actions button {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid #194278;
+  border-radius: 7px;
+  background: #fff;
+  color: #194278;
+  font: inherit;
+  cursor: pointer;
+}
+
+.offer-negotiation__actions button:first-child,
+.offer-negotiation__modal-actions button[type="submit"] {
+  background: #194278;
+  color: #fff;
+}
+
+.offer-negotiation__actions button:disabled,
+.offer-negotiation__modal-actions button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.offer-negotiation__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: #0009;
+}
+
+.counteroffer-dialog {
+  width: min(440px, 100%);
+  padding: 24px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 16px 48px #0003;
+}
+
+.counteroffer-dialog h2 { margin: 0 0 10px; color: #10295c; }
+.counteroffer-dialog p { color: #526882; }
+.counteroffer-dialog label { display: block; margin: 14px 0 6px; font-weight: 600; }
+.counteroffer-dialog input { width: 100%; min-height: 44px; padding: 8px; border: 1px solid #b9c7d7; border-radius: 6px; font: inherit; }
+.counteroffer-dialog input:focus-visible,
+.counteroffer-dialog button:focus-visible,
+.offer-negotiation button:focus-visible { outline: 3px solid #2785d1; outline-offset: 2px; }
+.offer-negotiation__modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+@media (max-width: 700px) {
+  .offer-negotiation { margin: 12px; padding: 14px; }
+  .offer-negotiation__actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .offer-negotiation__actions button { padding: 8px 5px; }
+}

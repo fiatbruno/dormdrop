@@ -22,7 +22,10 @@ import Home from "./pages/Home/Home";
 import SavedItem from "./pages/SavedItems/SavedItem";
 import Profile from "./pages/Profile/Profile";
 import EditListing from "./pages/EditListing/EditListing";
-import OfferDetails from "./pages/Offers/OfferDetails";
+import OfferDetails from "./pages/OfferDetails/OfferDetails";
+import Notifications from "./pages/Notifications/Notifications";
+import MyReports from "./pages/MyReports/MyReports";
+import StaffReports from "./pages/StaffReports/StaffReports";
 
 import AdminUsers from "./pages/Admin/AdminUsers";
 
@@ -37,6 +40,10 @@ const protectedPage = (element) => (
 );
 
 const router = createBrowserRouter([
+  { path: "/notifications", element: protectedPage(<Notifications />) },
+  { path: "/my-reports", element: protectedPage(<MyReports />) },
+  { path: "/staff/reports", element: protectedPage(<StaffReports />) },
+  { path: "/staff/reports/:caseId", element: protectedPage(<StaffReports />) },
   {
     path: "/",
     element: protectedPage(<Home />),
