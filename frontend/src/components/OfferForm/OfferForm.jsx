@@ -12,13 +12,17 @@ import "./OfferForm.css";
 export default function OfferForm({
   listingId,
   listingPrice,
+  onOfferSubmitted,
 }) {
   const [amount, setAmount] = useState("");
   const [saving, setSaving] = useState(false);
+  const [openingConversation, setOpeningConversation] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const submittingRef = useRef(false);
+  const openingConversationRef = useRef(false);
 
   const pendingKey = useRef(null);
 
@@ -31,8 +35,32 @@ export default function OfferForm({
     pendingKey.current = null;
   }
 
+  async function openConversation() {
+    if (!onOfferSubmitted || openingConversationRef.current) return;
+
+    openingConversationRef.current = true;
+    setOpeningConversation(true);
+    setError("");
+
+    try {
+      await onOfferSubmitted();
+    } catch {
+      setError(
+        "Your offer was sent, but its conversation couldn't be opened. Please retry.",
+      );
+    } finally {
+      openingConversationRef.current = false;
+      setOpeningConversation(false);
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
+
+    if (submitted) {
+      await openConversation();
+      return;
+    }
 
     if (submittingRef.current) return;
 
@@ -68,16 +96,15 @@ export default function OfferForm({
 
     submittingRef.current = true;
     setSaving(true);
+    let offerCreated = false;
 
     try {
       await createOffer(listingId, value, requestKey);
+      offerCreated = true;
 
       clearPendingRequest(storageKey);
-
-      setSuccess(
-        "Your offer was sent to the seller successfully."
-      );
-
+      setSubmitted(true);
+      setSuccess("Your offer was sent to the seller successfully.");
       setAmount("");
     } catch (err) {
       const status = err.response?.status;
@@ -115,6 +142,9 @@ export default function OfferForm({
       submittingRef.current = false;
       setSaving(false);
     }
+
+    if (!offerCreated || !onOfferSubmitted) return;
+    await openConversation();
   }
 
   return (
@@ -150,8 +180,8 @@ export default function OfferForm({
               setError("");
               setSuccess("");
             }}
-            disabled={saving}
-            required
+            disabled={saving || submitted}
+            required={!submitted}
           />
         </div>
 
@@ -170,9 +200,21 @@ export default function OfferForm({
         <Button
           type="submit"
           className="offer-submit-button"
-          disabled={saving || !amount}
+          disabled={
+            saving ||
+            openingConversation ||
+            (!submitted && !amount)
+          }
         >
-          {saving ? "Sending offer..." : "Send offer"}
+          {saving
+            ? openingConversation
+              ? "Opening conversation..."
+              : "Sending offer..."
+            : openingConversation
+              ? "Opening conversation..."
+              : submitted
+                ? "Open conversation"
+                : "Send offer"}
         </Button>
       </form>
     </section>

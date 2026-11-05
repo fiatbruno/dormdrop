@@ -47,13 +47,17 @@ function ItemDetailsContent({ id }) {
   } catch {
     // An unreadable token leaves the current user unknown.
   }
+  async function openListingConversation() {
+    const conversation = await startConversation(id);
+    navigate(`/messages/${conversation.id}`);
+  }
+
   async function contactSeller() {
     if (contactPending) return;
     setContactPending(true);
     setActionError("");
     try {
-      const conversation = await startConversation(id);
-      navigate(`/messages/${conversation.id}`);
+      await openListingConversation();
     } catch (err) {
       setActionError(
         err.response?.status === 409
@@ -328,6 +332,7 @@ const canMakeOffer =
     key={listing.id}
     listingId={listing.id}
     listingPrice={listing.price}
+    onOfferSubmitted={openListingConversation}
   />
 )}
 
