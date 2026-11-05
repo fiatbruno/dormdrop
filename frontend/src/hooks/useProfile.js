@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getProfile,
   getMyListings,
@@ -12,31 +12,81 @@ export default function useProfile() {
   const [user, setUser] = useState(null);
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [profileData, listingData] = await Promise.all([
-          getProfile(),
-          getMyListings(),
-        ]);
+  const mountedRef = useRef(false);
+  const requestIdRef = useRef(0);
 
-        setUser(profileData);
-        setListings(listingData);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+  const refreshProfile = useCallback(async (showLoading = false) => {
+    const requestId = ++requestIdRef.current;
+
+    if (showLoading) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
     }
 
-    loadData();
+    setError("");
+
+    try {
+      const [profileData, listingData] = await Promise.all([
+        getProfile(),
+        getMyListings(),
+      ]);
+
+      if (
+        !mountedRef.current ||
+        requestId !== requestIdRef.current
+      ) {
+        return;
+      }
+
+      setUser(profileData);
+      setListings(
+        Array.isArray(listingData) ? listingData : []
+      );
+    } catch (err) {
+      if (
+        mountedRef.current &&
+        requestId === requestIdRef.current
+      ) {
+        setError(
+          err.response?.data?.message ||
+            err.message ||
+            "Unable to load your profile."
+        );
+      }
+    } finally {
+      if (
+        mountedRef.current &&
+        requestId === requestIdRef.current
+      ) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    refreshProfile(true);
+
+    return () => {
+      mountedRef.current = false;
+      requestIdRef.current += 1;
+    };
+  }, [refreshProfile]);
 
   async function handleSaveProfile(data) {
     const updated = await saveProfile(data);
-    setUser(updated || { ...user, ...data });
+
+    setUser((previous) =>
+      updated || { ...previous, ...data }
+    );
+
+    return updated;
   }
 
   async function handleUpdateStatus(id, status) {
@@ -44,19 +94,31 @@ export default function useProfile() {
 
     setListings((previous) =>
       previous.map((item) =>
-        item.id === id ? { ...item, status } : item
+        String(item.id) === String(id)
+          ? { ...item, status }
+          : item
       )
     );
+  }
+
+  async function handleResetPassword() {
+    if (!user?.email) {
+      throw new Error("Your email address is unavailable.");
+    }
+
+    return resetPassword(user.email);
   }
 
   return {
     user,
     listings,
     loading,
+    refreshing,
     error,
+    refreshProfile,
     onSaveProfile: handleSaveProfile,
     onMarkSold: (id) => handleUpdateStatus(id, "SOLD"),
     onRelist: (id) => handleUpdateStatus(id, "AVAILABLE"),
-    onResetPassword: () => resetPassword(user.email),
+    onResetPassword: handleResetPassword,
   };
 }

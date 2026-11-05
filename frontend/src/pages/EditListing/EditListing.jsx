@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Upload, ShieldCheck } from "lucide-react";
@@ -61,13 +62,16 @@ const emptyForm = {
 
 function Photo({ photo, className, alt }) {
   const [url, setUrl] = useState("");
+
   useEffect(() => {
     if (!photo.file) return;
+
     const objectUrl = URL.createObjectURL(photo.file);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Publish the object URL created by this effect so cleanup can revoke it.
     setUrl(objectUrl);
+
     return () => URL.revokeObjectURL(objectUrl);
   }, [photo]);
+
   return photo.file ? (
     <img src={url} className={className} alt={alt} />
   ) : (
@@ -93,7 +97,6 @@ export default function EditListing() {
   useEffect(() => {
     const controller = new AbortController();
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset the editor before fetching a different route listing.
     setLoading(true);
     setLoaded(false);
     setError("");
@@ -104,6 +107,7 @@ export default function EditListing() {
     getListingById(id)
       .then((data) => {
         if (controller.signal.aborted) return;
+
         const knownCategory = categories.includes(data.category);
 
         setForm({
@@ -117,7 +121,12 @@ export default function EditListing() {
           pickupLocation: data.pickupLocation || "",
         });
 
-        setPhotos(data.image ? [{ key: "existing", url: data.image }] : []);
+        setPhotos(
+          data.image
+            ? [{ key: "existing", url: data.image }]
+            : []
+        );
+
         setStatus(data.status || "AVAILABLE");
         setLoaded(true);
       })
@@ -127,7 +136,7 @@ export default function EditListing() {
         setError(
           err.response?.data?.detail ||
             err.response?.data?.message ||
-            "Could not load this listing. Check your login and try again.",
+            "Could not load this listing. Check your login and try again."
         );
       })
       .finally(() => {
@@ -139,14 +148,21 @@ export default function EditListing() {
 
   function updateField(event) {
     const { name, value } = event.target;
-    setForm((previous) => ({ ...previous, [name]: value }));
+
+    setForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
   }
 
   function chooseType(listingType) {
     setForm((previous) => ({
       ...previous,
       listingType,
-      price: listingType === "Free / Donate" ? "0" : previous.price,
+      price:
+        listingType === "Free / Donate"
+          ? "0"
+          : previous.price,
     }));
   }
 
@@ -158,7 +174,7 @@ export default function EditListing() {
 
     if (photos.length + selected.length > 1) {
       setPhotoError(
-        "Replace the existing photo before adding a new one. One photo is supported.",
+        "Replace the existing photo before adding a new one. One photo is supported."
       );
       return;
     }
@@ -167,11 +183,13 @@ export default function EditListing() {
       (file) =>
         !["image/jpeg", "image/png"].includes(file.type) ||
         file.size === 0 ||
-        file.size > 5 * 1024 * 1024,
+        file.size > 5 * 1024 * 1024
     );
 
     if (invalid) {
-      setPhotoError("Choose JPG or PNG photos, up to 5 MB each.");
+      setPhotoError(
+        "Choose JPG or PNG photos, up to 5 MB each."
+      );
       return;
     }
 
@@ -187,7 +205,9 @@ export default function EditListing() {
   }
 
   function removePhoto(key) {
-    setPhotos((previous) => previous.filter((photo) => photo.key !== key));
+    setPhotos((previous) =>
+      previous.filter((photo) => photo.key !== key)
+    );
     setPhotoError("");
   }
 
@@ -203,10 +223,14 @@ export default function EditListing() {
     }
 
     const category =
-      form.category === "Other" ? form.customCategory.trim() : form.category;
+      form.category === "Other"
+        ? form.customCategory.trim()
+        : form.category;
 
     const price =
-      form.listingType === "Free / Donate" ? "0" : form.price.trim();
+      form.listingType === "Free / Donate"
+        ? "0"
+        : form.price.trim();
 
     if (
       !form.title.trim() ||
@@ -219,17 +243,23 @@ export default function EditListing() {
       return;
     }
 
-    if (!/^\d+(\.\d{1,2})?$/.test(price) || Number(price) > 999999.99) {
-      setError("Enter a valid price with up to two decimal places.");
+    if (
+      !/^\d+(\.\d{1,2})?$/.test(price) ||
+      Number(price) > 999999.99
+    ) {
+      setError(
+        "Enter a valid price with up to two decimal places."
+      );
       return;
     }
 
     if (photos.length === 0) {
       setPhotoError(
-        "Please add a photo before saving. To replace a photo, remove it and select a new one.",
+        "Please add a photo before saving. To replace a photo, remove it and select a new one."
       );
       return;
     }
+
     const data = {
       title: form.title.trim(),
       description: form.description.trim(),
@@ -245,18 +275,23 @@ export default function EditListing() {
 
     try {
       await updateListing(id, data);
+
       if (photos[0]?.file) {
         try {
           await uploadListingImage(id, photos[0].file);
         } catch {
           setError(
-            "Your listing details were saved, but the photo upload failed. Save again to retry the photo upload.",
+            "Your listing details were saved, but the photo upload failed. Save again to retry the photo upload."
           );
           return;
         }
       }
 
-      navigate("/profile#my-listings");
+      navigate("/profile#my-listings", {
+        state: {
+          listingUpdatedAt: Date.now(),
+        },
+      });
     } catch (err) {
       const responseStatus = err.response?.status;
 
@@ -272,7 +307,7 @@ export default function EditListing() {
         messages[responseStatus] ||
           err.response?.data?.detail ||
           err.response?.data?.message ||
-          "Could not save your changes. Please try again.",
+          "Could not save your changes. Please try again."
       );
     } finally {
       submitting.current = false;
@@ -281,7 +316,9 @@ export default function EditListing() {
   }
 
   const previewCategory =
-    form.category === "Other" ? form.customCategory : form.category;
+    form.category === "Other"
+      ? form.customCategory
+      : form.category;
 
   const previewPrice =
     form.listingType === "Free / Donate"
@@ -291,7 +328,8 @@ export default function EditListing() {
         : `$${Number(form.price || 0).toFixed(2)}`;
 
   const pickupOptions =
-    form.pickupLocation && !pickupSpots.includes(form.pickupLocation)
+    form.pickupLocation &&
+    !pickupSpots.includes(form.pickupLocation)
       ? [form.pickupLocation, ...pickupSpots]
       : pickupSpots;
 
@@ -302,10 +340,16 @@ export default function EditListing() {
       <div className="listing-container">
         <header className="listing-header">
           <h1>Edit your listing</h1>
-          <p>Update the details, photos, and information for your listing.</p>
+          <p>
+            Update the details, photos, and information
+            for your listing.
+          </p>
         </header>
 
-        {loading && <p role="status">Loading your listing…</p>}
+        {loading && (
+          <p role="status">Loading your listing…</p>
+        )}
+
         {error && (
           <p className="listing-error" role="alert">
             {error}
@@ -314,14 +358,20 @@ export default function EditListing() {
 
         {loaded && (
           <div className="listing-layout">
-            <form className="listing-form" onSubmit={saveChanges}>
+            <form
+              className="listing-form"
+              onSubmit={saveChanges}
+            >
               <fieldset disabled={saving}>
                 <h2>Photos</h2>
 
                 <div className="photo-box">
                   <div className="photo-thumbnails">
                     {photos.map((photo, index) => (
-                      <div className="photo-entry" key={photo.key}>
+                      <div
+                        className="photo-entry"
+                        key={photo.key}
+                      >
                         <Photo
                           photo={photo}
                           className="photo-thumb"
@@ -331,7 +381,9 @@ export default function EditListing() {
                         <button
                           type="button"
                           aria-label={`Remove photo ${index + 1}`}
-                          onClick={() => removePhoto(photo.key)}
+                          onClick={() =>
+                            removePhoto(photo.key)
+                          }
                         >
                           ×
                         </button>
@@ -343,18 +395,26 @@ export default function EditListing() {
                     <button
                       type="button"
                       className="photo-button"
-                      onClick={() => fileInput.current?.click()}
+                      onClick={() =>
+                        fileInput.current?.click()
+                      }
                       disabled={photos.length >= 1}
                     >
                       <span className="upload-icon">
-                        <Upload size={18} aria-hidden="true" />
+                        <Upload
+                          size={18}
+                          aria-hidden="true"
+                        />
                       </span>
-                      {photos.length ? "Add another photo" : "Upload a photo"}
+
+                      {photos.length
+                        ? "Add another photo"
+                        : "Upload a photo"}
                     </button>
 
                     <p>
-                      {photos.length} of 1 photo added · JPG or PNG · Up to 5 MB
-                      each
+                      {photos.length} of 1 photo added ·
+                      JPG or PNG · Up to 5 MB each
                     </p>
                   </div>
 
@@ -368,13 +428,19 @@ export default function EditListing() {
                 </div>
 
                 {photoError && (
-                  <p className="listing-error" role="alert">
+                  <p
+                    className="listing-error"
+                    role="alert"
+                  >
                     {photoError}
                   </p>
                 )}
 
                 <div className="field">
-                  <label htmlFor="title">Listing title</label>
+                  <label htmlFor="title">
+                    Listing title
+                  </label>
+
                   <input
                     id="title"
                     name="title"
@@ -387,7 +453,10 @@ export default function EditListing() {
 
                 <div className="field-row">
                   <div className="field">
-                    <label htmlFor="category">Category</label>
+                    <label htmlFor="category">
+                      Category
+                    </label>
+
                     <select
                       id="category"
                       name="category"
@@ -395,9 +464,15 @@ export default function EditListing() {
                       onChange={updateField}
                       required
                     >
-                      <option value="">Choose a category</option>
+                      <option value="">
+                        Choose a category
+                      </option>
+
                       {categories.map((category) => (
-                        <option key={category} value={category}>
+                        <option
+                          key={category}
+                          value={category}
+                        >
                           {category}
                         </option>
                       ))}
@@ -405,7 +480,10 @@ export default function EditListing() {
                   </div>
 
                   <div className="field">
-                    <label htmlFor="condition">Condition</label>
+                    <label htmlFor="condition">
+                      Condition
+                    </label>
+
                     <select
                       id="condition"
                       name="condition"
@@ -413,18 +491,29 @@ export default function EditListing() {
                       onChange={updateField}
                       required
                     >
-                      <option value="">Choose a condition</option>
+                      <option value="">
+                        Choose a condition
+                      </option>
                       <option value="New">New</option>
-                      <option value="Like new">Like new</option>
-                      <option value="Good">Good condition</option>
-                      <option value="Fair">Fair condition</option>
+                      <option value="Like new">
+                        Like new
+                      </option>
+                      <option value="Good">
+                        Good condition
+                      </option>
+                      <option value="Fair">
+                        Fair condition
+                      </option>
                     </select>
                   </div>
                 </div>
 
                 {form.category === "Other" && (
                   <div className="field">
-                    <label htmlFor="customCategory">Your category</label>
+                    <label htmlFor="customCategory">
+                      Your category
+                    </label>
+
                     <input
                       id="customCategory"
                       name="customCategory"
@@ -437,7 +526,10 @@ export default function EditListing() {
                 )}
 
                 <div className="field">
-                  <label htmlFor="description">Description</label>
+                  <label htmlFor="description">
+                    Description
+                  </label>
+
                   <textarea
                     id="description"
                     name="description"
@@ -447,14 +539,21 @@ export default function EditListing() {
                     aria-describedby="description-help"
                     required
                   />
-                  <p className="field-help" id="description-help">
-                    Tell buyers about condition, what’s included, and pickup
-                    details.
+
+                  <p
+                    className="field-help"
+                    id="description-help"
+                  >
+                    Tell buyers about condition, what’s
+                    included, and pickup details.
                   </p>
                 </div>
 
                 <div className="field">
-                  <span className="field-label" id="listing-type-label">
+                  <span
+                    className="field-label"
+                    id="listing-type-label"
+                  >
                     Listing type
                   </span>
 
@@ -463,13 +562,25 @@ export default function EditListing() {
                     role="group"
                     aria-labelledby="listing-type-label"
                   >
-                    {["For sale", "Free / Donate", "Trade"].map((type) => (
+                    {[
+                      "For sale",
+                      "Free / Donate",
+                      "Trade",
+                    ].map((type) => (
                       <button
                         key={type}
                         type="button"
-                        className={form.listingType === type ? "active" : ""}
-                        aria-pressed={form.listingType === type}
-                        onClick={() => chooseType(type)}
+                        className={
+                          form.listingType === type
+                            ? "active"
+                            : ""
+                        }
+                        aria-pressed={
+                          form.listingType === type
+                        }
+                        onClick={() =>
+                          chooseType(type)
+                        }
                       >
                         {type}
                       </button>
@@ -484,6 +595,7 @@ export default function EditListing() {
                         ? "Item value (USD)"
                         : "Price (USD)"}
                     </label>
+
                     <input
                       id="price"
                       name="price"
@@ -493,13 +605,22 @@ export default function EditListing() {
                       step="0.01"
                       value={form.price}
                       onChange={updateField}
-                      disabled={form.listingType === "Free / Donate"}
-                      required={form.listingType !== "Free / Donate"}
+                      disabled={
+                        form.listingType ===
+                        "Free / Donate"
+                      }
+                      required={
+                        form.listingType !==
+                        "Free / Donate"
+                      }
                     />
                   </div>
 
                   <div className="field">
-                    <label htmlFor="pickupLocation">Campus pickup spot</label>
+                    <label htmlFor="pickupLocation">
+                      Campus pickup spot
+                    </label>
+
                     <select
                       id="pickupLocation"
                       name="pickupLocation"
@@ -507,9 +628,15 @@ export default function EditListing() {
                       onChange={updateField}
                       required
                     >
-                      <option value="">Choose a pickup spot</option>
+                      <option value="">
+                        Choose a pickup spot
+                      </option>
+
                       {pickupOptions.map((spot) => (
-                        <option key={spot} value={spot}>
+                        <option
+                          key={spot}
+                          value={spot}
+                        >
                           {spot}
                         </option>
                       ))}
@@ -518,14 +645,21 @@ export default function EditListing() {
                 </div>
 
                 <div className="form-buttons">
-                  <button className="publish-button" type="submit">
-                    {saving ? "Saving changes…" : "Save changes"}
+                  <button
+                    className="publish-button"
+                    type="submit"
+                  >
+                    {saving
+                      ? "Saving changes…"
+                      : "Save changes"}
                   </button>
 
                   <button
                     className="draft-button"
                     type="button"
-                    onClick={() => navigate("/profile")}
+                    onClick={() =>
+                      navigate("/profile")
+                    }
                   >
                     Cancel
                   </button>
@@ -535,6 +669,7 @@ export default function EditListing() {
 
             <aside className="listing-preview">
               <h2>Preview</h2>
+
               <p className="preview-help">
                 This is how your listing will appear.
               </p>
@@ -544,7 +679,10 @@ export default function EditListing() {
                   <Photo
                     photo={photos[0]}
                     className="preview-photo"
-                    alt={form.title || "Listing preview"}
+                    alt={
+                      form.title ||
+                      "Listing preview"
+                    }
                   />
                 ) : (
                   <div className="preview-placeholder">
@@ -554,27 +692,42 @@ export default function EditListing() {
 
                 <div className="preview-details">
                   <span className="preview-category">
-                    {previewCategory || "Category"}
+                    {previewCategory ||
+                      "Category"}
                   </span>
 
-                  <h3>{form.title || "Your item title"}</h3>
+                  <h3>
+                    {form.title ||
+                      "Your item title"}
+                  </h3>
 
                   <div className="preview-bottom">
                     <strong>{previewPrice}</strong>
+
                     <span className="available">
-                      {status === "SOLD" ? "Sold" : "Available"}
+                      {status === "SOLD"
+                        ? "Sold"
+                        : "Available"}
                     </span>
                   </div>
                 </div>
               </article>
 
               <div className="campus-note">
-                <ShieldCheck size={18} aria-hidden="true" />
+                <ShieldCheck
+                  size={18}
+                  aria-hidden="true"
+                />
+
                 <div>
-                  <strong>Need to update your pickup details?</strong>
+                  <strong>
+                    Need to update your pickup details?
+                  </strong>
+
                   <p>
-                    Make sure your campus pickup spot and other details are
-                    accurate so buyers can reach you.
+                    Make sure your campus pickup spot
+                    and other details are accurate so
+                    buyers can reach you.
                   </p>
                 </div>
               </div>
@@ -586,7 +739,9 @@ export default function EditListing() {
           <button
             className="draft-button"
             type="button"
-            onClick={() => navigate("/profile")}
+            onClick={() =>
+              navigate("/profile")
+            }
           >
             Back to profile
           </button>
