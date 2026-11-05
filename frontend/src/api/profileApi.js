@@ -36,11 +36,6 @@ export async function updateListingStatus(id, status) {
   return data;
 }
 
-export async function relistItem(id) {
-  const { data } = await api.post(`/home/${encodeURIComponent(id)}/relist`);
-  return data;
-}
-
 // Request a password reset
 export async function resetPassword(email) {
   const { data, status } = await api.post(endpoints.resetPassword, { email });
