@@ -36,6 +36,19 @@
   font-size: 12px;
   color: #657b9b;
 }
+.messages-page button.messages-propose-pickup {
+  min-width: 154px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 1px solid #dce4ed;
+  border-radius: 7px;
+  background: #fff;
+  color: #194278;
+  font-weight: 600;
+}
+.messages-page button.messages-propose-pickup:hover {
+  background: #f5f8fb;
+}
 .messages-page button,
 .messages-listing > a {
   border: 1px solid #dce4ed;
@@ -257,6 +270,16 @@
   text-decoration: none;
   white-space: nowrap;
 }
+.messages-price-agreed {
+  flex: 0 0 auto;
+  padding: 12px 18px;
+  border-radius: 7px;
+  background: #eef0f3;
+  color: #52647a;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
 .messages-thread {
   flex: 1;
   min-height: 0;
@@ -298,6 +321,58 @@
 }
 .messages-bubble.incoming {
   background: #f9f8f6;
+}
+.offer-accepted-card {
+  width: min(360px, 100%);
+  margin: 0 0 18px;
+  padding: 16px;
+  border: 1px solid #d4e4dc;
+  border-radius: 10px;
+  background: #eef7f1;
+  color: #10295c;
+}
+.offer-accepted-card__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: #32835f;
+  font-size: 11px;
+}
+.offer-accepted-card__price {
+  margin: 0 0 8px;
+  color: #10295c;
+  font-size: 20px;
+  font-weight: 700;
+}
+.offer-accepted-card__listing-price,
+.offer-accepted-card__agreement,
+.offer-accepted-card__note {
+  margin: 0 0 8px;
+  color: #657b9b;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.offer-accepted-card__agreement {
+  margin-top: 8px;
+}
+.offer-accepted-card__note {
+  margin-bottom: 12px;
+}
+.messages-page button.offer-accepted-card__button {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 6px;
+  background: #194a7d;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+.messages-page button.offer-accepted-card__button:hover {
+  background: #123a66;
 }
 .messages-composer {
   display: flex;
@@ -433,6 +508,10 @@
   .messages-listing > a {
     font-size: 12px;
   }
+  .messages-price-agreed {
+    padding: 9px 12px;
+    font-size: 11px;
+  }
   .messages-thread {
     padding: 14px;
   }
@@ -445,5 +524,35 @@
   .messages-composer button {
     min-width: 70px;
     padding: 12px;
+  }
+
+  .messages-thread .offer-card {
+    margin-top: 18px;
+  }
+
+  .messages-thread .offer-card h3 {
+    color: #10295c;
+  }
+
+  .offer-preview-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .offer-preview-controls span {
+    color: #657b9b;
+    font-size: 13px;
+  }
+
+  .messages-page .offer-preview-controls button {
+    padding: 9px 15px;
+    border: 1px solid #dce4ed;
+    border-radius: 6px;
+    background: #edf4fa;
+    color: #194278;
+    font-size: 12px;
   }
 }
