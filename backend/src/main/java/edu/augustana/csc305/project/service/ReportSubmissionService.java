@@ -128,6 +128,9 @@ public class ReportSubmissionService {
                 || listing.getModerationVisibility() != Visibility.VISIBLE) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing is not available for reporting.");
         }
+        if (reporter.getId().equals(listing.getOwnerId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot report your own listing.");
+        }
         Instant now = Instant.now();
         ModerationCase active = mongo.findOne(Query.query(Criteria.where("listingId").is(listingId)
                 .and("status").in(CaseStatus.OPEN, CaseStatus.IN_REVIEW)), ModerationCase.class);
