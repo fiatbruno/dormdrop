@@ -10,6 +10,8 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 @Repository
 public class UserRepository {
@@ -49,6 +51,17 @@ public class UserRepository {
                 Query.query(Criteria.where("email").is(email)),
                 User.class
         );
+    }
+
+    /** Record activity at most once per five minutes, without moving the timestamp backwards. */
+    public void recordActivity(ObjectId userId, Instant now) {
+        Criteria due = new Criteria().orOperator(
+                Criteria.where("lastActiveAt").exists(false),
+                Criteria.where("lastActiveAt").is(null),
+                Criteria.where("lastActiveAt").lt(now.minus(5, ChronoUnit.MINUTES)));
+        mongoTemplate.updateFirst(Query.query(new Criteria().andOperator(
+                Criteria.where("_id").is(userId), due)),
+                new Update().max("lastActiveAt", now), User.class);
     }
 
 

@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
+import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The controller for handling authentication requests.
@@ -28,6 +31,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
@@ -82,6 +86,12 @@ public class AuthController {
         }
 
         String token = jwtService.generateToken(user);
+
+        try {
+            userRepository.recordActivity(user.getId(), Instant.now());
+        } catch (RuntimeException ex) {
+            log.warn("Could not record sign-in activity", ex);
+        }
 
         return new LoginResponse(
                 token,

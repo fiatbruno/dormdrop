@@ -6,6 +6,7 @@ import edu.augustana.csc305.project.model.UserRole;
 import edu.augustana.csc305.project.security.PermissionPolicy;
 import edu.augustana.csc305.project.security.StaffAccess;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.bson.types.ObjectId;
@@ -31,7 +32,12 @@ public class AdminDirectoryService {
 
     // Mapping a projection avoids loading password hashes and tokens into directory results.
     public record DirectoryUser(@Id ObjectId id, String name, String email, Boolean emailVerified,
-                                UserRole role, Instant createdAt, Instant updatedAt) { }
+                                UserRole role, Instant createdAt, Instant updatedAt, Instant lastActiveAt) {
+        public DirectoryUser(ObjectId id, String name, String email, Boolean emailVerified,
+                             UserRole role, Instant createdAt, Instant updatedAt) {
+            this(id, name, email, emailVerified, role, createdAt, updatedAt, null);
+        }
+    }
 
     public AdminDirectoryDtos.Page list(Authentication auth, String search, int page, int size) {
         access.require(auth, PermissionPolicy.Capability.VIEW_MEMBER_DIRECTORY);
@@ -48,16 +54,19 @@ public class AdminDirectoryService {
             criteria = new Criteria().orOperator(Criteria.where("name").regex(literal), Criteria.where("email").regex(literal));
         }
         long total = mongo.count(Query.query(criteria), User.class);
+        Instant cutoff = Instant.now().minus(30, ChronoUnit.DAYS);
+        long activeCount = mongo.count(Query.query(Criteria.where("lastActiveAt").gte(cutoff)), User.class);
         Query query = Query.query(criteria).with(Sort.by(Sort.Order.asc("name"), Sort.Order.asc("_id")))
                 .skip((long) page * size).limit(size);
         query.fields().include("name").include("email").include("emailVerified").include("role")
-                .include("createdAt").include("updatedAt");
+                .include("createdAt").include("updatedAt").include("lastActiveAt");
         List<AdminDirectoryDtos.Member> items = mongo.find(query, DirectoryUser.class, "users").stream()
                 .map(user -> new AdminDirectoryDtos.Member(user.id().toHexString(), user.name(), maskEmail(user.email()),
                         Boolean.TRUE.equals(user.emailVerified()), user.role() == null ? UserRole.STUDENT : user.role(),
-                        user.createdAt(), user.updatedAt()))
+                        user.createdAt(), user.updatedAt(), user.lastActiveAt(),
+                        user.lastActiveAt() != null && !user.lastActiveAt().isBefore(cutoff)))
                 .toList();
-        return new AdminDirectoryDtos.Page(items, total, page, size, total == 0 ? 0 : (total - 1) / size + 1);
+        return new AdminDirectoryDtos.Page(items, total, page, size, total == 0 ? 0 : (total - 1) / size + 1, activeCount);
     }
 
     private static String maskEmail(String email) {
