@@ -387,13 +387,15 @@ function ItemDetailsContent({ id }) {
                      Share listing
                    </button>
 
-                   <button
-                     type="button"
-                     onClick={() => setReportOpen(true)}
-                     aria-haspopup="dialog"
-                   >
-                     Report item
-                   </button>
+                   {!isOwner && (
+                     <button
+                       type="button"
+                       onClick={() => setReportOpen(true)}
+                       aria-haspopup="dialog"
+                     >
+                       Report item
+                     </button>
+                   )}
                  </div>
                  {offerFormOpen && (
                    <form
@@ -517,7 +519,7 @@ function ItemDetailsContent({ id }) {
           )
         )}
       </main>
-      {reportOpen && listing && (
+      {reportOpen && listing && !isOwner && (
         <ReportListing
           listing={listing}
           onClose={() => setReportOpen(false)}
