@@ -335,11 +335,12 @@ export default function Messages() {
                         {offer && (
                           <>
                             <OfferNegotiation
-                              key={`${offer.id}-${offer.version}`}
+                              key={offer.id}
                               offer={offer}
                               listing={item}
                               currentUserId={chat.conversation.currentUserId}
                               participant={chat.conversation.participant}
+                              onOfferUpdated={chat.updateOffer}
                             />
                             <Link to={`/offers/${encodeURIComponent(offer.id)}`}>
                               View offer details

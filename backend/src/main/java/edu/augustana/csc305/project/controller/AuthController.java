@@ -11,6 +11,7 @@ import edu.augustana.csc305.project.security.LoginRequest;
 import edu.augustana.csc305.project.security.JwtService;
 import edu.augustana.csc305.project.security.LoginResponse;
 import edu.augustana.csc305.project.service.AuthService;
+import edu.augustana.csc305.project.config.PublicUrls;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
-import java.net.URI;
 
 /**
  * The controller for handling authentication requests.
@@ -33,17 +33,20 @@ public class AuthController {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
+    private final PublicUrls urls;
 
     public AuthController(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
-            AuthService authService
+            AuthService authService,
+            PublicUrls urls
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authService = authService;
+        this.urls = urls;
     }
 
     @PostMapping("/login")
@@ -112,26 +115,14 @@ public class AuthController {
 
             return ResponseEntity
                     .status(HttpStatus.FOUND)
-                    .location(
-                            URI.create(
-                                    "http://localhost:5173/verification-success"
-                            )
-                    )
+                    .location(urls.verificationSuccess())
                     .build();
 
         } catch (IllegalArgumentException e) {
 
             return ResponseEntity
                     .status(HttpStatus.FOUND)
-                    .location(
-                            URI.create(
-                                    "http://localhost:5173/verification-expired?token="
-                                            + java.net.URLEncoder.encode(
-                                            token,
-                                            java.nio.charset.StandardCharsets.UTF_8
-                                    )
-                            )
-                    )
+                    .location(urls.verificationExpired(token))
                     .build();
         }
     }

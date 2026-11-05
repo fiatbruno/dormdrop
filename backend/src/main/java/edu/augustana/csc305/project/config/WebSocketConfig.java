@@ -18,7 +18,7 @@ public class WebSocketConfig
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/api/v1/ws")
-                .setAllowedOriginPatterns("*");
+                .setAllowedOrigins(frontendOrigin.value());
     }
 
     @Override
@@ -28,10 +28,13 @@ public class WebSocketConfig
     }
     private final WebSocketAuthInterceptor authInterceptor;
     private final WebSocketSessions sessions;
+    private final FrontendOrigin frontendOrigin;
 
-    public WebSocketConfig(WebSocketAuthInterceptor authInterceptor, WebSocketSessions sessions) {
+    public WebSocketConfig(WebSocketAuthInterceptor authInterceptor, WebSocketSessions sessions,
+                           FrontendOrigin frontendOrigin) {
         this.authInterceptor = authInterceptor;
         this.sessions = sessions;
+        this.frontendOrigin = frontendOrigin;
     }
 
     @Override

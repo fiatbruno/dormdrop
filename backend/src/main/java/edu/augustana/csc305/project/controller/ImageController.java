@@ -8,9 +8,13 @@ import edu.augustana.csc305.project.repository.UserRepository;
 import edu.augustana.csc305.project.service.ImageStorageService;
 
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,19 +28,29 @@ import java.util.Map;
 @RequestMapping("/images")
 public class ImageController {
 
+    private static final Logger log = LoggerFactory.getLogger(ImageController.class);
     private final ImageStorageService storage;
     private final ListingRepository listings;
     private final UserRepository users;
     private final edu.augustana.csc305.project.service.ListingVisibilityPolicy visibility;
+    private final SimpMessagingTemplate messaging;
 
     public ImageController(
             ImageStorageService storage,
             ListingRepository listings,
             UserRepository users, edu.augustana.csc305.project.service.ListingVisibilityPolicy visibility) {
+        this(storage, listings, users, visibility, null);
+    }
+
+    @Autowired
+    public ImageController(ImageStorageService storage, ListingRepository listings, UserRepository users,
+                           edu.augustana.csc305.project.service.ListingVisibilityPolicy visibility,
+                           SimpMessagingTemplate messaging) {
         this.storage = storage;
         this.listings = listings;
         this.users = users;
         this.visibility = visibility;
+        this.messaging = messaging;
     }
 
     @PostMapping("/{listingId}")
@@ -87,6 +101,14 @@ public class ImageController {
         } catch (RuntimeException failure) {
             storage.discardNewUpload(url);
             throw failure;
+        }
+
+        if (messaging != null) {
+            try {
+                messaging.convertAndSend("/topic/listings", "updated");
+            } catch (Exception ex) {
+                log.warn("Could not broadcast listing photo update", ex);
+            }
         }
 
         return Map.of("imageUrl", url);
