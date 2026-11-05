@@ -8,6 +8,7 @@ import MarketplaceFilters from "../../components/MarketplaceFilters/MarketplaceF
 import ProductCard from "../../components/ProductCard/ProductCard";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
+import useListingUpdates from "../../hooks/useListingUpdates";
 
 import {
   emptyFilters,
@@ -45,19 +46,19 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [favoriteError, setFavoriteError] = useState("");
+  const [listingAttempt, setListingAttempt] = useState(0);
+  useListingUpdates(() => setListingAttempt((value) => value + 1));
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadListings() {
       try {
-        setLoading(true);
-        setError("");
-
         const data = await getListings();
 
         if (!cancelled) {
           setProducts(data);
+          setError("");
         }
       } catch (err) {
         console.error(err);
@@ -77,7 +78,7 @@ function Home() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [listingAttempt]);
 
   useEffect(() => {
     let cancelled = false;
