@@ -94,6 +94,25 @@ public class ImageStorageService {
         return apiPrefix + "/images/" + filename;
     }
 
+    public String copyListingImage(String url) {
+        String prefix = apiPrefix + "/images/";
+        if (url == null || !url.startsWith(prefix)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Listing image is unavailable.");
+        }
+        String filename = url.substring(prefix.length());
+        Path source = getImage(filename);
+        String copy = UUID.randomUUID() + filename.substring(filename.lastIndexOf('.'));
+        try {
+            if (!source.toRealPath().startsWith(uploadDirectory.toRealPath())) {
+                throw new IOException("Image is outside upload storage");
+            }
+            Files.copy(source, uploadDirectory.resolve(copy));
+        } catch (IOException ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not copy listing image.", ex);
+        }
+        return imageUrl(copy);
+    }
+
     public void discardNewUpload(String url) {
         String prefix = apiPrefix + "/images/";
         if (!url.startsWith(prefix)) return;
