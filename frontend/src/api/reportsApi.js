@@ -1,6 +1,6 @@
 import api from "./client";
 
-export async function submitReport(listingId, report, idempotencyKey) {
+export async function submitListingReport(listingId, report, idempotencyKey) {
   const { data } = await api.post(
     `/home/${encodeURIComponent(listingId)}/reports`,
     report,
