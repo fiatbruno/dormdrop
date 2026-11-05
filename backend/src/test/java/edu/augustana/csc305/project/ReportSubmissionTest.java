@@ -72,6 +72,19 @@ class ReportSubmissionTest {
     private String requestId() { return user.getId().toHexString() + ":" + key; }
 
     @Test
+    void rejectsOwnListingWithoutSavingOrConsumingQuota() {
+        listing.setOwnerId(user.getId());
+        var failure = assertThrows(ResponseStatusException.class,
+                () -> service().submit(listing.getId().toHexString(), body, key, auth));
+        assertEquals(403, failure.getStatusCode().value());
+        assertEquals("You cannot report your own listing.", failure.getReason());
+        verifyNoInteractions(evidence);
+        verify(mongo, never()).insert(any(ReportRateWindow.class));
+        verify(mongo, never()).insert(any(ReportRequest.class));
+        verify(mongo, never()).insert(any(ModerationCase.class));
+    }
+
+    @Test
     void acceptsReportThroughRetentionAndNeverHidesOrChangesLifecycle() {
         var result = service().submit(listing.getId().toHexString(), body, key, auth);
         assertTrue(result.created());
