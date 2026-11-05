@@ -49,16 +49,13 @@ test("copies the canonical listing URL and confirms success accessibly", async (
   await page.goto("/items/shared-listing?campaign=ignored#details");
 
   await page.getByRole("button", { name: /share listing/i }).click();
-  await expect(
-    page.getByText(/Listing link copied|Copied a local-only link/),
-  ).toBeVisible();
+  await expect(page.getByText("Listing link copied!")).toBeVisible();
   const copied = await page.evaluate(() => globalThis.__copiedListingUrl);
   const url = new URL(copied);
   expect(url.pathname).toBe("/items/shared-listing");
   expect(url.search).toBe("");
   expect(url.hash).toBe("");
 });
-
 test("clipboard failure is announced without claiming the link was copied", async ({
   page,
 }) => {
@@ -77,7 +74,7 @@ test("clipboard failure is announced without claiming the link was copied", asyn
 
   await page.getByRole("button", { name: /share listing/i }).click();
   await expect(page.getByText(/Couldn't copy the link/)).toBeVisible();
-  await expect(page.getByText(/Listing link copied|Copied a local-only link/)).toHaveCount(0);
+  await expect(page.getByText("Listing link copied!")).toHaveCount(0);
 });
 
 test("a missing shared listing shows a safe unavailable state", async ({

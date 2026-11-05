@@ -17,7 +17,7 @@ function ListingCards({ items, onMarkSold, onRelist, pending }) {
     <div className="profile-listing-grid">
       {items.map((item) => (
         <article className="profile-listing-card" key={item.id}>
-          <Link to={`/listing/${item.id}`} className="profile-listing-image">
+          <Link to={`/items/${encodeURIComponent(item.id)}`} className="profile-listing-image">
             {item.imageUrl || item.image ? (
               <ListingImage
                 fallback={<span>No image available</span>}
@@ -173,7 +173,7 @@ function Profile({
         setMessage("Listing marked as sold.");
       } else {
         await onRelist(id);
-        setMessage("Listing relisted successfully!");
+        setMessage("A new listing has been created. Your sold listing remains in your history.");
       }
     } catch {
       setActionError("Unable to update listing. Please try again.");
