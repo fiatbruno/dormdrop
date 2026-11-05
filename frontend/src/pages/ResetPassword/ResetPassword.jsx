@@ -33,6 +33,11 @@ export default function ResetPassword() {
       return;
     }
 
+    if (new TextEncoder().encode(password).length > 72) {
+      setError("Your password must be at most 72 UTF-8 bytes long.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -67,6 +72,10 @@ export default function ResetPassword() {
       }
 
       if (!response.ok) {
+        if (response.status === 400 && result.message) {
+          setError(result.message);
+          return;
+        }
         throw new Error("Password reset failed.");
       }
 

@@ -67,6 +67,8 @@ function Photo({ photo, className, alt }) {
     if (!photo.file) return;
 
     const objectUrl = URL.createObjectURL(photo.file);
+    // Keep the preview synchronized with the browser-managed object URL.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUrl(objectUrl);
 
     return () => URL.revokeObjectURL(objectUrl);
@@ -97,6 +99,8 @@ export default function EditListing() {
   useEffect(() => {
     const controller = new AbortController();
 
+    // Reset the edit form while fetching a different listing.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setLoaded(false);
     setError("");

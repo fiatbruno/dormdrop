@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import useAuth from "../../hooks/useAuth";
+import useUnreadMessages from "../../hooks/useUnreadMessages";
 import NotificationBell from "../NotificationBell/NotificationBell";
 import logo from "../../assets/Logo.png";
 
@@ -43,6 +44,7 @@ function NavbarContent({
   profilePath = "/profile",
 }) {
   const { isAdmin } = useAuth();
+  const unreadMessages = useUnreadMessages();
 
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -198,6 +200,11 @@ function NavbarContent({
                 }
               >
                 {label}
+                {to === "/messages" && unreadMessages > 0 && (
+                  <span className="dormdrop-navbar__unread" aria-label={`${unreadMessages} unread messages`}>
+                    {unreadMessages}
+                  </span>
+                )}
               </NavLink>
             )
           )}

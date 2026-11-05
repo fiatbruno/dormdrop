@@ -22,6 +22,7 @@ export default function useMessaging(id) {
   const selected = useRef(id);
   useLayoutEffect(() => { selected.current = id; }, [id]);
   const revision = useRef(0);
+  const offerRevision = useRef(0);
   const sendingRef = useRef(false);
   const listWork = useRef(null);
   const queued = useRef(false);
@@ -54,14 +55,22 @@ export default function useMessaging(id) {
         const current = selected.current;
         if (!current) break;
         const version = revision.current;
+        const currentOfferRevision = offerRevision.current;
         try {
           const [conversation, messages] = await Promise.all([api.getConversation(current), api.getMessages(current)]);
-          if (mounted.current && version === revision.current && selected.current === current) {
-            setThread({ id: current, conversation, messages: uniqueMessages(messages) });
+          if (mounted.current && version === revision.current && currentOfferRevision === offerRevision.current && selected.current === current) {
+            setThread(previous => {
+              const existingOffer = previous.id === current ? previous.conversation?.offer : null;
+              const incomingOffer = conversation?.offer;
+              const keepExisting = existingOffer && incomingOffer?.id === existingOffer.id &&
+                Number(existingOffer.version) > Number(incomingOffer.version);
+              return { id: current, conversation: keepExisting ? { ...conversation, offer: existingOffer } : conversation,
+                messages: uniqueMessages(messages) };
+            });
             setError('');
           }
         } catch (err) {
-          if (mounted.current && version === revision.current) setError(
+          if (mounted.current && version === revision.current && currentOfferRevision === offerRevision.current) setError(
             err.response?.status === 403 ? 'You cannot access this conversation.' :
               err.response?.status === 404 ? 'Conversation not found.' : 'Could not load this conversation. Try refreshing.');
         } finally {
@@ -93,6 +102,30 @@ export default function useMessaging(id) {
     if (event.conversationId === selected.current) void refreshThread();
   }, refresh);
 
+  useEffect(() => {
+    const onOfferNotice = (event) => {
+      if (event.detail?.offerId) refresh();
+    };
+    window.addEventListener('dormdrop:notification-received', onOfferNotice);
+    window.addEventListener('dormdrop:notifications-reconnected', refresh);
+    return () => {
+      window.removeEventListener('dormdrop:notification-received', onOfferNotice);
+      window.removeEventListener('dormdrop:notifications-reconnected', refresh);
+    };
+  }, [refresh]);
+
+  function updateOffer(offer) {
+    // Prevent an older in-flight conversation fetch from undoing a successful action.
+    offerRevision.current++;
+    if (threadWork.current) threadQueued.current = true;
+    setThread(previous => {
+      if (previous.id !== selected.current || previous.conversation?.offer?.id !== offer.id) return previous;
+      const existing = previous.conversation.offer;
+      if (Number(existing.version) > Number(offer.version)) return previous;
+      return { ...previous, conversation: { ...previous.conversation, offer } };
+    });
+  }
+
   const visibleThread = thread.id === id ? thread : { conversation: null, messages: [] };
   // Effects run after the thread is committed to the page. Never mark a hidden page read.
   useEffect(() => {
@@ -108,6 +141,7 @@ export default function useMessaging(id) {
           setThread(previous => previous.id !== id ? previous : { ...previous, messages: previous.messages.map(message =>
             unreadIds.has(message.id) ? { ...message, readAt: new Date().toISOString() } : message) });
           void refreshList();
+          window.dispatchEvent(new Event('dormdrop:messages-updated'));
         }
       } catch { /* A later refresh can retry read acknowledgement. */ }
     };
@@ -142,5 +176,5 @@ export default function useMessaging(id) {
 
   return { conversations, ...visibleThread, loading, listLoading, error, listError, sendError,
     draft: drafts[id] || '', setDraft: value => setDrafts(previous => ({ ...previous, [id]: value })),
-    sending, sentVersion, send, refresh, connection };
+    sending, sentVersion, send, refresh, updateOffer, connection };
 }

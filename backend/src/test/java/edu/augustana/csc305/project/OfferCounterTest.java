@@ -5,6 +5,7 @@ import edu.augustana.csc305.project.controller.OfferController;
 import edu.augustana.csc305.project.model.*;
 import edu.augustana.csc305.project.repository.UserRepository;
 import edu.augustana.csc305.project.service.OfferService;
+import edu.augustana.csc305.project.service.OfferTransitionEventAppender;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -54,7 +55,7 @@ class OfferCounterTest {
                 .thenReturn(UpdateResult.acknowledged(1, 1L, null));
         when(transactions.execute(any())).thenAnswer(call ->
                 ((TransactionCallback<?>) call.getArgument(0)).doInTransaction(mock(TransactionStatus.class)));
-        service = new OfferService(mongo, users, transactions);
+        service = new OfferService(mongo, users, transactions, mock(OfferTransitionEventAppender.class));
     }
 
     private static User user(String name) {

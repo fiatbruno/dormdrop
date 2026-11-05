@@ -31,6 +31,15 @@ to be set:
     32`, or by using a website like
     [this one](https://randomkeygen.com/jwt-secret).
 
+Set `APP_FRONTEND_URL` to the public frontend URL (for example,
+`https://dormdrop.example.edu`) so password-reset emails link to the deployed
+site and verification redirects return there. Set `APP_BACKEND_URL` to the
+public backend base URL, without the API prefix (for example,
+`https://api.dormdrop.example.edu`); verification email links append the
+configured `api.prefix`. These default to `http://localhost:5173` and
+`http://localhost:8080` for local development. Set
+`MAIL_USERNAME` and `MAIL_PASSWORD` for the configured SMTP account as well.
+
 First administrator provisioning is disabled by default. To bootstrap a new,
 empty database, set `ADMIN_BOOTSTRAP_ENABLED=true`, `ADMIN_EMAIL` to an
 Augustana address, and `ADMIN_PASSWORD` to a password of at least eight

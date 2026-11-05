@@ -461,3 +461,34 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Directory within the shared staff workspace. */
+.community-page { padding: 0; background: transparent; }
+.community-page-header { align-items: center; margin-bottom: 28px; }
+.community-page-header .community-eyebrow { margin: 0 0 8px; color: #a16a16; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.community-page-header h1 { color: #142b50; font-size: clamp(28px, 3vw, 36px); letter-spacing: -.025em; }
+.community-page-header p { color: #63738b; font-size: 14px; }
+.community-refresh-button { min-height: 40px; padding: 9px 14px; border-color: #dce4ee; border-radius: 8px; }
+.community-directory { border-color: #e1e8f0; border-radius: 14px; box-shadow: 0 4px 18px #1e35560a; }
+.community-directory-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 24px; }
+.community-directory-header h2 { font-size: 17px; }
+.community-directory-header p { margin: 5px 0 0; color: #718096; font-size: 12px; }
+.community-count { flex: 0 0 auto; padding: 7px 11px; border-radius: 999px; background: #edf3fb; color: #315681; font-size: 11px; font-weight: 700; }
+.community-table { table-layout: auto; }
+.community-table th { padding: 14px 24px; background: #f8fafc; color: #6b7b90; font-size: 10px; font-weight: 700; letter-spacing: .06em; }
+.community-table td { padding: 15px 24px; font-size: 13px; }
+.community-table th:nth-child(n) { width: auto; }
+.community-member-name { display: grid; gap: 4px; font-weight: 650; }
+.community-member-id { color: #8491a2; font-size: 11px; }
+.community-pagination { padding: 18px 24px; border-top: 1px solid #eef1f5; }
+.community-pagination p, .community-pagination-controls button, .community-pagination-controls span { font-size: 12px; }
+.community-pagination-controls { gap: 8px; }
+.community-pagination-controls button { min-height: 34px; padding: 0 8px; }
+
+@media (max-width: 760px) {
+  .community-page { padding: 0; }
+  .community-page-header { align-items: flex-start; }
+  .community-directory-header { align-items: flex-start; padding: 18px; }
+  .community-table { min-width: 680px; }
+  .community-table td, .community-table th { padding-left: 18px; padding-right: 18px; }
+}

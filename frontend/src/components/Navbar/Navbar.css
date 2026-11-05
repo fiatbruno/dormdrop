@@ -97,6 +97,20 @@
   text-transform: uppercase;
 }
 
+.dormdrop-navbar__unread {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: #194278;
+  color: white;
+  font-size: 11px;
+  line-height: 1;
+}
+
 .dormdrop-navbar .dormdrop-navbar__link:hover,
 .dormdrop-navbar .dormdrop-navbar__link--active {
   text-decoration: underline;

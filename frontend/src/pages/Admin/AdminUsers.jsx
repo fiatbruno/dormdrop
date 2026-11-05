@@ -40,6 +40,8 @@ export default function AdminUsers() {
   useEffect(() => {
     let active = true;
 
+    // Reset request feedback while loading the newly selected page.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError("");
 
@@ -100,10 +102,10 @@ export default function AdminUsers() {
       <div className="community-page">
         <div className="community-page-header">
           <div>
+            <p className="community-eyebrow">Campus administration</p>
             <h1>Community members</h1>
             <p>
-              Administrator directory. Email addresses
-              are masked by the server.
+              Find and review registered DormDrop members.
             </p>
           </div>
 
@@ -120,7 +122,8 @@ export default function AdminUsers() {
 
         <section className="community-directory">
           <div className="community-directory-header">
-            <h2>Member directory</h2>
+            <div><h2>Member directory</h2><p>Campus email addresses are masked to protect member privacy.</p></div>
+            {!loading && !error && <span className="community-count">{result.total} {result.total === 1 ? "member" : "members"}</span>}
           </div>
 
           {error && (
@@ -152,7 +155,6 @@ export default function AdminUsers() {
                         <th>Verification</th>
                         <th>Role</th>
                         <th>Joined</th>
-                        <th>Details</th>
                       </tr>
                     </thead>
 
@@ -195,14 +197,6 @@ export default function AdminUsers() {
                               : "—"}
                           </td>
 
-                          <td>
-                            <span
-                              className="community-text-muted"
-                              title="No user detail endpoint is available"
-                            >
-                              Unavailable
-                            </span>
-                          </td>
                         </tr>
                       ))}
                     </tbody>

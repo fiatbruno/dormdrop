@@ -6,10 +6,16 @@
 }
 
 .staff-reports-page {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+}
+
+.staff-reports-shell .staff-reports-page {
   width: min(100% - 40px, 1280px);
   margin: 0 auto;
   padding: 38px 0 64px;
-  flex: 1;
 }
 
 .staff-reports-eyebrow {
@@ -21,9 +27,13 @@
 }
 
 .staff-reports-page > h1 {
-  margin: 0 0 24px;
-  font-size: clamp(30px, 5vw, 40px);
+  margin: 0 0 8px;
+  color: #142b50;
+  font-size: clamp(28px, 3vw, 36px);
+  letter-spacing: -.025em;
 }
+
+.staff-reports-intro { margin: 0 0 28px; color: #63738b; font-size: 14px; line-height: 1.5; }
 
 .staff-reports-layout {
   display: grid;
@@ -37,8 +47,9 @@
   min-width: 0;
   padding: 20px;
   border: 1px solid #e1e8f0;
-  border-radius: 12px;
+  border-radius: 14px;
   background: #fff;
+  box-shadow: 0 4px 18px #1e35560a;
 }
 
 .staff-reports-queue__heading,
@@ -358,6 +369,6 @@
   }
 
   .staff-reports-page {
-    width: min(100% - 32px, 1280px);
+    width: 100%;
   }
 }

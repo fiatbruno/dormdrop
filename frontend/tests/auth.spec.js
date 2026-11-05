@@ -205,6 +205,21 @@ test.describe("Authentication", () => {
 });
 
 test.describe("Authentication gaps", () => {
+  test("password reset explains when the new password matches the old one", async ({ page }) => {
+    await page.route("**/api/v1/auth/reset-password", (route) =>
+      route.fulfill({
+        status: 400,
+        json: { message: "Your new password must be different from your current password." },
+      }),
+    );
+    await page.goto("/reset-password?token=valid-reset-token");
+    await page.getByLabel("New password", { exact: true }).fill("existing-password");
+    await page.getByLabel("Confirm new password").fill("existing-password");
+    await page.getByRole("button", { name: "Reset password" }).click();
+    await expect(page.getByRole("alert")).toHaveText("Your new password must be different from your current password.");
+    await expect(page).toHaveURL(/reset-password/);
+  });
+
   test("password reset sends both password fields and accepts a valid token", async ({
     page,
   }) => {

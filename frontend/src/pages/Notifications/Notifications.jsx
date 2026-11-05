@@ -55,7 +55,7 @@ function NotificationsContent() {
   useEffect(() => {
     let active = true;
 
-    getNotifications(page, PAGE_SIZE)
+    getNotifications(page, PAGE_SIZE, filter === "unread")
       .then((result) => {
         if (!Array.isArray(result.items)) {
           throw new Error("The notification response is invalid.");
@@ -86,7 +86,7 @@ function NotificationsContent() {
     return () => {
       active = false;
     };
-  }, [page, refreshVersion]);
+  }, [page, refreshVersion, filter]);
 
   useEffect(() => {
     const refreshInbox = () => {
@@ -134,6 +134,10 @@ function NotificationsContent() {
       );
       setUnreadCount((count) => Math.max(0, count - 1));
       window.dispatchEvent(new Event("dormdrop:notifications-updated"));
+      if (filter === "unread") {
+        setPage(0);
+        refresh();
+      }
     } catch {
       setActionError("Couldn't mark that notification as read. Please retry.");
     } finally {
@@ -161,6 +165,10 @@ function NotificationsContent() {
       );
       setUnreadCount((count) => Math.max(0, count - readIds.length));
       window.dispatchEvent(new Event("dormdrop:notifications-updated"));
+      if (filter === "unread" && readIds.length) {
+        setPage(0);
+        refresh();
+      }
       if (failedIds.length) {
         setActionError(
           `${failedIds.length} notification${failedIds.length === 1 ? "" : "s"} couldn't be marked as read. Please retry.`,
@@ -176,6 +184,15 @@ function NotificationsContent() {
   const hasMore = items.length < total;
   const visibleItems =
     filter === "unread" ? items.filter((item) => !item.readAt) : items;
+
+  function changeFilter(next) {
+    if (next === filter) return;
+    setItems([]);
+    setPage(0);
+    setError("");
+    setLoading(true);
+    setFilter(next);
+  }
 
   return (
     <div className="notifications-shell">
@@ -207,14 +224,14 @@ function NotificationsContent() {
           <button
             type="button"
             aria-pressed={filter === "all"}
-            onClick={() => setFilter("all")}
+            onClick={() => changeFilter("all")}
           >
             All
           </button>
           <button
             type="button"
             aria-pressed={filter === "unread"}
-            onClick={() => setFilter("unread")}
+            onClick={() => changeFilter("unread")}
           >
             Unread ({unreadCount})
           </button>

@@ -14,14 +14,8 @@ export async function verifyAdminSession() {
   }
 
   try {
-    await api.get("/admin/users", {
-      params: {
-        page: 0,
-        size: 1,
-      },
-    });
-
-    return true;
+    const { data } = await api.get("/users/me");
+    return data?.role === "ADMIN";
   } catch {
     return false;
   }

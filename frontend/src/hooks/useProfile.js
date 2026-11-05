@@ -72,6 +72,8 @@ export default function useProfile() {
   useEffect(() => {
     mountedRef.current = true;
 
+    // Synchronize the profile with the server on mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshProfile(true);
 
     return () => {
@@ -123,6 +125,6 @@ export default function useProfile() {
       const listing = await relistItem(id);
       setListings((previous) => [listing, ...previous]);
     },
-    onResetPassword: () => resetPassword(user.email),
+    onResetPassword: handleResetPassword,
   };
 }
