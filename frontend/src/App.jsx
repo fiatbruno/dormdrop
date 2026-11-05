@@ -1,6 +1,12 @@
+
 import AuthProvider from "./auth/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
+
+import {
+  createBrowserRouter,
+  RouterProvider,
+} from "react-router-dom";
 
 import Login from "./pages/Login/Login";
 import Signup from "./pages/Signup/Signup";
@@ -8,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
 import VerificationSuccess from "./pages/EmailVerificationSuccess/EmailVerificationSuccess";
 import EmailVerificationExpired from "./pages/EmailVerificationExpired/EmailVerificationExpired";
+
 import ListItem from "./pages/ListItem/ListItem";
 import ItemDetails from "./pages/ItemDetails/ItemDetails";
 import Messages from "./pages/Messages/Messages";
@@ -15,98 +22,36 @@ import Home from "./pages/Home/Home";
 import SavedItem from "./pages/SavedItems/SavedItem";
 import Profile from "./pages/Profile/Profile";
 import EditListing from "./pages/EditListing/EditListing";
-
-import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
-
-import CheckYourInbox from "./pages/CheckYourInbox/CheckYourInbox";
-import ResetPassword from "./pages/ResetPassword/ResetPassword";
-import PasswordUpdated from "./pages/PasswordUpdated/PasswordUpdated";
+import OfferDetails from "./pages/OfferDetails/OfferDetails";
 import Notifications from "./pages/Notifications/Notifications";
 import MyReports from "./pages/MyReports/MyReports";
 import StaffReports from "./pages/StaffReports/StaffReports";
-import OfferDetails from "./pages/OfferDetails/OfferDetails";
+
+import AdminUsers from "./pages/Admin/AdminUsers";
+
+import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
+import CheckYourInbox from "./pages/CheckYourInbox/CheckYourInbox";
+import ResetPassword from "./pages/ResetPassword/ResetPassword";
+import PasswordUpdated from "./pages/PasswordUpdated/PasswordUpdated";
 import PasswordResetExpired from "./pages/PasswordResetExpired/PasswordResetExpired";
 
-/*
- * We use the react-router-dom library to load pages based
- * on path. This object configures which paths map to which
- * page.
- *
- * Matching happens from top to bottom; the last path is "*",
- * which is the fall-through case when no other path matches.
- */
+const protectedPage = (element) => (
+  <ProtectedRoute>{element}</ProtectedRoute>
+);
 
 const router = createBrowserRouter([
-  {
-    path: "/messages",
-    element: (
-      <ProtectedRoute>
-        <Messages />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/messages/:conversationId",
-    element: (
-      <ProtectedRoute>
-        <Messages />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/notifications",
-    element: (
-      <ProtectedRoute>
-        <Notifications />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/offers/:offerId",
-    element: (
-      <ProtectedRoute>
-        <OfferDetails />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/my-reports",
-    element: (
-      <ProtectedRoute>
-        <MyReports />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/staff/reports",
-    element: (
-      <ProtectedRoute>
-        <StaffReports />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/staff/reports/:caseId",
-    element: (
-      <ProtectedRoute>
-        <StaffReports />
-      </ProtectedRoute>
-    ),
-  },
+  { path: "/notifications", element: protectedPage(<Notifications />) },
+  { path: "/my-reports", element: protectedPage(<MyReports />) },
+  { path: "/staff/reports", element: protectedPage(<StaffReports />) },
+  { path: "/staff/reports/:caseId", element: protectedPage(<StaffReports />) },
   {
     path: "/",
-    element: (
-      <ProtectedRoute>
-        <Home />
-      </ProtectedRoute>
-    ),
+    element: protectedPage(<Home />),
   },
-
   {
-    path: "/verify-email",
-    element: <VerifyEmail />,
+    path: "/home",
+    element: protectedPage(<Home />),
   },
-
   {
     path: "/login",
     element: <Login />,
@@ -115,7 +60,10 @@ const router = createBrowserRouter([
     path: "/signup",
     element: <Signup />,
   },
-
+  {
+    path: "/verify-email",
+    element: <VerifyEmail />,
+  },
   {
     path: "/verification-success",
     element: <VerificationSuccess />,
@@ -125,60 +73,9 @@ const router = createBrowserRouter([
     element: <EmailVerificationExpired />,
   },
   {
-    path: "/list-an-item",
-    element: (
-      <ProtectedRoute>
-        <ListItem />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/saved-item",
-    element: (
-      <ProtectedRoute>
-        <SavedItem />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/profile",
-    element: (
-      <ProtectedRoute>
-        <Profile />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/edit-listing/:id",
-    element: (
-      <ProtectedRoute>
-        <EditListing />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/items/:id",
-    element: (
-      <ProtectedRoute>
-        <ItemDetails />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/home",
-    element: (
-      <ProtectedRoute>
-        <Home />
-      </ProtectedRoute>
-    ),
-  },
-
-
-  {
     path: "/forgot-password",
     element: <ForgotPassword />,
   },
-
   {
     path: "/check-your-inbox",
     element: <CheckYourInbox />,
@@ -195,11 +92,51 @@ const router = createBrowserRouter([
     path: "/password-updated",
     element: <PasswordUpdated />,
   },
-
   {
-      path: "*",
-      element: <NotFound />,
-    },
+    path: "/messages",
+    element: protectedPage(<Messages />),
+  },
+  {
+    path: "/messages/:conversationId",
+    element: protectedPage(<Messages />),
+  },
+  {
+    path: "/list-an-item",
+    element: protectedPage(<ListItem />),
+  },
+  {
+    path: "/saved-item",
+    element: protectedPage(<SavedItem />),
+  },
+  {
+    path: "/profile",
+    element: protectedPage(<Profile />),
+  },
+  {
+    path: "/edit-listing/:id",
+    element: protectedPage(<EditListing />),
+  },
+  {
+    path: "/items/:id",
+    element: protectedPage(<ItemDetails />),
+  },
+  {
+    path: "/offers/:offerId",
+    element: protectedPage(<OfferDetails />),
+  },
+  {
+    element: <AdminProtectedRoute />,
+    children: [
+      {
+        path: "/admin/users",
+        element: <AdminUsers />,
+      },
+    ],
+  },
+  {
+    path: "*",
+    element: <NotFound />,
+  },
 ]);
 
 function App() {
