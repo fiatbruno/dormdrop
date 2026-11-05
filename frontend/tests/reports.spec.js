@@ -28,6 +28,22 @@ async function loginAsStaff(page, profile = {}) {
   );
 }
 
+test("profile links reporters to their history and staff to the review queue", async ({ page }) => {
+  await loginAsStaff(page);
+  await page.route("**/api/v1/users/me/listings", (route) => route.fulfill({ json: [] }));
+  await page.goto("/profile");
+  await expect(page.getByRole("link", { name: "My reports" })).toHaveAttribute("href", "/my-reports");
+  await expect(page.getByRole("link", { name: "Review reports" })).toHaveAttribute("href", "/staff/reports");
+});
+
+test("ordinary members do not see the staff review link", async ({ page }) => {
+  await loginAsStaff(page, { role: "STUDENT", capabilities: [] });
+  await page.route("**/api/v1/users/me/listings", (route) => route.fulfill({ json: [] }));
+  await page.goto("/profile");
+  await expect(page.getByRole("link", { name: "My reports" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Review reports" })).toHaveCount(0);
+});
+
 function queuePage(items = [], total = items.length, totalPages = 1, page = 0) {
   return { items, total, page, size: 20, totalPages };
 }

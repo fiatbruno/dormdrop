@@ -1,8 +1,8 @@
 import api from "./client";
 
-export async function getNotifications(page = 0, size = 20) {
+export async function getNotifications(page = 0, size = 20, unreadOnly = false) {
   const { data } = await api.get("/me/notifications", {
-    params: { page, size },
+    params: unreadOnly ? { page, size, unreadOnly: true } : { page, size },
   });
   return data;
 }

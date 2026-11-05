@@ -77,10 +77,12 @@ public class ListingController {
             @Valid @RequestBody CreateListingRequest request,
             Authentication authentication) {
 
-        return service.createSecureListing(
+        Listing created = service.createSecureListing(
                 request,
                 authentication.getName()
         );
+        broadcastUpdate();
+        return created;
     }
 
     @PutMapping("/{id}")
@@ -101,13 +103,7 @@ public class ListingController {
                 request,
                 authentication.getName()
         );
-        if (messaging != null) {
-            try {
-                messaging.convertAndSend("/topic/listings", "updated");
-            } catch (Exception ex) {
-                log.warn("Could not broadcast listing update", ex);
-            }
-        }
+        broadcastUpdate();
         return updated;
     }
 
@@ -121,6 +117,7 @@ public class ListingController {
                 convertToObjectId(id),
                 authentication.getName()
         );
+        broadcastUpdate();
     }
 
     @PatchMapping("/{id}/status")
@@ -129,11 +126,22 @@ public class ListingController {
             @RequestParam ListingStatus status,
             Authentication authentication) {
 
-        return service.updateStatus(
+        Listing updated = service.updateStatus(
                 convertToObjectId(id),
                 status,
                 authentication.getName()
         );
+        broadcastUpdate();
+        return updated;
+    }
+
+    private void broadcastUpdate() {
+        if (messaging == null) return;
+        try {
+            messaging.convertAndSend("/topic/listings", "updated");
+        } catch (Exception ex) {
+            log.warn("Could not broadcast listing update", ex);
+        }
     }
 
     private ObjectId convertToObjectId(String id) {

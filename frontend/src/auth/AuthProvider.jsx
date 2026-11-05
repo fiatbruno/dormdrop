@@ -29,6 +29,7 @@ export default function AuthProvider({ children }) {
 
   useEffect(() => {
     let active = true;
+    let requestId = 0;
 
     if (!token) {
       return () => {
@@ -37,9 +38,10 @@ export default function AuthProvider({ children }) {
     }
 
     async function checkPrivileges() {
+      const currentRequest = ++requestId;
       const authorized = await verifyAdminSession();
 
-      if (active) {
+      if (active && currentRequest === requestId) {
         setAdminStatus({
           token,
           isAdmin: authorized,
@@ -49,9 +51,16 @@ export default function AuthProvider({ children }) {
     }
 
     checkPrivileges();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void checkPrivileges();
+    };
+    window.addEventListener("focus", refreshWhenVisible);
+    window.addEventListener("online", refreshWhenVisible);
 
     return () => {
       active = false;
+      window.removeEventListener("focus", refreshWhenVisible);
+      window.removeEventListener("online", refreshWhenVisible);
     };
   }, [token]);
 

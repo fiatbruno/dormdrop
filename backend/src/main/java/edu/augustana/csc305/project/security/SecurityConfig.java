@@ -2,11 +2,14 @@
 package edu.augustana.csc305.project.security;
 
 import jakarta.servlet.DispatcherType;
+import edu.augustana.csc305.project.config.FrontendOrigin;
 import edu.augustana.csc305.project.model.UserRole;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -17,6 +20,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.List;
 
@@ -27,7 +31,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             JwtService jwtService,
-            PersistedUserDetailsService users
+            PersistedUserDetailsService users,
+            @Qualifier("corsConfigurationSource") CorsConfigurationSource corsConfigurationSource
     ) throws Exception {
 
         http
@@ -84,36 +89,7 @@ public class SecurityConfig {
 
                 .csrf(csrf -> csrf.disable())
 
-                .cors(cors ->
-                        cors.configurationSource(request -> {
-
-                            CorsConfiguration config =
-                                    new CorsConfiguration();
-
-                            config.setAllowedOrigins(
-                                    List.of(
-                                            "http://localhost:5173"
-                                    )
-                            );
-
-                            config.setAllowedMethods(
-                                    List.of(
-                                            "GET",
-                                            "POST",
-                                            "PUT",
-                                            "PATCH",
-                                            "DELETE",
-                                            "OPTIONS"
-                                    )
-                            );
-
-                            config.setAllowedHeaders(
-                                    List.of("*")
-                            );
-
-                            return config;
-                        })
-                )
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
@@ -122,6 +98,20 @@ public class SecurityConfig {
                 );
 
         return http.build();
+    }
+
+    @Bean
+    public FrontendOrigin frontendOrigin(@Value("${app.frontend-url:http://localhost:5173}") String frontendUrl) {
+        return new FrontendOrigin(frontendUrl);
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource(FrontendOrigin frontendOrigin) {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of(frontendOrigin.value()));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        return request -> config;
     }
 
     private static AuthorizationManager<RequestAuthorizationContext> requires(PermissionPolicy.Capability capability) {

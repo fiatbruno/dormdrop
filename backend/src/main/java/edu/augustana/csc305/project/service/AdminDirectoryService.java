@@ -30,7 +30,7 @@ public class AdminDirectoryService {
     }
 
     // Mapping a projection avoids loading password hashes and tokens into directory results.
-    public record DirectoryUser(@Id ObjectId id, String name, String email, boolean emailVerified,
+    public record DirectoryUser(@Id ObjectId id, String name, String email, Boolean emailVerified,
                                 UserRole role, Instant createdAt, Instant updatedAt) { }
 
     public AdminDirectoryDtos.Page list(Authentication auth, String search, int page, int size) {
@@ -54,7 +54,7 @@ public class AdminDirectoryService {
                 .include("createdAt").include("updatedAt");
         List<AdminDirectoryDtos.Member> items = mongo.find(query, DirectoryUser.class, "users").stream()
                 .map(user -> new AdminDirectoryDtos.Member(user.id().toHexString(), user.name(), maskEmail(user.email()),
-                        user.emailVerified(), user.role() == null ? UserRole.STUDENT : user.role(),
+                        Boolean.TRUE.equals(user.emailVerified()), user.role() == null ? UserRole.STUDENT : user.role(),
                         user.createdAt(), user.updatedAt()))
                 .toList();
         return new AdminDirectoryDtos.Page(items, total, page, size, total == 0 ? 0 : (total - 1) / size + 1);

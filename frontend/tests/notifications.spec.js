@@ -50,6 +50,39 @@ test.beforeEach(async ({ page }) => {
   }, makeSessionToken());
 });
 
+test("unread filter loads older unread notifications from the server", async ({ page }) => {
+  const olderUnread = { ...counteredOffer, id: "older-unread" };
+  const readItems = Array.from({ length: 20 }, (_, index) => ({
+    ...acceptedOffer,
+    id: `read-${index}`,
+    readAt: "2026-11-03T00:00:00Z",
+  }));
+  await page.route("**/api/v1/me/notifications/unread-count", (route) =>
+    route.fulfill({ json: { count: 1 } }),
+  );
+  const requests = [];
+  await page.route("**/api/v1/me/notifications?*", (route) => {
+    const params = new URL(route.request().url()).searchParams;
+    requests.push(params.get("unreadOnly"));
+    const unreadOnly = params.get("unreadOnly") === "true";
+    return route.fulfill({
+      json: {
+        items: unreadOnly ? [olderUnread] : readItems,
+        total: unreadOnly ? 1 : 21,
+        unreadCount: 1,
+        page: 0,
+        size: 20,
+      },
+    });
+  });
+  await page.goto("/notifications");
+  await expect(page.getByRole("button", { name: "Load older notifications" })).toBeVisible();
+  await page.getByRole("button", { name: "Unread (1)" }).click();
+  await expect(page.getByRole("heading", { name: "New counteroffer" })).toBeVisible();
+  await expect(page.getByText("You’re all caught up")).toHaveCount(0);
+  expect(requests).toContain("true");
+});
+
 test("buyers see distinct accepted, rejected, and counteroffer notifications", async ({
   page,
 }) => {
