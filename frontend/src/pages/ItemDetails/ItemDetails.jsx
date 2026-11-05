@@ -1,5 +1,6 @@
 import { startConversation } from "../../api/messagingApi";
 import useAuth from "../../hooks/useAuth";
+import useListingUpdates from "../../hooks/useListingUpdates";
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { ImageOff, Share2, UserRound } from "lucide-react";
@@ -124,6 +125,7 @@ function ItemDetailsContent({ id }) {
   const [offerSaved, setOfferSaved] = useState(false);
   const offerIdempotencyKey = useRef(null);
   const [favoriteAttempt, setFavoriteAttempt] = useState(0);
+  useListingUpdates(() => setAttempt((value) => value + 1));
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -131,12 +133,12 @@ function ItemDetailsContent({ id }) {
 
   useEffect(() => {
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset loading before fetching the newly selected listing.
-    setLoading(true);
-    setError("");
     getListingById(id)
       .then((item) => {
-        if (!cancelled) setListing(item);
+        if (!cancelled) {
+          setListing(item);
+          setError("");
+        }
       })
       .catch((err) => {
         if (!cancelled)
@@ -209,12 +211,7 @@ function ItemDetailsContent({ id }) {
         baseUrl,
       );
       await navigator.clipboard.writeText(shareUrl.href);
-      setShareMessage(
-        !import.meta.env.VITE_PUBLIC_APP_URL &&
-          shareUrl.hostname.includes("localhost")
-          ? "Copied a local-only link. Set VITE_PUBLIC_APP_URL to your deployed site URL to share it."
-          : "Listing link copied!",
-      );
+      setShareMessage("Listing link copied!");
     } catch {
       setShareMessage(
         "Couldn't copy the link. Copy this page's address to share it.",
@@ -275,7 +272,7 @@ function ItemDetailsContent({ id }) {
           <div className="item-state" role="alert">
             <h1>Listing unavailable</h1>
             <p>{error}</p>
-            <button type="button" onClick={() => setAttempt(attempt + 1)}>
+            <button type="button" onClick={() => { setLoading(true); setAttempt(attempt + 1); }}>
               Try again
             </button>
             <Link to="/home">Back to browse</Link>
