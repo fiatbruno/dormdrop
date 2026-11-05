@@ -121,6 +121,8 @@ mvn spring-boot:run
 
 The documented API base is `http://localhost:8080/api/v1`. When the server is running, check its health endpoint:
 
+Offers use MongoDB transactions and require a replica set or sharded cluster. A standalone local MongoDB server can start the app but cannot complete offer submissions or decisions; configure a local replica set or use a compatible cluster for those flows.
+
 ```bash
 curl http://localhost:8080/api/v1/healthCheck
 ```
@@ -209,7 +211,7 @@ DormDrop began as an **Augustana College CSC 305** software engineering project 
 | **Backend-only** | Pickup proposals | API supports proposing and responding to pickup arrangements; corresponding messaging controls are not yet connected in the runnable frontend per current project notes. |
 | **Incomplete** | Password reset | Reset request API exists; the frontend reset-completion route still needs implementation. |
 | **Planned** | Operations | Deployment, further admin/reporting capabilities, automated tests, and hardened production configuration. |
-| **Planned** | Offers | Buyer–seller price negotiation/offer flow. |
+| **Implemented** | Offers | Buyers can make offers on eligible listings; participants can accept, reject, and counter in messages or offer details. This flow requires MongoDB transaction support. |
 
 For deployment, the current localhost URLs and permitted origins must be updated, and uploads on local disk need a durable storage strategy. See [security and deployment notes](docs/SECURITY.md).
 

@@ -8,6 +8,7 @@ import edu.augustana.csc305.project.service.*;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -19,6 +20,22 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class ListingVersionJsonTest {
+    @Test
+    void successfulEditsBroadcastAnInvalidationButFailedEditsDoNot() {
+        var service = mock(ListingService.class);
+        var messaging = mock(SimpMessagingTemplate.class);
+        var controller = new ListingController(service, messaging);
+        var id = new ObjectId();
+        var auth = new UsernamePasswordAuthenticationToken("seller@example.edu", null, List.of());
+        var listing = new Listing();
+        when(service.updateListing(eq(id), any(), anyString())).thenReturn(listing)
+                .thenThrow(new IllegalStateException("save failed"));
+        var request = mock(CreateListingRequest.class);
+        assertSame(listing, controller.updateListing(id.toHexString(), request, auth));
+        verify(messaging).convertAndSend("/topic/listings", "updated");
+        assertThrows(IllegalStateException.class, () -> controller.updateListing(id.toHexString(), request, auth));
+        verifyNoMoreInteractions(messaging);
+    }
     @Test
     void marketplaceAndOwnerListingResponsesNeverSerializeVersion() throws Exception {
         Listing listing = new Listing();

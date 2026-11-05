@@ -18,12 +18,12 @@ public class WebSocketConfig
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/api/v1/ws")
-                .setAllowedOrigins("http://localhost:5173");
+                .setAllowedOriginPatterns("*");
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/queue");
+        registry.enableSimpleBroker("/queue", "/topic");
         registry.setUserDestinationPrefix("/user");
     }
     private final WebSocketAuthInterceptor authInterceptor;
