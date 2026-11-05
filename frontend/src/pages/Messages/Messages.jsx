@@ -6,7 +6,6 @@ import Footer from "../../components/Footer/Footer";
 import ListingImage from "../../components/ListingImage";
 import useMessaging from "../../hooks/useMessaging";
 import "./Messages.css";
-import OfferCard from "../../components/OfferCard/OfferCard";
 import OfferNegotiation from "../../components/OfferNegotiation/OfferNegotiation";
 
 const initials = (name) =>
@@ -334,13 +333,23 @@ export default function Messages() {
                           );
                         })}
                         {offer && (
-                          <OfferNegotiation
-                            key={`${offer.id}-${offer.version}`}
-                            offer={offer}
-                            listing={item}
-                            currentUserId={chat.conversation.currentUserId}
-                            participant={chat.conversation.participant}
-                          />
+                          <>
+                            <OfferNegotiation
+                              key={`${offer.id}-${offer.version}`}
+                              offer={offer}
+                              listing={item}
+                              currentUserId={chat.conversation.currentUserId}
+                              participant={chat.conversation.participant}
+                            />
+                            <Link to={`/offers/${encodeURIComponent(offer.id)}`}>
+                              View offer details
+                            </Link>
+                            {offer.status === "REJECTED" && item?.id && (
+                              <Link to={`/items/${encodeURIComponent(item.id)}`}>
+                                Make another offer
+                              </Link>
+                            )}
+                          </>
                         )}
                         {offerAccepted && formattedAgreedPrice && (
                           <article
@@ -377,22 +386,6 @@ export default function Messages() {
                               Arrange pickup
                             </button>
                           </article>
-                        )}
-                        {!offerAccepted && (
-                          <OfferCard
-                            offer={
-                              offer?.status === "REJECTED"
-                                ? { ...offer, status: "DECLINED" }
-                                : offer
-                            }
-                            onArrangePickup={arrangePickup}
-                            onMakeAnotherOffer={() => {
-                              chat.setDraft(
-                                "Hi! I'd like to make another offer. Would you consider a different price?",
-                              );
-                              composerInput.current?.focus();
-                            }}
-                          />
                         )}
                       </div>
                       {newMessages && (
