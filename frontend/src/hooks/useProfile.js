@@ -123,7 +123,9 @@ export default function useProfile() {
     onMarkSold: (id) => handleUpdateStatus(id, "SOLD"),
     onRelist: async (id) => {
       const listing = await relistItem(id);
-      setListings((previous) => [listing, ...previous]);
+      setListings((previous) => previous.map((item) =>
+        String(item.id) === String(id) ? listing : item,
+      ));
     },
     onResetPassword: handleResetPassword,
   };

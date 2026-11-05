@@ -32,7 +32,7 @@ public class AdminDirectoryService {
 
     // Mapping a projection avoids loading password hashes and tokens into directory results.
     public record DirectoryUser(@Id ObjectId id, String name, String email, Boolean emailVerified,
-                                UserRole role, Instant createdAt, Instant updatedAt, Instant lastActiveAt) {
+                                UserRole role, Instant createdAt, Instant updatedAt, Instant lastLoginAt) {
         public DirectoryUser(ObjectId id, String name, String email, Boolean emailVerified,
                              UserRole role, Instant createdAt, Instant updatedAt) {
             this(id, name, email, emailVerified, role, createdAt, updatedAt, null);
@@ -55,16 +55,16 @@ public class AdminDirectoryService {
         }
         long total = mongo.count(Query.query(criteria), User.class);
         Instant cutoff = Instant.now().minus(30, ChronoUnit.DAYS);
-        long activeCount = mongo.count(Query.query(Criteria.where("lastActiveAt").gte(cutoff)), User.class);
+        long activeCount = mongo.count(Query.query(Criteria.where("lastLoginAt").gte(cutoff)), User.class);
         Query query = Query.query(criteria).with(Sort.by(Sort.Order.asc("name"), Sort.Order.asc("_id")))
                 .skip((long) page * size).limit(size);
         query.fields().include("name").include("email").include("emailVerified").include("role")
-                .include("createdAt").include("updatedAt").include("lastActiveAt");
+                .include("createdAt").include("updatedAt").include("lastLoginAt");
         List<AdminDirectoryDtos.Member> items = mongo.find(query, DirectoryUser.class, "users").stream()
                 .map(user -> new AdminDirectoryDtos.Member(user.id().toHexString(), user.name(), maskEmail(user.email()),
                         Boolean.TRUE.equals(user.emailVerified()), user.role() == null ? UserRole.STUDENT : user.role(),
-                        user.createdAt(), user.updatedAt(), user.lastActiveAt(),
-                        user.lastActiveAt() != null && !user.lastActiveAt().isBefore(cutoff)))
+                        user.createdAt(), user.updatedAt(), user.lastLoginAt(),
+                        user.lastLoginAt() != null && !user.lastLoginAt().isBefore(cutoff)))
                 .toList();
         return new AdminDirectoryDtos.Page(items, total, page, size, total == 0 ? 0 : (total - 1) / size + 1, activeCount);
     }

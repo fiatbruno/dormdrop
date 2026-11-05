@@ -103,6 +103,9 @@ public class OfferService {
         if (listing.getStatus() != ListingStatus.AVAILABLE || !"For sale".equalsIgnoreCase(listing.getListingType())
                 || listing.getPrice() == null || listing.getPrice().signum() <= 0)
             throw conflict("Listing is not an available sale.");
+        if (mongo.exists(Query.query(Criteria.where("buyerId").is(buyer.getId()).and("listingId").is(listingId)
+                .and("status").is(OfferNegotiation.Status.ACCEPTED)), OfferNegotiation.class))
+            throw conflict("You already have an accepted offer for this listing.");
         Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         // Free the unique pending-offer slot when the previous response window has ended.
         mongo.updateMulti(Query.query(Criteria.where("buyerId").is(buyer.getId()).and("listingId").is(listingId)
@@ -302,6 +305,19 @@ public class OfferService {
         if (offer == null || (!user.getId().equals(offer.buyerId()) && !user.getId().equals(offer.sellerId())))
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Offer not found.");
         return offer;
+    }
+
+    /** The buyer's own current offer, prioritizing an agreement over older negotiations. */
+    public OfferNegotiation getBuyerListingOffer(Authentication auth, String listingId) {
+        User buyer = verified(auth);
+        ObjectId target = parseId(listingId);
+        Criteria accepted = Criteria.where("buyerId").is(buyer.getId()).and("listingId").is(target)
+                .and("status").is(OfferNegotiation.Status.ACCEPTED);
+        Sort newest = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("_id"));
+        OfferNegotiation agreement = mongo.findOne(Query.query(accepted).with(newest), OfferNegotiation.class);
+        if (agreement != null) return agreement;
+        return mongo.findOne(Query.query(Criteria.where("buyerId").is(buyer.getId()).and("listingId").is(target))
+                .with(newest), OfferNegotiation.class);
     }
 
     public Page list(Authentication auth, String perspective, int page, int size) {
