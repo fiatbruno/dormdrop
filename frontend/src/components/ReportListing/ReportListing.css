@@ -26,7 +26,7 @@
 .report-listing-dialog.is-confirmation {
   width: min(100%, 496px);
   padding: 26px;
-  border: 4px solid #ffca28;
+  border: 1px solid #e0e5ec;
   border-radius: 0;
 }
 
