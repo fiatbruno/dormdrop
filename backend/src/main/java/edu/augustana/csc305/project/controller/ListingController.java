@@ -11,6 +11,10 @@ import jakarta.validation.Valid;
 import org.bson.types.ObjectId;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -23,10 +27,18 @@ import java.util.List;
 @RequestMapping("/home")
 public class ListingController {
 
+    private static final Logger log = LoggerFactory.getLogger(ListingController.class);
     private final ListingService service;
+    private final SimpMessagingTemplate messaging;
 
     public ListingController(ListingService service) {
+        this(service, null);
+    }
+
+    @Autowired
+    public ListingController(ListingService service, SimpMessagingTemplate messaging) {
         this.service = service;
+        this.messaging = messaging;
     }
 
     @GetMapping
@@ -65,10 +77,12 @@ public class ListingController {
             @Valid @RequestBody CreateListingRequest request,
             Authentication authentication) {
 
-        return service.createSecureListing(
+        Listing created = service.createSecureListing(
                 request,
                 authentication.getName()
         );
+        broadcastUpdate();
+        return created;
     }
 
     @PutMapping("/{id}")
@@ -84,11 +98,13 @@ public class ListingController {
             );
         }
 
-        return service.updateListing(
+        Listing updated = service.updateListing(
                 convertToObjectId(id),
                 request,
                 authentication.getName()
         );
+        broadcastUpdate();
+        return updated;
     }
 
     @DeleteMapping("/{id}")
@@ -101,6 +117,7 @@ public class ListingController {
                 convertToObjectId(id),
                 authentication.getName()
         );
+        broadcastUpdate();
     }
 
     @PatchMapping("/{id}/status")
@@ -109,11 +126,22 @@ public class ListingController {
             @RequestParam ListingStatus status,
             Authentication authentication) {
 
-        return service.updateStatus(
+        Listing updated = service.updateStatus(
                 convertToObjectId(id),
                 status,
                 authentication.getName()
         );
+        broadcastUpdate();
+        return updated;
+    }
+
+    private void broadcastUpdate() {
+        if (messaging == null) return;
+        try {
+            messaging.convertAndSend("/topic/listings", "updated");
+        } catch (Exception ex) {
+            log.warn("Could not broadcast listing update", ex);
+        }
     }
 
     private ObjectId convertToObjectId(String id) {

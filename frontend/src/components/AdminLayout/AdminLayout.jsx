@@ -2,59 +2,23 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 
-import {
-  LayoutDashboard,
-  Flag,
-  Box,
-  Users,
-  Undo2,
-  ClipboardList,
-  Settings,
-  Search,
-  Bell,
-  Menu,
-  X,
-} from "lucide-react";
+import { Flag, Users, Search, Menu, X, ArrowUpRight } from "lucide-react";
 
 import AdminLogout from "../AdminLogout";
 import logo from "../../assets/Logo.png";
 import "../../pages/Admin/AdminUserDetails.css";
+import "./AdminLayout.css";
 
 const navigation = [
   {
-    label: "Overview",
-    icon: LayoutDashboard,
-    to: "/admin",
-  },
-  {
-    label: "Reports",
+    label: "Reported listings",
     icon: Flag,
-    to: "/admin/reports",
+    to: "/staff/reports",
   },
   {
-    label: "Listings",
-    icon: Box,
-    to: "/admin/listings",
-  },
-  {
-    label: "Users",
+    label: "Community members",
     icon: Users,
     to: "/admin/users",
-  },
-  {
-    label: "Appeals",
-    icon: Undo2,
-    to: "/admin/appeals",
-  },
-  {
-    label: "Activity log",
-    icon: ClipboardList,
-    to: "/admin/activity",
-  },
-  {
-    label: "Settings",
-    icon: Settings,
-    to: "/admin/settings",
   },
 ];
 
@@ -64,6 +28,7 @@ export default function AdminLayout({
   search = "",
   onSearchChange,
   showSearch = true,
+  showUsers = true,
 }) {
   const [sidebarOpen, setSidebarOpen] =
     useState(false);
@@ -77,7 +42,7 @@ export default function AdminLayout({
       >
         <div className="admin-brand">
           <Link
-            to="/admin/users"
+            to={showUsers ? "/admin/users" : "/staff/reports"}
             className="admin-brand-link"
             aria-label="DormDrop administration"
           >
@@ -109,14 +74,11 @@ export default function AdminLayout({
           aria-label="Admin navigation"
         >
           {navigation
-            .filter(
-              (item) => item.to === "/admin/users"
-            )
+            .filter((item) => showUsers || item.to !== "/admin/users")
             .map(({ label, icon: Icon, to }) => (
               <NavLink
                 key={to}
                 to={to}
-                end={to === "/admin"}
                 onClick={() =>
                   setSidebarOpen(false)
                 }
@@ -133,8 +95,8 @@ export default function AdminLayout({
         </nav>
 
         <div className="admin-sidebar-footer">
-          <strong>Administrator</strong>
-          <span>DormDrop administration</span>
+          <strong>Campus workspace</strong>
+          <span>Keep your community safe.</span>
           <AdminLogout />
         </div>
       </aside>
@@ -148,6 +110,7 @@ export default function AdminLayout({
               setSidebarOpen(true)
             }
             aria-label="Open sidebar"
+            aria-expanded={sidebarOpen}
           >
             <Menu size={22} />
           </button>
@@ -162,14 +125,14 @@ export default function AdminLayout({
 
               <input
                 type="search"
-                placeholder="Search reports or listings"
+                placeholder="Search members by name or email"
                 value={search}
                 onChange={(event) =>
                   onSearchChange?.(
                     event.target.value
                   )
                 }
-                aria-label="Search admin records"
+                aria-label="Search members by name or email"
                 readOnly={!onSearchChange}
               />
             </div>
@@ -177,7 +140,7 @@ export default function AdminLayout({
 
           <div className="admin-top-actions">
             <Link to="/home">
-              View marketplace
+              View marketplace <ArrowUpRight size={15} aria-hidden="true" />
             </Link>
 
             <span

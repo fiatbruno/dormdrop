@@ -38,10 +38,14 @@ export default function Notifications() {
   }, []);
 
   useEffect(() => {
+    // Fetch the persisted inbox when this component mounts.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadNotifications();
   }, [loadNotifications]);
 
   useEffect(() => {
+    // Refresh the persisted inbox when the panel is opened.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) void loadNotifications();
   }, [open, loadNotifications]);
 

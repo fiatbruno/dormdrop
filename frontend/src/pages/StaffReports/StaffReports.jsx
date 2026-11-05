@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
+import AdminLayout from "../../components/AdminLayout/AdminLayout";
 import useAuth from "../../hooks/useAuth";
 import { getProfile } from "../../api/profileApi";
 import { getStaffIdentity } from "../../auth/staffCapabilities";
@@ -147,7 +148,10 @@ function StaffReportsProfile({ caseId }) {
     };
   }, [profileAttempt]);
 
-  const staff = getStaffIdentity(profile);
+  const staff = {
+    ...getStaffIdentity(profile),
+    canManageUsers: profile?.role === "ADMIN" || profile?.capabilities?.includes("VIEW_MEMBER_DIRECTORY"),
+  };
   if (loadingProfile) {
     return (
       <div className="staff-reports-shell">
@@ -384,12 +388,11 @@ function StaffReportsContent({ caseId, staff }) {
 
   const summary = caseDetail?.caseSummary;
   const totalPages = Number(queue?.totalPages) || 0;
-  return (
-    <div className="staff-reports-shell">
-      <Navbar showSearch={false} />
-      <main className="staff-reports-page">
-        <p className="staff-reports-eyebrow">Staff workspace</p>
+  const content = (
+      <div className="staff-reports-page">
+        <p className="staff-reports-eyebrow">Moderation workspace</p>
         <h1>Listing reports</h1>
+        <p className="staff-reports-intro">Review reported listings, examine the evidence, and record a decision.</p>
         {!staff.canReview || permissionLost ? (
           <section className="staff-reports-state" role="alert">
             <h2>Staff access required</h2>
@@ -766,8 +769,13 @@ function StaffReportsContent({ caseId, staff }) {
             </section>
           </div>
         )}
-      </main>
-      <Footer />
-    </div>
+      </div>
+  );
+  return staff.canReview ? (
+    <AdminLayout breadcrumb={caseId ? "Reported listings / Case review" : "Reported listings"} showSearch={false} showUsers={staff.canManageUsers}>
+      {content}
+    </AdminLayout>
+  ) : (
+    <div className="staff-reports-shell"><Navbar showSearch={false} /><main>{content}</main><Footer /></div>
   );
 }

@@ -112,7 +112,41 @@ test("seller accepts buyer offer without implying payment or sale", async ({
 
   await expect(page.getByText("Agreed price: $60.00", { exact: true })).toBeVisible();
   await expect(page.getByText(/agreement only; no payment is taken/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Propose pickup" })).toBeVisible();
   expect(requestBody).toEqual({ action: "ACCEPT", expectedVersion: 0 });
+});
+
+test("an offer notification refreshes an already open conversation", async ({ page }) => {
+  const offer = makeOffer();
+  await openMessageOffer(page, "buyer-1", offer);
+  Object.assign(offer, { amount: 75, currentProposerId: "seller-1", version: 1 });
+  await page.evaluate(() => {
+    globalThis.dispatchEvent(new CustomEvent("dormdrop:notification-received", {
+      detail: { offerId: "offer-1", type: "OFFER_COUNTERED" },
+    }));
+  });
+  await expect(page.getByText("Current proposal: $75.00")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Accept", exact: true })).toBeEnabled();
+});
+
+test("an offer notification refreshes the open offer details page", async ({ page }) => {
+  await page.addInitScript((token) => localStorage.setItem("token", token), makeToken("buyer-1"));
+  await page.route("**/api/v1/me/notifications/unread-count", (route) =>
+    route.fulfill({ json: { count: 0 } }),
+  );
+  const offer = makeOffer();
+  await page.route("**/api/v1/offers/offer-1", (route) => route.fulfill({ json: offer }));
+  await page.route("**/api/v1/home/listing-1", (route) => route.fulfill({ json: listing }));
+  await page.goto("/offers/offer-1");
+  await expect(page.getByText("Current proposal: $60.00")).toBeVisible();
+  Object.assign(offer, { amount: 70, currentProposerId: "seller-1", version: 1 });
+  await page.evaluate(() => {
+    globalThis.dispatchEvent(new CustomEvent("dormdrop:notification-received", {
+      detail: { offerId: "offer-1", type: "OFFER_COUNTERED" },
+    }));
+  });
+  await expect(page.getByText("Current proposal: $70.00")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Accept", exact: true })).toBeEnabled();
 });
 
 test("buyer counters seller proposal with version and idempotency header", async ({

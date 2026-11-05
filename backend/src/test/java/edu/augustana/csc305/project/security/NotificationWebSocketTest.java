@@ -54,7 +54,7 @@ class NotificationWebSocketTest {
         interceptor.preSend(message(connected), null);
         assertEquals(recipient.getEmail(), connected.getUser().getName());
         verify(sessions).expireAt("recipient-session", expiresAt);
-        for (String destination : List.of("/user/queue/messages", "/user/queue/notifications")) {
+        for (String destination : List.of("/user/queue/messages", "/user/queue/notifications", "/topic/listings")) {
             var subscription = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
             subscription.setUser(connected.getUser());
             subscription.setDestination(destination);
@@ -83,6 +83,8 @@ class NotificationWebSocketTest {
     void missingOrUnauthenticatedPrincipalCannotSubscribe() {
         var subscription = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
         subscription.setDestination("/user/queue/notifications");
+        assertThrows(AccessDeniedException.class, () -> interceptor.preSend(message(subscription), null));
+        subscription.setDestination("/topic/listings");
         assertThrows(AccessDeniedException.class, () -> interceptor.preSend(message(subscription), null));
         subscription.setUser(new UsernamePasswordAuthenticationToken("untrusted", "unused"));
         assertThrows(AccessDeniedException.class, () -> interceptor.preSend(message(subscription), null));

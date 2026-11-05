@@ -18,20 +18,23 @@ public class WebSocketConfig
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/api/v1/ws")
-                .setAllowedOrigins("http://localhost:5173");
+                .setAllowedOrigins(frontendOrigin.value());
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/queue");
+        registry.enableSimpleBroker("/queue", "/topic");
         registry.setUserDestinationPrefix("/user");
     }
     private final WebSocketAuthInterceptor authInterceptor;
     private final WebSocketSessions sessions;
+    private final FrontendOrigin frontendOrigin;
 
-    public WebSocketConfig(WebSocketAuthInterceptor authInterceptor, WebSocketSessions sessions) {
+    public WebSocketConfig(WebSocketAuthInterceptor authInterceptor, WebSocketSessions sessions,
+                           FrontendOrigin frontendOrigin) {
         this.authInterceptor = authInterceptor;
         this.sessions = sessions;
+        this.frontendOrigin = frontendOrigin;
     }
 
     @Override

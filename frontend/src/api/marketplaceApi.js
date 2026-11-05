@@ -33,8 +33,11 @@ function normalizeListing(listing) {
   };
 }
 
-export async function getListings() {
-  const { data: listings } = await api.get("/home");
+export async function getListings({ query = "", signal } = {}) {
+  const { data: listings } = await api.get("/home", {
+    params: query.trim() ? { q: query.trim() } : undefined,
+    signal,
+  });
   return listings.map(normalizeListing);
 }
 

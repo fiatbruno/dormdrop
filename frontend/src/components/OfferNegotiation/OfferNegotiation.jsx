@@ -15,6 +15,7 @@ export default function OfferNegotiation({
   listing,
   currentUserId,
   participant,
+  onOfferUpdated,
 }) {
   const [offer, setOffer] = useState(initialOffer);
   const [counterOpen, setCounterOpen] = useState(false);
@@ -28,6 +29,13 @@ export default function OfferNegotiation({
   const restoreFocus = useRef(false);
 
   const expiresAt = Date.parse(offer?.expiresAt || "");
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Accept newer server updates received while the negotiation remains open.
+    setOffer((previous) =>
+      Number(initialOffer?.version) > Number(previous?.version) ? initialOffer : previous,
+    );
+  }, [initialOffer]);
 
   useEffect(() => {
     if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return undefined;
@@ -91,6 +99,7 @@ export default function OfferNegotiation({
   async function refreshAuthoritative() {
     const latest = await getOffer(offer.id);
     setOffer(latest);
+    onOfferUpdated?.(latest);
     return latest;
   }
 
@@ -105,6 +114,7 @@ export default function OfferNegotiation({
       const result = await decideOffer(offer.id, action, version, key);
       keys.current.delete(operationId);
       setOffer(result);
+      onOfferUpdated?.(result);
       setConfirmation(
         action === "ACCEPT"
           ? `Agreed price: ${formatMoney(amount)}. This records agreement only; no payment is taken and the listing is not marked sold.`
@@ -147,6 +157,7 @@ export default function OfferNegotiation({
       );
       keys.current.delete(operationId);
       setOffer(result);
+      onOfferUpdated?.(result);
       setCounterOpen(false);
       setConfirmation(
         `Counteroffer sent at ${formatMoney(counterAmount)}. This is a proposal only; no payment is taken.`,

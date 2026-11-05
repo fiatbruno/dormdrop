@@ -100,7 +100,7 @@ public class OfferService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found.");
         if (buyer.getId().equals(listing.getOwnerId()))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot offer on your own listing.");
-        if (listing.getStatus() != ListingStatus.AVAILABLE || !"For sale".equals(listing.getListingType())
+        if (listing.getStatus() != ListingStatus.AVAILABLE || !"For sale".equalsIgnoreCase(listing.getListingType())
                 || listing.getPrice() == null || listing.getPrice().signum() <= 0)
             throw conflict("Listing is not an available sale.");
         Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
@@ -281,7 +281,7 @@ public class OfferService {
         if (listing == null || listing.getStatus() != ListingStatus.AVAILABLE
                 || listing.getModerationVisibility() != Visibility.VISIBLE
                 || !offer.sellerId().equals(listing.getOwnerId())
-                || (requireSale && (!"For sale".equals(listing.getListingType())
+                || (requireSale && (!"For sale".equalsIgnoreCase(listing.getListingType())
                     || listing.getPrice() == null || listing.getPrice().signum() <= 0)))
             throw conflict("Listing is not available for this offer action.");
         Criteria visible = new Criteria().orOperator(Criteria.where("moderationVisibility").is(Visibility.VISIBLE),

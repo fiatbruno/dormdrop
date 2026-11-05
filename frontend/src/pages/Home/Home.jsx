@@ -51,19 +51,19 @@ function Home() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
 
     async function loadListings() {
       try {
-        const data = await getListings();
+        const data = await getListings({ query: search, signal: controller.signal });
 
         if (!cancelled) {
           setProducts(data);
           setError("");
         }
       } catch (err) {
-        console.error(err);
-
         if (!cancelled) {
+          console.error(err);
           setError("Unable to load listings.");
         }
       } finally {
@@ -73,12 +73,14 @@ function Home() {
       }
     }
 
-    loadListings();
+    const timer = window.setTimeout(loadListings, search.trim() ? 250 : 0);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
+      controller.abort();
     };
-  }, [listingAttempt]);
+  }, [listingAttempt, search]);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,7 +111,7 @@ function Home() {
   const results = filterProducts(
     products,
     filters,
-    search
+    ""
   );
 
   function changeFilters(next) {
@@ -153,6 +155,8 @@ function Home() {
       <Navbar
         searchValue={search}
         onSearchChange={value => {
+          setLoading(true);
+          setError("");
           setSearch(value);
           setVisibleCount(9);
         }}
@@ -246,9 +250,14 @@ function Home() {
             )}
 
             {error && (
-              <p className="home-empty" role="alert">
-                {error}
-              </p>
+              <div className="home-empty" role="alert">
+                <p>{error}</p>
+                <button type="button" onClick={() => {
+                  setLoading(true);
+                  setError("");
+                  setListingAttempt((value) => value + 1);
+                }}>Try again</button>
+              </div>
             )}
 
             {favoriteError && (

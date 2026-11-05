@@ -45,6 +45,7 @@ function OfferDetailsContent({ offerId }) {
         if (active) {
           setOffer(currentOffer);
           setListing(currentListing);
+          setError("");
         }
       })
       .catch((requestError) => {
@@ -63,6 +64,21 @@ function OfferDetailsContent({ offerId }) {
       active = false;
     };
   }, [offerId, attempt]);
+
+  useEffect(() => {
+    const onOfferNotice = (event) => {
+      if (String(event.detail?.offerId || "") === String(offerId)) {
+        setAttempt((value) => value + 1);
+      }
+    };
+    const onReconnect = () => setAttempt((value) => value + 1);
+    window.addEventListener("dormdrop:notification-received", onOfferNotice);
+    window.addEventListener("dormdrop:notifications-reconnected", onReconnect);
+    return () => {
+      window.removeEventListener("dormdrop:notification-received", onOfferNotice);
+      window.removeEventListener("dormdrop:notifications-reconnected", onReconnect);
+    };
+  }, [offerId]);
 
   const currentUserId = userIdFromToken(token);
 

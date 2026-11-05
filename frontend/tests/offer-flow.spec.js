@@ -119,15 +119,16 @@ test("submitting a listing offer opens its conversation with the offer in the me
   });
 
   await page.goto("/items/listing-1");
-  await page.getByLabel("Your offer amount").fill("73.50");
-  await page.getByRole("button", { name: "Send offer" }).click();
+  await page.getByRole("button", { name: "Make an offer" }).click();
+  await page.getByLabel("Your offer price").fill("73.50");
+  await page.getByRole("button", { name: "Submit offer" }).click();
 
   await expect(page).toHaveURL("/messages/conversation-1");
-  const thread = page.getByLabel("Message and offer history");
-  await expect(thread.getByText("Offer pending")).toBeVisible();
-  await expect(thread.getByText("$73.50")).toBeVisible();
+  const thread = page.getByLabel("Message history");
+  await expect(thread.getByText("PENDING", { exact: true })).toBeVisible();
+  await expect(thread.getByText("Current proposal: $73.50")).toBeVisible();
   await expect(
-    thread.getByText("Waiting for the seller's decision."),
+    thread.getByText("Waiting for the other participant to respond to your proposal."),
   ).toBeVisible();
   expect(offerRequests).toBe(1);
   expect(idempotencyKey).toBeTruthy();
@@ -160,17 +161,38 @@ test("a conversation retry after offer submission does not submit the offer twic
   });
 
   await page.goto("/items/listing-1");
-  await page.getByLabel("Your offer amount").fill("73.50");
-  await page.getByRole("button", { name: "Send offer" }).click();
+  await page.getByRole("button", { name: "Make an offer" }).click();
+  await page.getByLabel("Your offer price").fill("73.50");
+  await page.getByRole("button", { name: "Submit offer" }).click();
   await expect(
     page.getByRole("alert"),
-  ).toHaveText(/offer was sent, but its conversation couldn't be opened/i);
+  ).toHaveText(/offer is saved, but its conversation could not be opened/i);
   await page.getByRole("button", { name: "Open conversation" }).click();
 
   await expect(page).toHaveURL("/messages/conversation-1");
   await expect(
-    page.getByLabel("Message and offer history").getByText("Offer pending"),
+    page.getByLabel("Message history").getByText("PENDING", { exact: true }),
   ).toBeVisible();
   expect(offerRequests).toBe(1);
   expect(conversationAttempts).toBe(2);
+});
+
+test("the seller cannot offer on their own listing", async ({ page }) => {
+  await preparePage(page);
+  await page.route("**/api/v1/home/listing-1", (route) =>
+    route.fulfill({ json: { ...listing, ownerId: "buyer-1" } }),
+  );
+  await page.goto("/items/listing-1");
+  await expect(page.getByRole("button", { name: "Make an offer" })).toHaveCount(0);
+  await expect(page.getByText("Other users can make an offer on this listing.")).toBeVisible();
+});
+
+test("offers are not available for free listings", async ({ page }) => {
+  await preparePage(page);
+  await page.route("**/api/v1/home/listing-1", (route) =>
+    route.fulfill({ json: { ...listing, listingType: "Free / Donate", price: 0 } }),
+  );
+  await page.goto("/items/listing-1");
+  await expect(page.getByRole("heading", { name: listing.title })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Make an offer" })).toHaveCount(0);
 });

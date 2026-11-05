@@ -1,6 +1,28 @@
 // @ts-check
 import { test, expect } from "@playwright/test";
 
+test("navigation shows unread messages separately from offer notifications", async ({ page }) => {
+  const payload = Buffer.from(
+    JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 }),
+  ).toString("base64url");
+  await page.addInitScript((token) => localStorage.setItem("token", token), `test.${payload}.signature`);
+  await page.route("**/api/v1/me/notifications/unread-count", (route) =>
+    route.fulfill({ json: { count: 0 } }),
+  );
+  let unread = 3;
+  await page.route("**/api/v1/conversations", (route) =>
+    route.fulfill({ json: [{ id: "conversation-1", unreadCount: unread }] }),
+  );
+  await page.route("**/api/v1/home", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/v1/favorites", (route) => route.fulfill({ json: [] }));
+  await page.goto("/home");
+  const messages = page.getByRole("link", { name: /Messages/ });
+  await expect(messages.getByLabel("3 unread messages")).toBeVisible();
+  unread = 0;
+  await page.evaluate(() => globalThis.dispatchEvent(new Event("dormdrop:messages-updated")));
+  await expect(messages.getByLabel("3 unread messages")).toHaveCount(0);
+});
+
 test("accepted offer appears as a pickup card in the conversation", async ({
   page,
 }) => {

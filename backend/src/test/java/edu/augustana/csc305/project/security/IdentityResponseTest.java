@@ -67,7 +67,8 @@ class IdentityResponseTest {
         var encoder = mock(PasswordEncoder.class);
         when(encoder.encode(anyString())).thenReturn("encoded");
         var auth = new AuthService(users, encoder, mock(EmailService.class));
-        var mvc = MockMvcBuilders.standaloneSetup(new AuthController(users, encoder, mock(JwtService.class), auth)).build();
+        var mvc = MockMvcBuilders.standaloneSetup(new AuthController(users, encoder, mock(JwtService.class), auth,
+                new edu.augustana.csc305.project.config.PublicUrls("http://localhost:5173", "http://localhost:8080", "/api/v1"))).build();
         for (String role : List.of("ADMIN", "MODERATOR")) {
             mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
                     .content("{\"name\":\"Student\",\"email\":\"student@augustana.edu\",\"password\":\"password123\",\"role\":\"" + role + "\"}"))

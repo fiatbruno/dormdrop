@@ -8,7 +8,7 @@ export default function AdminLogout() {
 
   function handleLogout() {
     adminLogout();
-    navigate("/admin/login", { replace: true });
+    navigate("/login", { replace: true });
   }
 
   return (

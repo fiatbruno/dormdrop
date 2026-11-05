@@ -11,6 +11,7 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import "./Profile.css";
 import useProfile from "../../hooks/useProfile";
+import { getStaffIdentity } from "../../auth/staffCapabilities";
 
 function ListingCards({
   items,
@@ -125,6 +126,8 @@ function Profile({
 
   useEffect(() => {
     if (user) {
+      // Populate editable fields when server profile data changes.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(user.name || "");
       setBio(user.about || "");
     }
@@ -241,6 +244,10 @@ function Profile({
             <a href="#account-security">Account security</a>
             <a href="#my-listings">Active listings</a>
             <a href="#sold-listings">Sold listings</a>
+            <Link to="/my-reports">My reports</Link>
+            {getStaffIdentity(user).canReview && (
+              <Link to="/staff/reports">Review reports</Link>
+            )}
 
             <button
               type="button"
