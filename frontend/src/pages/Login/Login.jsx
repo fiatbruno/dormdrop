@@ -9,7 +9,7 @@ import useAuth from "../../hooks/useAuth";
 import AuthLeftPanel from "../../components/AuthLeftPanel/AuthLeftPanel.jsx";
 import Footer from "../../components/Footer/Footer.jsx";
 
-import { useNavigate, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,6 +46,7 @@ function Login() {
 
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -60,7 +61,18 @@ function Login() {
     const response = await loginUser(data);
     login(response.data.token);
 
-      navigate("/home", { replace: true });
+      const returnTo = location.state?.from;
+      const returnPath =
+        typeof returnTo?.pathname === "string" &&
+        returnTo.pathname.startsWith("/") &&
+        !returnTo.pathname.startsWith("//")
+          ? {
+              pathname: returnTo.pathname,
+              search: returnTo.search || "",
+              hash: returnTo.hash || "",
+            }
+          : "/home";
+      navigate(returnPath, { replace: true });
 
     } catch {
       // On failure, set an error message.

@@ -21,6 +21,10 @@ import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
 import CheckYourInbox from "./pages/CheckYourInbox/CheckYourInbox";
 import ResetPassword from "./pages/ResetPassword/ResetPassword";
 import PasswordUpdated from "./pages/PasswordUpdated/PasswordUpdated";
+import Notifications from "./pages/Notifications/Notifications";
+import MyReports from "./pages/MyReports/MyReports";
+import StaffReports from "./pages/StaffReports/StaffReports";
+import OfferDetails from "./pages/OfferDetails/OfferDetails";
 import PasswordResetExpired from "./pages/PasswordResetExpired/PasswordResetExpired";
 
 /*
@@ -46,6 +50,46 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Messages />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/notifications",
+    element: (
+      <ProtectedRoute>
+        <Notifications />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/offers/:offerId",
+    element: (
+      <ProtectedRoute>
+        <OfferDetails />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/my-reports",
+    element: (
+      <ProtectedRoute>
+        <MyReports />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/staff/reports",
+    element: (
+      <ProtectedRoute>
+        <StaffReports />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/staff/reports/:caseId",
+    element: (
+      <ProtectedRoute>
+        <StaffReports />
       </ProtectedRoute>
     ),
   },
