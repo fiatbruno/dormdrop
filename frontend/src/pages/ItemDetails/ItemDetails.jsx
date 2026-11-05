@@ -247,6 +247,7 @@ function ItemDetailsContent({ id }) {
   const canMakeOffer =
     listing?.status === "AVAILABLE" &&
     String(listing.listingType || "").toLowerCase() === "for sale" &&
+    Number(listing.price) > 0 &&
     !isOwner;
 
   return (
@@ -358,6 +359,9 @@ function ItemDetailsContent({ id }) {
                     >
                       Make an offer
                     </button>
+                  )}
+                  {isOwner && listing.status === "AVAILABLE" && Number(listing.price) > 0 && String(listing.listingType || "").toLowerCase() === "for sale" && (
+                    <p className="item-muted">Other users can make an offer on this listing.</p>
                   )}
                  <div className="item-actions">
                    <button
