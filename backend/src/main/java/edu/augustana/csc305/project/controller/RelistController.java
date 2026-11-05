@@ -24,7 +24,6 @@ public class RelistController {
     }
 
     @PostMapping("/{id}/relist")
-    @ResponseStatus(HttpStatus.CREATED)
     public Listing relist(@PathVariable String id, Authentication authentication) {
         if (authentication == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required.");
         if (!ObjectId.isValid(id)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid listing ID.");

@@ -26,6 +26,13 @@ public class OfferController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(OfferDtos.from(offers.get(auth, offerId)));
     }
 
+    @GetMapping("/home/{listingId}/my-offer")
+    public ResponseEntity<OfferDtos.Offer> buyerListingOffer(Authentication auth, @PathVariable String listingId) {
+        var offer = offers.getBuyerListingOffer(auth, listingId);
+        return offer == null ? ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build()
+                : ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(OfferDtos.from(offer));
+    }
+
     @PostMapping("/offers/{offerId}/decisions")
     public ResponseEntity<OfferDtos.Offer> decide(Authentication auth, @PathVariable String offerId,
             @RequestHeader("Idempotency-Key") String key, @RequestBody OfferDtos.Decision request) {

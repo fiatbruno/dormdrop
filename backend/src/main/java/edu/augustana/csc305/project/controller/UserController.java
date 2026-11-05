@@ -12,7 +12,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
-import java.time.Instant;
 
 @RestController
 @RequestMapping("/users")
@@ -56,16 +55,6 @@ public class UserController {
         );
     }
 
-    @PostMapping("/me/activity")
-    public ResponseEntity<Void> recordActivity(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        var user = userRepository.findByEmail(authentication.getName());
-        if (user.isEmpty()) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        userRepository.recordActivity(user.get().getId(), Instant.now());
-        return ResponseEntity.noContent().build();
-    }
 
     @PutMapping("/me")
     public ResponseEntity<?> updateMyProfile(

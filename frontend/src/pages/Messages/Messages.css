@@ -36,19 +36,6 @@
   font-size: 12px;
   color: #657b9b;
 }
-.messages-page button.messages-propose-pickup {
-  min-width: 154px;
-  min-height: 44px;
-  padding: 10px 18px;
-  border: 1px solid #dce4ed;
-  border-radius: 7px;
-  background: #fff;
-  color: #194278;
-  font-weight: 600;
-}
-.messages-page button.messages-propose-pickup:hover {
-  background: #f5f8fb;
-}
 .messages-page button,
 .messages-listing > a {
   border: 1px solid #dce4ed;

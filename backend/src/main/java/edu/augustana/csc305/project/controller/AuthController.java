@@ -88,7 +88,7 @@ public class AuthController {
         String token = jwtService.generateToken(user);
 
         try {
-            userRepository.recordActivity(user.getId(), Instant.now());
+            userRepository.recordLogin(user.getId(), Instant.now());
         } catch (RuntimeException ex) {
             log.warn("Could not record sign-in activity", ex);
         }
