@@ -1,51 +1,34 @@
 
-import { useEffect, useState } from "react";
 import {
   Navigate,
   Outlet,
   useLocation,
 } from "react-router-dom";
 
-import {
-  getAdminToken,
-  verifyAdminSession,
-} from "../api/adminAuthApi";
+import useAuth from "../hooks/useAuth";
 
 export default function AdminProtectedRoute() {
   const location = useLocation();
 
-  const [status, setStatus] = useState("checking");
+  const {
+    isAuthenticated,
+    isAdmin,
+    adminChecking,
+  } = useAuth();
 
-  useEffect(() => {
-    let active = true;
+  if (!isAuthenticated) {
+    return (
+      <Navigate
+        to="/login"
+        state={{
+          from: `${location.pathname}${location.search}${location.hash}`,
+        }}
+        replace
+      />
+    );
+  }
 
-    async function checkAdmin() {
-      setStatus("checking");
-
-      if (!getAdminToken()) {
-        if (active) setStatus("unauthorized");
-        return;
-      }
-
-      try {
-        const admin = await verifyAdminSession();
-
-        if (active) {
-          setStatus(admin ? "authorized" : "unauthorized");
-        }
-      } catch {
-        if (active) setStatus("unauthorized");
-      }
-    }
-
-    checkAdmin();
-
-    return () => {
-      active = false;
-    };
-  }, [location.pathname]);
-
-  if (status === "checking") {
+  if (adminChecking) {
     return (
       <div className="admin-loading">
         Verifying administrator access...
@@ -53,13 +36,15 @@ export default function AdminProtectedRoute() {
     );
   }
 
-  if (status === "unauthorized") {
+  if (!isAdmin) {
     return (
-      <Navigate
-        to="/admin/login"
-        state={{ from: location.pathname }}
-        replace
-      />
+      <main className="admin-loading" role="alert">
+        <h1>Access denied</h1>
+        <p>
+          Your account does not have administrator
+          access.
+        </p>
+      </main>
     );
   }
 

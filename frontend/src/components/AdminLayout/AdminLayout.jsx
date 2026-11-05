@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
+
 import {
   LayoutDashboard,
   Flag,
@@ -20,13 +21,41 @@ import logo from "../../assets/Logo.png";
 import "../../pages/Admin/AdminUserDetails.css";
 
 const navigation = [
-  { label: "Overview", icon: LayoutDashboard, to: "/admin" },
-  { label: "Reports", icon: Flag, to: "/admin/reports" },
-  { label: "Listings", icon: Box, to: "/admin/listings" },
-  { label: "Users", icon: Users, to: "/admin/users" },
-  { label: "Appeals", icon: Undo2, to: "/admin/appeals" },
-  { label: "Activity log", icon: ClipboardList, to: "/admin/activity" },
-  { label: "Settings", icon: Settings, to: "/admin/settings" },
+  {
+    label: "Overview",
+    icon: LayoutDashboard,
+    to: "/admin",
+  },
+  {
+    label: "Reports",
+    icon: Flag,
+    to: "/admin/reports",
+  },
+  {
+    label: "Listings",
+    icon: Box,
+    to: "/admin/listings",
+  },
+  {
+    label: "Users",
+    icon: Users,
+    to: "/admin/users",
+  },
+  {
+    label: "Appeals",
+    icon: Undo2,
+    to: "/admin/appeals",
+  },
+  {
+    label: "Activity log",
+    icon: ClipboardList,
+    to: "/admin/activity",
+  },
+  {
+    label: "Settings",
+    icon: Settings,
+    to: "/admin/settings",
+  },
 ];
 
 export default function AdminLayout({
@@ -36,7 +65,8 @@ export default function AdminLayout({
   onSearchChange,
   showSearch = true,
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] =
+    useState(false);
 
   return (
     <div className="admin-page">
@@ -47,7 +77,7 @@ export default function AdminLayout({
       >
         <div className="admin-brand">
           <Link
-            to="/admin"
+            to="/admin/users"
             className="admin-brand-link"
             aria-label="DormDrop administration"
           >
@@ -70,26 +100,36 @@ export default function AdminLayout({
           <span>Moderation workspace</span>
         </div>
 
-        <p className="admin-nav-label">WORKSPACE</p>
+        <p className="admin-nav-label">
+          WORKSPACE
+        </p>
 
         <nav
           className="admin-navigation"
           aria-label="Admin navigation"
         >
-          {navigation.map(({ label, icon: Icon, to }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === "/admin"}
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `admin-nav-item ${isActive ? "selected" : ""}`
-              }
-            >
-              <Icon size={17} />
-              <span>{label}</span>
-            </NavLink>
-          ))}
+          {navigation
+            .filter(
+              (item) => item.to === "/admin/users"
+            )
+            .map(({ label, icon: Icon, to }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === "/admin"}
+                onClick={() =>
+                  setSidebarOpen(false)
+                }
+                className={({ isActive }) =>
+                  `admin-nav-item ${
+                    isActive ? "selected" : ""
+                  }`
+                }
+              >
+                <Icon size={17} />
+                <span>{label}</span>
+              </NavLink>
+            ))}
         </nav>
 
         <div className="admin-sidebar-footer">
@@ -104,13 +144,17 @@ export default function AdminLayout({
           <button
             type="button"
             className="admin-menu-button"
-            onClick={() => setSidebarOpen(true)}
+            onClick={() =>
+              setSidebarOpen(true)
+            }
             aria-label="Open sidebar"
           >
             <Menu size={22} />
           </button>
 
-          <div className="admin-breadcrumb">{breadcrumb}</div>
+          <div className="admin-breadcrumb">
+            {breadcrumb}
+          </div>
 
           {showSearch && (
             <div className="admin-search">
@@ -121,7 +165,9 @@ export default function AdminLayout({
                 placeholder="Search reports or listings"
                 value={search}
                 onChange={(event) =>
-                  onSearchChange?.(event.target.value)
+                  onSearchChange?.(
+                    event.target.value
+                  )
                 }
                 aria-label="Search admin records"
                 readOnly={!onSearchChange}
@@ -130,15 +176,22 @@ export default function AdminLayout({
           )}
 
           <div className="admin-top-actions">
-            <Link to="/home">View marketplace</Link>
+            <Link to="/home">
+              View marketplace
+            </Link>
 
-            <span className="admin-avatar" aria-label="Admin account">
+            <span
+              className="admin-avatar"
+              aria-label="Admin account"
+            >
               AD
             </span>
           </div>
         </header>
 
-        <main className="admin-content">{children}</main>
+        <main className="admin-content">
+          {children}
+        </main>
       </div>
     </div>
   );

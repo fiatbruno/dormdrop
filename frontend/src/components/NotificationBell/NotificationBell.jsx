@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, RefreshCw } from "lucide-react";
 
@@ -35,22 +35,26 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [openingId, setOpeningId] = useState(null);
 
   const containerRef = useRef(null);
   const requestRef = useRef(0);
+  const busyRef = useRef(false);
 
-  useEffect(() => {
-    let active = true;
-    let busy = false;
+  const refreshNotifications = useCallback(
+    async (showLoading = false) => {
+      if (!token || busyRef.current) return;
 
-    const requestId = ++requestRef.current;
+      busyRef.current = true;
+      const requestId = ++requestRef.current;
 
-    async function refresh() {
-      if (!token || busy) return;
-
-      busy = true;
+      if (showLoading) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
 
       try {
         const [items, count] = await Promise.all([
@@ -58,45 +62,55 @@ export default function NotificationBell() {
           getUnreadNotificationCount(),
         ]);
 
-        if (!active || requestRef.current !== requestId) {
-          return;
-        }
+        if (requestRef.current !== requestId) return;
 
-        setNotifications(items);
+        setNotifications(Array.isArray(items) ? items : []);
         setUnreadCount(count);
         setError("");
       } catch {
-        if (active && requestRef.current === requestId) {
+        if (requestRef.current === requestId) {
           setError("Couldn't load notifications.");
         }
       } finally {
-        busy = false;
-
-        if (active && requestRef.current === requestId) {
+        if (requestRef.current === requestId) {
+          busyRef.current = false;
           setLoading(false);
+          setRefreshing(false);
         }
       }
-    }
+    },
+    [token]
+  );
+
+  useEffect(() => {
+    requestRef.current += 1;
+    busyRef.current = false;
 
     setNotifications([]);
     setUnreadCount(null);
     setLoading(true);
+    setRefreshing(false);
     setError("");
 
-    refresh();
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    refreshNotifications(true);
 
     const interval = window.setInterval(
-      refresh,
+      () => refreshNotifications(),
       POLL_INTERVAL
     );
 
     function handleFocus() {
-      refresh();
+      refreshNotifications();
     }
 
     function handleVisibility() {
       if (document.visibilityState === "visible") {
-        refresh();
+        refreshNotifications();
       }
     }
 
@@ -107,7 +121,9 @@ export default function NotificationBell() {
     );
 
     return () => {
-      active = false;
+      requestRef.current += 1;
+      busyRef.current = false;
+
       window.clearInterval(interval);
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener(
@@ -115,7 +131,7 @@ export default function NotificationBell() {
         handleVisibility
       );
     };
-  }, [token]);
+  }, [token, refreshNotifications]);
 
   useEffect(() => {
     function handleOutsideClick(event) {
@@ -133,15 +149,24 @@ export default function NotificationBell() {
       }
     }
 
-    document.addEventListener("mousedown", handleOutsideClick);
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick
+    );
+    document.addEventListener(
+      "keydown",
+      handleEscape
+    );
 
     return () => {
       document.removeEventListener(
         "mousedown",
         handleOutsideClick
       );
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener(
+        "keydown",
+        handleEscape
+      );
     };
   }, []);
 
@@ -152,19 +177,20 @@ export default function NotificationBell() {
     setError("");
 
     try {
-      if (!notification.read) {
+      if (!notification.readAt) {
         await markNotificationAsRead(notification.id);
 
         setNotifications((current) =>
           current.map((item) =>
             item.id === notification.id
-              ? { ...item, read: true }
+              ? {
+                  ...item,
+                  readAt: new Date().toISOString(),
+                }
               : item
           )
         );
 
-        // The server remains the source of truth
-        // for the unread notification count.
         try {
           const count = await getUnreadNotificationCount();
           setUnreadCount(count);
@@ -175,10 +201,7 @@ export default function NotificationBell() {
 
       setOpen(false);
 
-      if (
-        notification.type === "OFFER_RECEIVED" &&
-        notification.offerId
-      ) {
+      if (notification.offerId) {
         navigate(
           `/offers/${encodeURIComponent(notification.offerId)}`
         );
@@ -268,7 +291,7 @@ export default function NotificationBell() {
                     openNotification(notification)
                   }
                   className={`notification-item ${
-                    notification.read
+                    notification.readAt
                       ? ""
                       : "notification-item-unread"
                   }`}
@@ -279,13 +302,14 @@ export default function NotificationBell() {
 
                   <span className="notification-item-content">
                     <strong>
-                      {notification.type === "OFFER_RECEIVED"
-                        ? "New offer received"
-                        : "Notification"}
+                      {notification.type?.replaceAll(
+                        "_",
+                        " "
+                      ) || "Notification"}
                     </strong>
 
                     <span>
-                      {notification.message ||
+                      {notification.payload?.message ||
                         "You have a new notification."}
                     </span>
 
@@ -294,7 +318,7 @@ export default function NotificationBell() {
                     </small>
                   </span>
 
-                  {!notification.read && (
+                  {!notification.readAt && (
                     <span
                       className="notification-unread-dot"
                       aria-label="Unread"
@@ -314,13 +338,10 @@ export default function NotificationBell() {
 
             <button
               type="button"
-              onClick={() => {
-                // Refresh by reopening the component
-                // on the next scheduled fetch.
-                setOpen(false);
-                setOpen(true);
-              }}
-              aria-label="Close and reopen notifications"
+              onClick={() => refreshNotifications()}
+              disabled={refreshing || loading}
+              aria-label="Refresh notifications"
+              title="Refresh notifications"
             >
               <RefreshCw size={15} />
             </button>
