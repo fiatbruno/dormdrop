@@ -5,7 +5,7 @@ import useMessageSocket from "./useMessageSocket";
 
 export default function useUnreadMessages() {
   const { token } = useAuth();
-  const [result, setResult] = useState({ token: null, count: 0 });
+  const [result, setResult] = useState({ token: null, count: 0, conversations: [], error: false });
   const generation = useRef(0);
 
   const refresh = useCallback(async () => {
@@ -18,9 +18,13 @@ export default function useUnreadMessages() {
         const unread = Number(conversation.unreadCount);
         return total + (Number.isFinite(unread) && unread > 0 ? unread : 0);
       }, 0);
-      setResult({ token, count });
+      setResult({ token, count, conversations: conversations.filter((item) => Number(item.unreadCount) > 0), error: false });
     } catch {
-      // Keep the last confirmed count until a later refresh succeeds.
+      if (request === generation.current) {
+        setResult((previous) => previous.token === token
+          ? { ...previous, error: true }
+          : { token, count: 0, conversations: [], error: true });
+      }
     }
   }, [token]);
 
@@ -45,5 +49,10 @@ export default function useUnreadMessages() {
     };
   }, [token, refresh]);
 
-  return result.token === token ? result.count : 0;
+  return {
+    count: result.token === token ? result.count : 0,
+    conversations: result.token === token ? result.conversations : [],
+    error: result.token === token && result.error,
+    refresh,
+  };
 }

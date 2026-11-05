@@ -49,6 +49,10 @@ export function notificationBody(notification) {
 }
 
 export function notificationTarget(notification) {
+  const link = notification?.payload?.link;
+  if (typeof link === "string" && link.startsWith("/") && !link.startsWith("//") && !link.startsWith("/\\")) {
+    return link;
+  }
   if (notification?.offerId) {
     return `/offers/${encodeURIComponent(notification.offerId)}`;
   }
