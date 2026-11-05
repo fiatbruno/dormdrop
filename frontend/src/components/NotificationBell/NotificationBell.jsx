@@ -53,7 +53,6 @@ function NotificationBellContent() {
   const [error, setError] = useState("");
   const [pendingIds, setPendingIds] = useState(() => new Set());
   const [markingAll, setMarkingAll] = useState(false);
-  const [liveNotice, setLiveNotice] = useState(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [permission, setPermission] = useState(() =>
     typeof window.Notification === "undefined"
@@ -79,7 +78,6 @@ function NotificationBellContent() {
 
   const handleLiveNotice = useCallback(
     (notification) => {
-      setLiveNotice(notification);
       setRefreshVersion((version) => version + 1);
       if (
         document.visibilityState === "hidden" &&
@@ -227,8 +225,6 @@ function NotificationBellContent() {
       setPermission("denied");
     }
   }
-
-  const liveTarget = liveNotice ? notificationTarget(liveNotice) : null;
 
   return (
     <div className="notification-bell" ref={rootRef}>
@@ -417,42 +413,6 @@ function NotificationBellContent() {
             )}
           </footer>
         </section>
-      )}
-      {liveNotice && (
-        <aside
-          className="notification-bell__toast"
-          role="status"
-          aria-live="polite"
-        >
-          <button
-            type="button"
-            className="notification-bell__toast-close"
-            aria-label="Dismiss notification"
-            onClick={() => setLiveNotice(null)}
-          >
-            <X size={14} aria-hidden="true" />
-          </button>
-          <strong>{notificationTitle(liveNotice.type)}</strong>
-          <p>{notificationBody(liveNotice)}</p>
-          <Link
-            to={liveTarget}
-            onClick={() => {
-              if (liveNotice.id && !liveNotice.readAt) {
-                void markNotificationRead(liveNotice.id)
-                  .then(() => {
-                    window.dispatchEvent(new Event("dormdrop:notifications-updated"));
-                  })
-                  .catch(() => {
-                    setError("Couldn't mark that notification as read. It remains in your inbox.");
-                  });
-              }
-              setLiveNotice(null);
-              setOpen(false);
-            }}
-          >
-            Open update
-          </Link>
-        </aside>
       )}
       <span className="notification-bell__sr-only" aria-live="polite">
         {countError || messageError ? "Unread count unavailable" : `${totalUnread} unread notifications`}

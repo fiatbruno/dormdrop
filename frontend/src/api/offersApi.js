@@ -7,6 +7,11 @@ export async function getOffer(offerId) {
   return data;
 }
 
+export async function getMyListingOffer(listingId) {
+  const { data } = await api.get(`/home/${encodeURIComponent(listingId)}/my-offer`);
+  return data || null;
+}
+
 export async function submitOffer(listingId, amount, idempotencyKey) {
   const { data } = await api.post(
     `/home/${encodeURIComponent(listingId)}/offers`,

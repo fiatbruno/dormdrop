@@ -36,6 +36,7 @@ public class User {
     // Profile and settings
     private String aboutYou;
     private Instant lastActiveAt;
+    private Instant lastLoginAt;
 
     // Default constructor required by MongoDB
     public User() {
@@ -169,4 +170,9 @@ public class User {
     public Instant getLastActiveAt() { return lastActiveAt; }
 
     public void setLastActiveAt(Instant lastActiveAt) { this.lastActiveAt = lastActiveAt; }
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public Instant getLastLoginAt() { return lastLoginAt; }
+
+    public void setLastLoginAt(Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }
 }
