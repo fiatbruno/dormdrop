@@ -16,16 +16,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
-/**
- * #66/#71 integration: call after the version-checked offer update, in that SAME Mongo transaction.
- * Pass persisted participant IDs, the pre-update current proposer, the authenticated actor,
- * and the resulting price/version. ACCEPT/REJECT use the current proposal price; COUNTER uses
- * the newly saved proposal price. The expected/resulting versions are negotiation aggregate versions.
- * Commands own permission/state validation, request-key payload checks and transaction retries.
- * A same-key command replay must return its saved result, without updating the offer again.
- * Map OptimisticLockingFailureException to 409 at the command API boundary.
- * OfferService invokes this component for accept, reject and counteroffer commands.
- */
+
 @Service
 public class OfferTransitionEventAppender {
     public enum Action { ACCEPT, REJECT, COUNTER }

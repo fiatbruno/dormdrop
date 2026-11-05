@@ -12,8 +12,10 @@ import edu.augustana.csc305.project.repository.UserRepository;
 import org.bson.types.ObjectId;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -230,9 +232,21 @@ public class ListingService {
 
         Listing listing = ownedListing(id, email);
         visibility.requireStatusTransition(listing, status);
-        listing.setStatus(status);
-
-        return repository.save(listing);
+        Criteria lifecycle = listing.getStatus() == ListingStatus.AVAILABLE
+                ? new Criteria().orOperator(Criteria.where("status").is(ListingStatus.AVAILABLE), Criteria.where("status").exists(false))
+                : Criteria.where("status").is(listing.getStatus());
+        Query query = Query.query(new Criteria().andOperator(
+                Criteria.where("_id").is(id), Criteria.where("ownerId").is(listing.getOwnerId()),
+                Criteria.where("version").is(listing.getVersion()), visibility.visibleCriteria(), lifecycle));
+        Update update = new Update().set("status", status);
+        if (listing.getVersion() == null) update.set("version", 1L);
+        else update.inc("version", 1L);
+        Listing updated = mongoTemplate.findAndModify(query, update,
+                FindAndModifyOptions.options().returnNew(true), Listing.class);
+        if (updated == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Listing changed. Refresh before trying again.");
+        }
+        return updated;
     }
 
 
