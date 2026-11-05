@@ -59,8 +59,8 @@ public class ListingVisibilityPolicy {
     }
     public void requireStatusTransition(Listing listing, ListingStatus next) {
         if (next == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status is required.");
-        if ((listing.getStatus() == ListingStatus.SOLD || listing.getStatus() == ListingStatus.DONATED)
-                && next != listing.getStatus()) {
+        if ((listing.getStatus() == ListingStatus.SOLD && next != ListingStatus.SOLD && next != ListingStatus.AVAILABLE)
+                || (listing.getStatus() == ListingStatus.DONATED && next != ListingStatus.DONATED)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Completed listings cannot be reopened or reclassified.");
         }
     }

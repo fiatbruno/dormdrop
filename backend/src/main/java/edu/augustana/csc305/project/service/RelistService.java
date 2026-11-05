@@ -14,12 +14,14 @@ public class RelistService {
     private final ListingRepository listings;
     private final UserRepository users;
     private final ListingVisibilityPolicy visibility;
+    private final ListingService listingService;
 
     public RelistService(ListingRepository listings, UserRepository users,
-                         ListingVisibilityPolicy visibility) {
+                         ListingVisibilityPolicy visibility, ListingService listingService) {
         this.listings = listings;
         this.users = users;
         this.visibility = visibility;
+        this.listingService = listingService;
     }
 
     public Listing relist(ObjectId id, String email) {
@@ -32,7 +34,6 @@ public class RelistService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Only sold listings can be relisted.");
         }
 
-        original.setStatus(ListingStatus.AVAILABLE);
-        return listings.save(original);
+        return listingService.updateStatus(id, ListingStatus.AVAILABLE, email);
     }
 }
