@@ -1,14 +1,23 @@
+
 import ListingImage from "../../components/ListingImage";
 import useAuth from "../../hooks/useAuth";
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import "./Profile.css";
 import useProfile from "../../hooks/useProfile";
 
-// Listing cards for active and sold items
-function ListingCards({ items, onMarkSold, onRelist, pending }) {
+function ListingCards({
+  items,
+  onMarkSold,
+  onRelist,
+  pending,
+}) {
   if (items.length === 0) {
     return <p className="profile-empty">No listings to show.</p>;
   }
@@ -42,6 +51,7 @@ function ListingCards({ items, onMarkSold, onRelist, pending }) {
                     ? "Free"
                     : `$${Number(item.price).toFixed(2)}`}
               </strong>
+
               <span
                 className={
                   item.status === "SOLD"
@@ -57,7 +67,9 @@ function ListingCards({ items, onMarkSold, onRelist, pending }) {
           <div className="profile-card-actions">
             {item.status === "SOLD" ? (
               <>
-                <Link to={`/items/${item.id}`}>View listing</Link>
+                <Link to={`/items/${encodeURIComponent(item.id)}`}>
+                  View listing
+                </Link>
 
                 <button
                   type="button"
@@ -69,7 +81,9 @@ function ListingCards({ items, onMarkSold, onRelist, pending }) {
               </>
             ) : (
               <>
-                <Link to={`/edit-listing/${encodeURIComponent(item.id)}`}>
+                <Link
+                  to={`/edit-listing/${encodeURIComponent(item.id)}`}
+                >
                   Edit listing
                 </Link>
 
@@ -93,6 +107,7 @@ function Profile({
   user = null,
   listings = [],
   loading = false,
+  refreshing = false,
   error = "",
   onSaveProfile,
   onMarkSold,
@@ -101,33 +116,29 @@ function Profile({
 }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
+
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
   const [message, setMessage] = useState("");
   const [actionError, setActionError] = useState("");
   const [pending, setPending] = useState(false);
 
-  // Fill the form when user data arrives from the backend
   useEffect(() => {
     if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Populate editable fields when the backend supplies updated profile data.
       setName(user.name || "");
       setBio(user.about || "");
     }
   }, [user]);
 
   const activeListings = listings.filter(
-    (item) => item.status === "AVAILABLE" || item.status === "ACTIVE",
+    (item) =>
+      item.status === "AVAILABLE" ||
+      item.status === "ACTIVE"
   );
 
-  function handleLogout() {
-    logout();
-
-    // Redirect to the login page
-    navigate("/login", { replace: true });
-  }
-
-  const soldListings = listings.filter((item) => item.status === "SOLD");
+  const soldListings = listings.filter(
+    (item) => item.status === "SOLD"
+  );
 
   const initials =
     name
@@ -138,6 +149,11 @@ function Profile({
       .map((part) => part[0])
       .join("")
       .toUpperCase() || "?";
+
+  function handleLogout() {
+    logout();
+    navigate("/login", { replace: true });
+  }
 
   async function saveProfile(event) {
     event.preventDefault();
@@ -156,7 +172,9 @@ function Profile({
 
       setMessage("Profile updated successfully!");
     } catch {
-      setActionError("Unable to save profile. Please try again.");
+      setActionError(
+        "Unable to save profile. Please try again."
+      );
     } finally {
       setPending(false);
     }
@@ -176,7 +194,9 @@ function Profile({
         setMessage("A new listing has been created. Your sold listing remains in your history.");
       }
     } catch {
-      setActionError("Unable to update listing. Please try again.");
+      setActionError(
+        "Unable to update listing. Please try again."
+      );
     } finally {
       setPending(false);
     }
@@ -191,9 +211,13 @@ function Profile({
 
     try {
       await onResetPassword();
-      setMessage("Password reset request sent. Check your email.");
+      setMessage(
+        "Password reset request sent. Check your email."
+      );
     } catch {
-      setActionError("Unable to request a password reset.");
+      setActionError(
+        "Unable to request a password reset."
+      );
     } finally {
       setPending(false);
     }
@@ -201,192 +225,272 @@ function Profile({
 
   return (
     <>
-    <main className="profile-page">
-      <Navbar showSearch={false} />
+      <main className="profile-page">
+        <Navbar showSearch={false} />
 
-      <header className="profile-heading">
-        <h1>Profile</h1>
-        <p>Your campus identity, listings, and account controls.</p>
-      </header>
+        <header className="profile-heading">
+          <h1>Profile</h1>
+          <p>
+            Your campus identity, listings, and account controls.
+          </p>
+        </header>
 
-      <div className="profile-layout">
-        {/* SIDEBAR */}
+        <div className="profile-layout">
+          <aside className="profile-sidebar">
+            <a href="#your-profile">Your profile</a>
+            <a href="#account-security">Account security</a>
+            <a href="#my-listings">Active listings</a>
+            <a href="#sold-listings">Sold listings</a>
 
-        <aside className="profile-sidebar">
-          <a href="#your-profile">Your profile</a>
-          <a href="#account-security">Account security</a>
-          <a href="#my-listings">Active listings</a>
-          <a href="#sold-listings">Sold listings</a>
+            <button
+              type="button"
+              className="profile-logout"
+              onClick={handleLogout}
+            >
+              Log out
+            </button>
+          </aside>
 
-          <button
-            type="button"
-            className="profile-logout"
-            onClick={handleLogout}
-          >
-            Log out
-          </button>
-        </aside>
+          <div className="profile-main">
+            {error && (
+              <p className="profile-error" role="alert">
+                {error}
+              </p>
+            )}
 
-        {/* MAIN CONTENT */}
-        <div className="profile-main">
-          {error && (
-            <p className="profile-error" role="alert">
-              {error}
-            </p>
-          )}
+            {actionError && (
+              <p className="profile-error" role="alert">
+                {actionError}
+              </p>
+            )}
 
-          {actionError && (
-            <p className="profile-error" role="alert">
-              {actionError}
-            </p>
-          )}
+            {message && (
+              <p className="profile-success" role="status">
+                {message}
+              </p>
+            )}
 
-          {message && (
-            <p className="profile-success" role="status">
-              {message}
-            </p>
-          )}
+            {refreshing && !loading && (
+              <p className="profile-success" role="status">
+                Refreshing your listings...
+              </p>
+            )}
 
-          {loading ? (
-            <p>Loading your profile...</p>
-          ) : (
-            <>
-              {/* PROFILE INFORMATION */}
-              <section id="your-profile" className="profile-section">
-                <div className="profile-user">
-                  <div className="profile-avatar">{initials}</div>
-
-                  <div>
-                    <h2>{name || "Your profile"}</h2>
-
-                    <p>{user?.campus || "Campus not available"}</p>
-
-                    <span className="profile-verified">
-                      {user?.emailVerified
-                        ? "Campus email verified"
-                        : "Email not verified"}
-                    </span>
-                  </div>
-                </div>
-
-                <form onSubmit={saveProfile} className="profile-form">
-                  <div className="profile-form-grid">
-                    <div className="profile-field">
-                      <label htmlFor="displayName">Display name</label>
-
-                      <input
-                        id="displayName"
-                        value={name}
-                        onChange={(event) => setName(event.target.value)}
-                        maxLength={100}
-                        required
-                      />
+            {loading ? (
+              <p>Loading your profile...</p>
+            ) : (
+              <>
+                <section
+                  id="your-profile"
+                  className="profile-section"
+                >
+                  <div className="profile-user">
+                    <div className="profile-avatar">
+                      {initials}
                     </div>
 
-                    <div className="profile-field">
-                      <label htmlFor="campus">Campus</label>
+                    <div>
+                      <h2>{name || "Your profile"}</h2>
 
-                      <input id="campus" value={user?.campus || ""} readOnly />
-                    </div>
+                      <p>
+                        {user?.campus || "Campus not available"}
+                      </p>
 
-                    <div className="profile-field">
-                      <label htmlFor="email">Campus email</label>
-
-                      <input id="email" value={user?.email || ""} readOnly />
-
-                      <small>
+                      <span className="profile-verified">
                         {user?.emailVerified
-                          ? "Verified email"
+                          ? "Campus email verified"
                           : "Email not verified"}
-                        {" · Not shown on listings"}
-                      </small>
+                      </span>
+                    </div>
+                  </div>
+
+                  <form
+                    onSubmit={saveProfile}
+                    className="profile-form"
+                  >
+                    <div className="profile-form-grid">
+                      <div className="profile-field">
+                        <label htmlFor="displayName">
+                          Display name
+                        </label>
+
+                        <input
+                          id="displayName"
+                          value={name}
+                          onChange={(event) =>
+                            setName(event.target.value)
+                          }
+                          maxLength={100}
+                          required
+                        />
+                      </div>
+
+                      <div className="profile-field">
+                        <label htmlFor="campus">
+                          Campus
+                        </label>
+
+                        <input
+                          id="campus"
+                          value={user?.campus || ""}
+                          readOnly
+                        />
+                      </div>
+
+                      <div className="profile-field">
+                        <label htmlFor="email">
+                          Campus email
+                        </label>
+
+                        <input
+                          id="email"
+                          value={user?.email || ""}
+                          readOnly
+                        />
+
+                        <small>
+                          {user?.emailVerified
+                            ? "Verified email"
+                            : "Email not verified"}
+                          {" · Not shown on listings"}
+                        </small>
+                      </div>
+
+                      <div className="profile-field">
+                        <label htmlFor="bio">About you</label>
+
+                        <textarea
+                          id="bio"
+                          value={bio}
+                          onChange={(event) =>
+                            setBio(event.target.value)
+                          }
+                          maxLength={300}
+                          rows={2}
+                          placeholder="Keeping good finds on campus."
+                        />
+
+                        <small>
+                          Shown on your public profile.
+                        </small>
+                      </div>
                     </div>
 
-                    <div className="profile-field">
-                      <label htmlFor="bio">About you</label>
+                    <button
+                      type="submit"
+                      className="profile-save-button"
+                      disabled={!onSaveProfile || pending}
+                    >
+                      {pending
+                        ? "Please wait..."
+                        : "Save changes"}
+                    </button>
+                  </form>
+                </section>
 
-                      <textarea
-                        id="bio"
-                        value={bio}
-                        onChange={(event) => setBio(event.target.value)}
-                        maxLength={300}
-                        rows={2}
-                        placeholder="Keeping good finds on campus."
-                      />
-
-                      <small>Shown on your public profile.</small>
-                    </div>
+                <section
+                  id="account-security"
+                  className="profile-security"
+                >
+                  <div>
+                    <h2>Account security</h2>
+                    <p>
+                      Request an email link to reset your password.
+                    </p>
                   </div>
 
                   <button
-                    type="submit"
-                    className="profile-save-button"
-                    disabled={!onSaveProfile || pending}
+                    type="button"
+                    onClick={resetPassword}
+                    disabled={!onResetPassword || pending}
                   >
-                    {pending ? "Please wait..." : "Save changes"}
+                    Reset password
                   </button>
-                </form>
-              </section>
+                </section>
 
-              {/* ACCOUNT SECURITY */}
-              <section id="account-security" className="profile-security">
-                <div>
-                  <h2>Account security</h2>
-
-                  <p>Request an email link to reset your password.</p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={resetPassword}
-                  disabled={!onResetPassword || pending}
+                <section
+                  id="my-listings"
+                  className="profile-section"
                 >
-                  Reset password
-                </button>
-              </section>
+                  <div className="profile-section-heading">
+                    <h2>Active listings</h2>
+                    <Link to="/list-an-item">
+                      + List an item
+                    </Link>
+                  </div>
 
-              {/* ACTIVE LISTINGS */}
-              <section id="my-listings" className="profile-section">
-                <div className="profile-section-heading">
-                  <h2>Active listings</h2>
+                  <ListingCards
+                    items={activeListings}
+                    pending={pending}
+                    onMarkSold={(id) =>
+                      changeListingStatus(id, true)
+                    }
+                  />
+                </section>
 
-                  <Link to="/list-an-item">+ List an item</Link>
-                </div>
+                <section
+                  id="sold-listings"
+                  className="profile-section"
+                >
+                  <h2>Sold listings</h2>
 
-                <ListingCards
-                  items={activeListings}
-                  pending={pending}
-                  onMarkSold={(id) => changeListingStatus(id, true)}
-                />
-              </section>
+                  <p className="profile-section-description">
+                    Items you've sold on campus.
+                  </p>
 
-              {/* SOLD LISTINGS */}
-              <section id="sold-listings" className="profile-section">
-                <h2>Sold listings</h2>
-
-                <p className="profile-section-description">
-                  Items you've sold on campus.
-                </p>
-
-                <ListingCards
-                  items={soldListings}
-                  pending={pending}
-                  onRelist={(id) => changeListingStatus(id, false)}
-                />
-              </section>
-            </>
-          )}
+                  <ListingCards
+                    items={soldListings}
+                    pending={pending}
+                    onRelist={(id) =>
+                      changeListingStatus(id, false)
+                    }
+                  />
+                </section>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-    </main>
-    <Footer />
+      </main>
+
+      <Footer />
     </>
   );
 }
 
-//export default Profile;
-function ProfilePage(){
-    const profileData = useProfile();
-    return <Profile {...profileData}/>;
-    }
+function ProfilePage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const profileData = useProfile();
+
+  const { refreshProfile } = profileData;
+  const listingUpdatedAt = location.state?.listingUpdatedAt;
+
+  useEffect(() => {
+    if (!listingUpdatedAt) return;
+
+    refreshProfile();
+
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+      },
+      {
+        replace: true,
+        state: null,
+      }
+    );
+  }, [
+    listingUpdatedAt,
+    refreshProfile,
+    navigate,
+    location.pathname,
+    location.search,
+    location.hash,
+  ]);
+
+  return <Profile {...profileData} />;
+}
+
 export default ProfilePage;
