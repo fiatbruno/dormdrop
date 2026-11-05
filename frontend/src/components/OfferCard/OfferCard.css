@@ -1,0 +1,81 @@
+
+.offer-card {
+  width: min(440px, 100%);
+  padding: 18px;
+  margin: 14px 0 20px;
+  border: 1px solid #d7e1ec;
+  border-radius: 10px;
+  color: #10295c;
+}
+
+.offer-card--accepted {
+  background: #edf8f0;
+}
+
+.offer-card--declined {
+  background: #ffffff;
+}
+
+.offer-card__status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  font-size: 12px;
+}
+
+.offer-card--accepted .offer-card__status {
+  color: #278458;
+}
+
+.offer-card--declined .offer-card__status {
+  color: #c94343;
+}
+
+.offer-card--declined .offer-card__status span {
+  padding: 6px 14px;
+  border-radius: 5px;
+  background: #fff0f0;
+}
+
+.offer-card h3 {
+  margin: 0 0 14px;
+  font-size: 26px;
+  font-weight: 750;
+}
+
+.offer-card p {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #657b9b;
+}
+
+.offer-card__note {
+  font-size: 11px !important;
+}
+
+.messages-page .offer-card button {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.messages-page .offer-card--accepted button {
+  background: #194278;
+  color: white;
+  border-color: #194278;
+}
+
+.messages-page .offer-card--declined button {
+  background: white;
+  color: #194278;
+  border-color: #d1dce9;
+}
+
+.messages-page .offer-card button:hover {
+  filter: brightness(0.95);
+}

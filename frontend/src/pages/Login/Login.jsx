@@ -45,7 +45,8 @@ function Login() {
   const location = useLocation();
   const { login } = useAuth();
 
-  const requestedDestination = location.state?.from;
+  const returnTo = location.state?.from;
+  const requestedDestination = typeof returnTo === "string" ? returnTo : returnTo?.pathname;
 
   const destination =
     typeof requestedDestination === "string" &&
@@ -65,7 +66,9 @@ function Login() {
 
       login(response.data.token);
 
-      navigate(destination, {
+      navigate(destination === requestedDestination && typeof returnTo === "object"
+        ? { pathname: destination, search: returnTo.search || "", hash: returnTo.hash || "" }
+        : destination, {
         replace: true,
       });
     } catch {

@@ -27,6 +27,9 @@
 .item-page button.item-primary { width: 100%; color: #fff; background: #194278; border-color: #194278; }
 .item-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
 .item-actions button:disabled { color: #687b95; background: #f5f7fa; }
+.item-page button.item-share-button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 14px; background: #fff; color: #194278; border: 1px solid #dce4ed; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.item-page button.item-share-button:hover:enabled { background: #edf4fa; }
+.item-share-button svg { flex-shrink: 0; }
 .item-feedback { font-size: 11px; line-height: 1.5; margin-top: 8px; }
 .item-feedback:empty { display: none; }
 .item-seller { border: 1px solid #dce4ed; border-radius: 9px; padding: 18px; margin-top: 28px; background: #f9f8f6; }
@@ -62,4 +65,16 @@
   .item-related-grid { grid-template-columns: 1fr; }
   .item-related .product-card__media { aspect-ratio: 2; }
   .item-about dl div { grid-template-columns: 95px minmax(0, 1fr); }
+  .item-page button.item-share-button { padding: 10px 12px; font-size: 12px; gap: 8px; }
 }
+.item-page button.item-make-offer { margin-top: 10px; }
+.item-offer-form { display: grid; gap: 10px; margin-top: 12px; padding: 16px; border: 1px solid #dce4ed; border-radius: 8px; background: #f9f8f6; }
+.item-offer-form label { color: #10295c; font-size: 13px; font-weight: 600; }
+.item-offer-form__input { display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 12px; border: 1px solid #cbd7e5; border-radius: 6px; background: #fff; }
+.item-offer-form__input input { width: 100%; min-width: 0; border: 0; outline: 0; color: #10295c; font: inherit; }
+.item-offer-form__input:focus-within { border-color: #194278; box-shadow: 0 0 0 2px rgb(25 66 120 / 15%); }
+.item-offer-form > p { margin: 0; color: #657b9b; font-size: 12px; line-height: 1.5; }
+.item-offer-form > p[role="alert"] { color: #b42318; }
+.item-offer-form > a { font-size: 12px; }
+.item-offer-form__actions { display: flex; justify-content: flex-end; gap: 8px; }
+.item-offer-form__actions button[type="submit"] { color: #fff; background: #194278; border-color: #194278; }

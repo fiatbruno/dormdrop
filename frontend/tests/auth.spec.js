@@ -24,6 +24,9 @@ const mockMarketplace = async (page) => {
   await page.route("**/api/v1/favorites", (route) =>
     route.fulfill({ json: [] }),
   );
+  await page.route("**/api/v1/me/notifications/unread-count", (route) =>
+    route.fulfill({ json: { count: 0 } }),
+  );
 };
 
 /** @param {import('@playwright/test').Page} page */
@@ -201,8 +204,6 @@ test.describe("Authentication", () => {
   });
 });
 
-// These tokens exercise client-side session handling only; the API is mocked.
-
 test.describe("Authentication gaps", () => {
   test("password reset sends both password fields and accepts a valid token", async ({
     page,
@@ -330,6 +331,74 @@ test.describe("Authentication gaps", () => {
     await expect(page).toHaveURL("/home");
   });
 
+  test("login returns a verified user to the shared item they requested", async ({
+    page,
+  }) => {
+    const token = makeSessionToken(Math.floor(Date.now() / 1000) + 3600);
+    await page.route("**/api/v1/auth/login", (route) =>
+      route.fulfill({ json: { token } }),
+    );
+    await page.route("**/api/v1/home/shared-item", (route) =>
+      route.fulfill({
+        json: {
+          id: "shared-item",
+          title: "Shared listing",
+          category: "Furniture",
+          price: 25,
+          status: "AVAILABLE",
+          condition: "Good",
+          description: "A listing shared with you.",
+        },
+      }),
+    );
+    await page.route("**/api/v1/home", (route) => route.fulfill({ json: [] }));
+    await page.route("**/api/v1/favorites", (route) =>
+      route.fulfill({ json: [] }),
+    );
+    await page.route("**/api/v1/me/notifications/unread-count", (route) =>
+      route.fulfill({ json: { count: 0 } }),
+    );
+
+    await page.goto("/items/shared-item?source=share#details");
+    await expect(page).toHaveURL("/login");
+    await page.getByLabel("email").fill("sample@augustana.edu");
+    await page.getByLabel("Password", { exact: true }).fill("passwordsample");
+    await page.getByRole("button", { name: "Log In" }).click();
+
+    await expect(page).toHaveURL("/items/shared-item?source=share#details");
+    await expect(
+      page.getByRole("heading", { name: "Shared listing" }),
+    ).toBeVisible();
+  });
+
+  test("a shared item does not bypass backend verification denial", async ({
+    page,
+  }) => {
+    let listingRequests = 0;
+    await page.route("**/api/v1/auth/login", (route) =>
+      route.fulfill({
+        status: 403,
+        json: { message: "Account verification required." },
+      }),
+    );
+    await page.route("**/api/v1/home/shared-item", (route) => {
+      listingRequests += 1;
+      return route.fulfill({
+        json: { id: "shared-item", title: "Private shared listing" },
+      });
+    });
+
+    await page.goto("/items/shared-item");
+    await expect(page).toHaveURL("/login");
+    await page.getByLabel("email").fill("unverified@augustana.edu");
+    await page.getByLabel("Password", { exact: true }).fill("passwordsample");
+    await page.getByRole("button", { name: "Log In", exact: true }).click();
+
+    await expect(page.getByRole("alert")).toHaveText("Invalid email or password.");
+    await expect(page).toHaveURL("/login");
+    expect(listingRequests).toBe(0);
+  });
+
   test("a failed login can be corrected and retried successfully", async ({
     page,
   }) => {
@@ -404,6 +473,7 @@ test.describe("Authentication gaps", () => {
     "/edit-listing/sample",
     "/messages",
     "/messages/sample",
+    "/notifications",
   ]) {
     test(`logged-out access to ${path} redirects to login`, async ({
       page,

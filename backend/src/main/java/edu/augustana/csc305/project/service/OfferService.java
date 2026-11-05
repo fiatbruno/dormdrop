@@ -43,13 +43,16 @@ public class OfferService {
     private final UserRepository users;
     private final TransactionOperations transactions;
     private final OfferReceivedEventAppender notifications;
+    private final OfferTransitionEventAppender transitions;
 
     public OfferService(MongoTemplate mongo, UserRepository users,
-                        @Qualifier("reportTransactions") TransactionOperations transactions) {
+                        @Qualifier("reportTransactions") TransactionOperations transactions,
+                        OfferTransitionEventAppender transitions) {
         this.mongo = mongo;
         this.users = users;
         this.transactions = transactions;
         this.notifications = new OfferReceivedEventAppender(mongo);
+        this.transitions = transitions;
     }
 
     public record Submission(OfferNegotiation offer, boolean created) { }
@@ -193,8 +196,14 @@ public class OfferService {
                 .and("status").is(OfferNegotiation.Status.PENDING).and("currentProposerId").is(offer.currentProposerId()));
         Update update = new Update().set("status", decision).set("updatedAt", now).inc("version", 1L)
                 .push("history", result.history().get(result.history().size() - 1));
-        if (mongo.updateFirst(expected, update, OfferNegotiation.class).getModifiedCount() != 1)
+        var commandWrite = mongo.updateFirst(expected, update, OfferNegotiation.class);
+        if (commandWrite.getModifiedCount() != 1)
             throw conflict("Offer changed or has already ended. Refresh and try again.");
+        transitions.append(new OfferTransitionEventAppender.Transition(offer.id(), offer.listingId(),
+                offer.buyerId(), offer.sellerId(), actorId, offer.currentProposerId(),
+                decision == OfferNegotiation.Status.ACCEPTED ? OfferTransitionEventAppender.Action.ACCEPT
+                        : OfferTransitionEventAppender.Action.REJECT,
+                result.amount(), expectedVersion, result.version(), now), commandWrite);
         mongo.insert(new OfferDecisionRequest(requestId, offerId, decision, expectedVersion, result, now));
         return result;
     }
@@ -255,8 +264,13 @@ public class OfferService {
         Update update = new Update().set("amount", amount).set("currentProposerId", actorId)
                 .set("updatedAt", now).inc("version", 1L)
                 .push("history", result.history().get(result.history().size() - 1));
-        if (mongo.updateFirst(expected, update, OfferNegotiation.class).getModifiedCount() != 1)
+        var commandWrite = mongo.updateFirst(expected, update, OfferNegotiation.class);
+        if (commandWrite.getModifiedCount() != 1)
             throw conflict("Offer changed or has already ended. Refresh and try again.");
+        transitions.append(new OfferTransitionEventAppender.Transition(offer.id(), offer.listingId(),
+                offer.buyerId(), offer.sellerId(), actorId, offer.currentProposerId(),
+                OfferTransitionEventAppender.Action.COUNTER, result.amount(), expectedVersion,
+                result.version(), now), commandWrite);
         mongo.insert(new OfferCounterRequest(requestId, offerId, amount, expectedVersion, result, now));
         return result;
     }
