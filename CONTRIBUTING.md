@@ -22,9 +22,9 @@ Use descriptive names, for example:
 Keep each new PR focused on one manageable change.
 An existing cohesive PR may address multiple issues.
 
-## 3. Test your changes
+## 3. Check your changes
 
-Run the checks relevant to your change.
+Testing is optional for this project. If you run checks, these commands may help:
 
 Backend, from backend/:
 
@@ -44,12 +44,8 @@ npm test
 Frontend browser tests currently require the app to be running.
 Follow the Playwright configuration and test setup instructions.
 
-Add meaningful tests for new behavior and bug fixes.
-Check relevant failure cases, permissions, and input validation.
-Explain any checks you could not run.
-
-Documentation-only changes usually need careful review rather
-than application tests.
+If you run checks, describe them and their results in your PR. You do not
+need to add tests or run these commands to complete an issue.
 
 ## 4. Open a pull request
 
@@ -59,9 +55,7 @@ Include:
 
 - The work issue and tracking issue.
 - A description of the behavior changed.
-- Test commands and results.
-- Screenshots for visible UI changes.
-- Dependencies, limitations, and configuration changes.
+- Testing performed, if any.
 
 Open a draft PR early when you want to show progress.
 Mark it ready for review when the change is ready.
@@ -84,14 +78,15 @@ Do not dismiss unresolved feedback or bypass main's review rules.
 
 ## 6. Merge and verify
 
-Merge only after required approvals and checks pass,
+Merge only after any configured approvals and checks pass,
 dependencies are satisfied, and review feedback is resolved.
 
 Verify the completed behavior on main.
 A merged PR does not necessarily mean the app has been deployed.
 
-A work issue is complete when its acceptance criteria pass
-and its implementation is merged into main.
+A work issue is complete when its agreed feature requirements are met
+and its implementation is merged into main. Tests are not required to
+complete an issue.
 
 A tracking issue stays open until the entire user story works,
 including frontend/backend integration where applicable.
