@@ -6,6 +6,8 @@ import edu.augustana.csc305.project.model.User;
 import edu.augustana.csc305.project.repository.UserRepository;
 
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,7 @@ import java.util.Optional;
 @Service
 public class AuthService {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
@@ -239,10 +242,12 @@ public class AuthService {
                 expiration
         );
 
-        emailService.sendPasswordResetEmail(
-                user.getEmail(),
-                token
-        );
+        try {
+            emailService.sendPasswordResetEmail(user.getEmail(), token);
+        } catch (RuntimeException failure) {
+            // Do not log the recipient, reset token, exception message, or stack trace.
+            log.warn("Password reset email could not be sent ({})", failure.getClass().getSimpleName());
+        }
     }
 
     // Reset a user's password
