@@ -15,7 +15,8 @@ export async function verifyAdminSession() {
 
   try {
     const { data } = await api.get("/users/me");
-    return data?.role === "ADMIN";
+    return Array.isArray(data?.capabilities) &&
+      data.capabilities.includes("VIEW_MEMBER_DIRECTORY");
   } catch {
     return false;
   }
