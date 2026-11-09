@@ -57,6 +57,7 @@ public class OfferService {
 
     public record Submission(OfferNegotiation offer, boolean created) { }
     public record Page(List<OfferNegotiation> items, long total, int page, int size, long totalPages) { }
+    public record Detail(OfferNegotiation offer, String buyerDisplayName) { }
 
     public Submission submit(Authentication auth, String listingId, BigDecimal amount, String key) {
         User buyer = verified(auth);
@@ -305,6 +306,13 @@ public class OfferService {
         if (offer == null || (!user.getId().equals(offer.buyerId()) && !user.getId().equals(offer.sellerId())))
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Offer not found.");
         return offer;
+    }
+
+    /** Look up display information only after the caller is authorized for this offer. */
+    public Detail getDetail(Authentication auth, String offerId) {
+        OfferNegotiation offer = get(auth, offerId);
+        String buyerName = users.findById(offer.buyerId()).map(User::getName).orElse(null);
+        return new Detail(offer, buyerName);
     }
 
     /** The buyer's own current offer, prioritizing an agreement over older negotiations. */
