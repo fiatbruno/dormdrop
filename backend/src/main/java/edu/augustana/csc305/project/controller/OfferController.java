@@ -23,7 +23,9 @@ public class OfferController {
 
     @GetMapping("/offers/{offerId}")
     public ResponseEntity<OfferDtos.Offer> get(Authentication auth, @PathVariable String offerId) {
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(OfferDtos.from(offers.get(auth, offerId)));
+        var detail = offers.getDetail(auth, offerId);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(OfferDtos.from(detail.offer(), detail.buyerDisplayName()));
     }
 
     @GetMapping("/home/{listingId}/my-offer")

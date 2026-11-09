@@ -48,6 +48,10 @@ Example response:
 
 History actions are `PROPOSED`, `COUNTERED`, `ACCEPTED`, and `REJECTED`. The buyer submits the initial `PROPOSED` entry. Each history entry includes the action, actor ID, the proposal amount associated with that action, and its UTC creation time.
 
+The participant-only `GET /api/v1/offers/{offerId}` response also includes
+`buyerDisplayName`, or `null` if the buyer's account is unavailable. Other
+offer responses may return `null` for this field. No email or raw user record is exposed.
+
 ## Decisions and counters (planned)
 
 `POST /api/v1/offers/{offerId}/decisions` accepts [decision-request.json](offer-fixtures/decision-request.json), an `Idempotency-Key`, and bearer authentication. `action` is `ACCEPT` or `REJECT`; `expectedVersion` must match the current version. The other participant may answer the current proposal, not the proposer. Accepting an unavailable or removed listing is prohibited; an existing proposal may still be rejected. On success, the response is the same offer representation with the new status, incremented version, and appended decision history.
