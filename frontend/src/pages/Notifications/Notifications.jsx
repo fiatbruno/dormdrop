@@ -290,9 +290,7 @@ function NotificationsContent() {
                       </time>
                     </div>
                     <div className="notification-card__actions">
-                      {(notification.offerId ||
-                        notification.conversationId ||
-                        notification.listingId) && (
+                      {notificationTarget(notification) !== "/notifications" && (
                         <Link
                           to={notificationTarget(notification)}
                           onClick={() => void markRead(notification)}
@@ -301,7 +299,11 @@ function NotificationsContent() {
                             ? "Open current offer"
                             : notification.conversationId
                               ? "Open conversation"
-                              : "View listing"}
+                              : notificationTarget(notification) === "/my-reports"
+                                ? "View your reports"
+                                : notificationTarget(notification) === "/profile"
+                                  ? "View your profile"
+                                  : "View listing"}
                         </Link>
                       )}
                       {!notification.readAt && (

@@ -49,6 +49,13 @@ export function notificationBody(notification) {
 }
 
 export function notificationTarget(notification) {
+  // Old moderation notices contain an API self-link, not a page a user can visit.
+  if (["MODERATION_NOTICE", "MODERATION_SELLER_NOTICE"].includes(notification?.type)) {
+    return "/profile";
+  }
+  if (["REPORT_UPDATE", "MODERATION_REPORT_UPDATE"].includes(notification?.type)) {
+    return "/my-reports";
+  }
   const link = notification?.payload?.link;
   if (typeof link === "string" && link.startsWith("/") && !link.startsWith("//") && !link.startsWith("/\\")) {
     return link;
