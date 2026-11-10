@@ -48,6 +48,10 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript((token) => {
     localStorage.setItem("token", token);
   }, makeSessionToken());
+  // The bell combines notification and message unread counts.
+  await page.route("**/api/v1/conversations", (route) =>
+    route.fulfill({ json: [] }),
+  );
 });
 
 test("unread filter loads older unread notifications from the server", async ({ page }) => {
@@ -245,7 +249,7 @@ test("an older counteroffer notice opens the authoritative current offer", async
   expect(offerReads).toBeGreaterThan(0);
 });
 
-test("desktop permission is requested only after the user acts and denial keeps inbox available", async ({
+test("the inbox does not request desktop notification permission", async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -280,11 +284,8 @@ test("desktop permission is requested only after the user acts and denial keeps 
   expect(await page.evaluate(() => globalThis.__notificationPermissionRequests)).toBe(0);
   await page.getByRole("button", { name: "Notifications", exact: true }).click();
   expect(await page.evaluate(() => globalThis.__notificationPermissionRequests)).toBe(0);
-  await page.getByRole("button", { name: "Enable desktop alerts" }).click();
-  await expect(
-    page.getByText("Desktop alerts are blocked. In-app notifications remain available."),
-  ).toBeVisible();
-  expect(await page.evaluate(() => globalThis.__notificationPermissionRequests)).toBe(1);
+  await expect(page.getByRole("button", { name: "Enable desktop alerts" })).toHaveCount(0);
+  expect(await page.evaluate(() => globalThis.__notificationPermissionRequests)).toBe(0);
   await expect(page.getByText("No notifications yet")).toBeVisible();
 });
 
@@ -344,22 +345,20 @@ test("live notification events update the inbox and ignore duplicate event IDs",
   );
 
   await page.goto("/notifications");
-  await expect(page.locator(".notification-bell__toast")).toHaveCount(1);
   await expect(
     page.getByRole("heading", { name: "New counteroffer" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Notifications, 1 unread" }),
   ).toBeVisible();
-  await expect(
-    page.locator(".notification-bell__toast").getByRole("link", {
-      name: "Open update",
-    }),
-  ).toHaveAttribute("href", "/offers/offer-3");
+  await page.getByRole("button", { name: "Notifications, 1 unread" }).click();
+  await expect(page.getByRole("region", { name: "Notifications" })
+    .getByRole("link", { name: /New counteroffer/ }))
+    .toHaveAttribute("href", "/offers/offer-3");
   await expect(page.getByRole("listitem")).toHaveCount(1);
 });
 
-test("granted desktop permission shows a native popup for a background tab", async ({
+test("a background tab receives live updates without native popups", async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -416,8 +415,9 @@ test("granted desktop permission shows a native popup for a background tab", asy
   );
 
   await page.goto("/notifications");
-  await expect(page.locator(".notification-bell__toast")).toBeVisible();
-  expect(await page.evaluate(() => globalThis.__nativePopupCount)).toBe(1);
+  await expect(page.getByRole("heading", { name: "New counteroffer" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Notifications, 1 unread" })).toBeVisible();
+  expect(await page.evaluate(() => globalThis.__nativePopupCount)).toBe(0);
 });
 
 test("a reconnect refetches persisted notifications and deduplicates replayed events", async ({
@@ -471,7 +471,7 @@ test("a reconnect refetches persisted notifications and deduplicates replayed ev
   await expect.poll(() => connection, { timeout: 15000 }).toBeGreaterThan(1);
   await expect.poll(() => inboxReads, { timeout: 15000 }).toBeGreaterThan(2);
   await expect(page.getByRole("listitem")).toHaveCount(1);
-  await expect(page.locator(".notification-bell__toast")).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "New counteroffer" })).toBeVisible();
 });
 
 test("unsupported desktop notifications leave the in-app inbox available", async ({
@@ -494,9 +494,7 @@ test("unsupported desktop notifications leave the in-app inbox available", async
 
   await page.goto("/notifications");
   await page.getByRole("button", { name: "Notifications", exact: true }).click();
-  await expect(
-    page.getByText("Desktop alerts are unavailable in this browser."),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Enable desktop alerts" })).toHaveCount(0);
   await expect(page.getByText("You’re all caught up.")).toBeVisible();
 });
 
