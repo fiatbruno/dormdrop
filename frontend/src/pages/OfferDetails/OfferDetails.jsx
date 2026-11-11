@@ -108,6 +108,7 @@ function OfferDetailsContent({ offerId }) {
           </div>
         ) : offer ? (
           <>
+            <p>Buyer: {offer.buyerDisplayName || "Unavailable"}</p>
             {!listing && (
               <p className="offer-details-unavailable">
                 The listing is no longer available. You can review this negotiation; acceptance and counteroffers are unavailable.
@@ -127,6 +128,9 @@ function OfferDetailsContent({ offerId }) {
               offer={offer}
               listing={listing}
               currentUserId={currentUserId}
+              participant={String(currentUserId) === String(offer.sellerId)
+                ? { id: offer.buyerId, name: offer.buyerDisplayName }
+                : undefined}
             />
           </>
         ) : null}

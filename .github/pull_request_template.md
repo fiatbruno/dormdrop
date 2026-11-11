@@ -1,10 +1,7 @@
-## Linked issues
+## What changed?
 
-Closes #NUMBER
-Tracking issue: #NUMBER
+## What did you add?
 
-## Changes made
+## What testing did you do, if any?
 
-- What changed?
-- Why was it needed?
-- What remains outside this PR?
+Testing is optional. If you didn't run any checks, write "None".

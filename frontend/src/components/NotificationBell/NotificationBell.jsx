@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bell, Mail, Tag, X } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 import useNotificationClient from "../../hooks/useNotificationClient";
 import {
@@ -45,7 +45,6 @@ export default function NotificationBell() {
 }
 
 function NotificationBellContent() {
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("all");
   const [items, setItems] = useState([]);
@@ -54,11 +53,6 @@ function NotificationBellContent() {
   const [pendingIds, setPendingIds] = useState(() => new Set());
   const [markingAll, setMarkingAll] = useState(false);
   const [refreshVersion, setRefreshVersion] = useState(0);
-  const [permission, setPermission] = useState(() =>
-    typeof window.Notification === "undefined"
-      ? "unsupported"
-      : window.Notification.permission,
-  );
   const rootRef = useRef(null);
   const { count, error: countError } = useUnreadNotificationCount();
   const { count: messageCount, conversations, error: messageError, refresh: refreshMessages } = useUnreadMessages();
@@ -76,40 +70,9 @@ function NotificationBellContent() {
     .slice(0, PREVIEW_SIZE);
   const unreadInPreview = visibleItems.filter((item) => !item.readAt).length;
 
-  const handleLiveNotice = useCallback(
-    (notification) => {
-      setRefreshVersion((version) => version + 1);
-      if (
-        document.visibilityState === "hidden" &&
-        typeof window.Notification !== "undefined" &&
-        window.Notification.permission === "granted"
-      ) {
-        try {
-          const popup = new window.Notification(
-            notificationTitle(notification.type),
-            { body: notificationBody(notification), tag: notification.id },
-          );
-          popup.onclick = () => {
-            if (notification.id && !notification.readAt) {
-              void markNotificationRead(notification.id)
-                .then(() => {
-                  window.dispatchEvent(new Event("dormdrop:notifications-updated"));
-                })
-                .catch(() => {
-                  setError("Couldn't mark that notification as read. It remains in your inbox.");
-                });
-            }
-            window.focus();
-            navigate(notificationTarget(notification));
-            popup.close();
-          };
-        } catch {
-          setPermission("unsupported");
-        }
-      }
-    },
-    [navigate],
-  );
+  const handleLiveNotice = useCallback(() => {
+    setRefreshVersion((version) => version + 1);
+  }, []);
   useNotificationClient(handleLiveNotice);
 
   useEffect(() => {
@@ -214,18 +177,6 @@ function NotificationBellContent() {
     }
   }
 
-  async function enableDesktopAlerts() {
-    if (typeof window.Notification === "undefined") {
-      setPermission("unsupported");
-      return;
-    }
-    try {
-      setPermission(await window.Notification.requestPermission());
-    } catch {
-      setPermission("denied");
-    }
-  }
-
   return (
     <div className="notification-bell" ref={rootRef}>
       <button
@@ -313,30 +264,6 @@ function NotificationBellContent() {
                 Retry
               </button>
             </div>
-          )}
-          {permission === "default" && (
-            <button
-              type="button"
-              className="notification-bell__permission"
-              onClick={() => void enableDesktopAlerts()}
-            >
-              Enable desktop alerts
-            </button>
-          )}
-          {permission === "granted" && (
-            <p className="notification-bell__permission" role="status">
-              Desktop alerts enabled while DormDrop is open.
-            </p>
-          )}
-          {permission === "denied" && (
-            <p className="notification-bell__permission">
-              Desktop alerts are blocked. In-app notifications remain available.
-            </p>
-          )}
-          {permission === "unsupported" && (
-            <p className="notification-bell__permission">
-              Desktop alerts are unavailable in this browser.
-            </p>
           )}
           <div className="notification-bell__list">
             {loading ? (

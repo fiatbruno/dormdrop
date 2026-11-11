@@ -200,8 +200,7 @@
   color: #a32020;
 }
 
-.notification-bell__error button,
-.notification-bell__permission {
+.notification-bell__error button {
   padding: 8px 12px;
   border: 0;
   background: #f7f9fc;
@@ -214,17 +213,6 @@
 .notification-bell__error button {
   margin-left: 8px;
   text-decoration: underline;
-  cursor: pointer;
-}
-
-.notification-bell__panel .notification-bell__permission {
-  display: block;
-  width: 100%;
-  margin: 0;
-  border-bottom: 1px solid #edf0f4;
-}
-
-.notification-bell__panel button.notification-bell__permission {
   cursor: pointer;
 }
 
