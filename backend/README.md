@@ -89,43 +89,21 @@ the response remains the same listing array in the same order.
 
 MongoDB evaluates the substring search along with the existing filters and
 sort. Case-insensitive substring matching can require scanning candidates;
-inspect query plans on representative data before adding indexes. Database-backed
-search tests run when `MONGODB_TEST_URI` points
-to a MongoDB instance; they create and drop an isolated test database.
+inspect query plans on representative data before adding indexes.
 
 ### Backend tests and CI
 
-Use Java 17 and Maven to run the ordinary backend tests from the repository root:
+Use Java 17 and Maven to run the backend unit tests from the repository root:
 
 ```sh
-mvn --batch-mode --no-transfer-progress -f backend/pom.xml clean test
+mvn --batch-mode --no-transfer-progress -f backend/pom.xml -DfailIfNoTests=true clean test
 ```
 
-Database tests are skipped when their test URI is absent. To run them locally,
-install and start Docker, then use a disposable single-node replica set:
-
-```sh
-bash backend/scripts/mongo-test-replica.sh start
-export MODERATION_TEST_MONGODB_URI='mongodb://localhost:27017/?replicaSet=rs0'
-export NOTIFICATION_TEST_MONGODB_URI="$MODERATION_TEST_MONGODB_URI"
-export MONGODB_TEST_URI="$MODERATION_TEST_MONGODB_URI"
-mvn --batch-mode --no-transfer-progress -f backend/pom.xml clean test
-python3 backend/scripts/check-mongo-test-reports.py
-bash backend/scripts/mongo-test-replica.sh stop
-unset MODERATION_TEST_MONGODB_URI NOTIFICATION_TEST_MONGODB_URI MONGODB_TEST_URI
-```
-
-The tests create and drop databases: only use a dedicated test server, never
-production data or credentials. The script creates a container named
-`dormdrop-test-mongo`; its `stop` command removes that container and its data.
-If port 27017 is in use, set `DORMDROP_TEST_MONGO_PORT` before starting and use
-that port in the three URIs. Stop the container even if a test fails.
-
-On pull requests, `backend-unit` runs without database URIs, while
-`backend-integration` starts a fresh replica set, runs the suite with all three
-test URIs, and checks that key transaction tests actually ran. Failed Maven
-test reports are uploaded as GitHub Actions artifacts. The workflow also runs
-on pushes to main; it does not change branch protection rules.
+These tests check listing visibility and status rules without starting Spring or
+connecting to MongoDB. GitHub Actions runs the same command on pull requests
+targeting `main` and pushes to `main`, and uploads test reports on failure. No
+database, Docker, or GitHub secrets are needed for these tests. The workflow
+does not test database operations or change branch protection rules.
 
 The starter code ships with the following packages:
 

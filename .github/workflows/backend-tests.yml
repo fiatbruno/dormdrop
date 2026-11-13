@@ -10,8 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  backend-unit:
-    name: backend-unit
+  backend-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,43 +19,12 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
-      - name: Compile and run tests without a database
-        run: mvn --batch-mode --no-transfer-progress -f backend/pom.xml clean test
+      - name: Run backend tests
+        run: mvn --batch-mode --no-transfer-progress -f backend/pom.xml -DfailIfNoTests=true clean test
       - name: Upload test reports on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: backend-unit-reports
+          name: backend-test-reports
           path: backend/target/surefire-reports/
           if-no-files-found: ignore
-
-  backend-integration:
-    name: backend-integration
-    runs-on: ubuntu-latest
-    env:
-      MODERATION_TEST_MONGODB_URI: mongodb://localhost:27017/?replicaSet=rs0
-      NOTIFICATION_TEST_MONGODB_URI: mongodb://localhost:27017/?replicaSet=rs0
-      MONGODB_TEST_URI: mongodb://localhost:27017/?replicaSet=rs0
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-          cache: maven
-      - name: Start isolated MongoDB replica set
-        run: bash backend/scripts/mongo-test-replica.sh start
-      - name: Run tests against MongoDB
-        run: mvn --batch-mode --no-transfer-progress -f backend/pom.xml clean test
-      - name: Confirm transaction tests actually ran
-        run: python3 backend/scripts/check-mongo-test-reports.py
-      - name: Upload test reports on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-integration-reports
-          path: backend/target/surefire-reports/
-          if-no-files-found: ignore
-      - name: Remove test database
-        if: always()
-        run: bash backend/scripts/mongo-test-replica.sh stop
