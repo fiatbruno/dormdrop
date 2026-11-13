@@ -351,11 +351,11 @@ export default function Messages() {
                                   {" · Campus pickup"}
                                 </p>
                                 <p className="offer-accepted-card__agreement">
-                                  You and {chat.conversation.participant.name} agreed on {formattedAgreedPrice}. Arrange pickup in chat.
+                                  You and {chat.conversation.participant.name} agreed on {formattedAgreedPrice}. Propose pickup in chat.
                                 </p>
                                 <p className="offer-accepted-card__note">Accepting an offer does not mark the item as sold.</p>
                                 <button type="button" className="offer-accepted-card__button" onClick={arrangePickup}>
-                                  Arrange pickup
+                                  Proposed pickup
                                 </button>
                               </article>
                             </div>
@@ -417,7 +417,7 @@ export default function Messages() {
                           {chat.sending ? "Sending…" : "Send"}
                         </button>
                         <span className="messages-character-count">
-                          {chat.draft.length}/5000 · Arrange pickups in
+                          {chat.draft.length}/5000 · Propose pickups in
                           messages.
                         </span>
                       </form>
