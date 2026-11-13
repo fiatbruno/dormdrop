@@ -5,6 +5,7 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ListingImage from "../../components/ListingImage";
 import useMessaging from "../../hooks/useMessaging";
+import { reportMessage } from "../../api/messagingApi";
 import "./Messages.css";
 import OfferNegotiation from "../../components/OfferNegotiation/OfferNegotiation";
 
@@ -45,6 +46,13 @@ export default function Messages() {
   const [search, setSearch] = useState("");
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [newMessages, setNewMessages] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [reportReason, setReportReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [reportError, setReportError] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportSubmitted, setReportSubmitted] = useState(false);
   const scroll = useRef(null);
   const composerInput = useRef(null);
   const nearBottom = useRef(true);
@@ -116,6 +124,42 @@ export default function Messages() {
 
   function arrangePickup() {
     composerInput.current?.focus();
+  }
+
+  function closeReportDialog() {
+    if (reportSubmitting) return;
+    setReportTarget(null);
+    setReportReason("");
+    setCustomReason("");
+    setReportDetails("");
+    setReportError("");
+    setReportSubmitted(false);
+  }
+
+  async function submitMessageReport(event) {
+    event.preventDefault();
+    const reason = reportReason === "Other" ? customReason.trim() : reportReason;
+    if (!reason) {
+      setReportError("Select or enter a reason before submitting.");
+      return;
+    }
+
+    setReportSubmitting(true);
+    setReportError("");
+    try {
+      await reportMessage(conversationId, reportTarget.id, {
+        reason,
+        details: reportDetails.trim() || undefined,
+      });
+      setReportSubmitted(true);
+    } catch (error) {
+      setReportError(
+        error.response?.data?.message ||
+          "We couldn't submit your report. Please try again.",
+      );
+    } finally {
+      setReportSubmitting(false);
+    }
   }
 
   return (
@@ -365,9 +409,22 @@ export default function Messages() {
                           return (
                             <div key={`message-${message.id}`}>
                               {showDate && <p className="messages-date">{date}</p>}
-                              <div className={`messages-bubble ${outgoing ? "outgoing" : "incoming"}`}>
-                                <p>{message.content}</p>
-                                <time dateTime={message.sentAt}>{timeLabel(message.sentAt)}</time>
+                              <div className={`messages-message-row ${outgoing ? "outgoing" : "incoming"}`}>
+                                <div className={`messages-bubble ${outgoing ? "outgoing" : "incoming"}`}>
+                                  <p>{message.content}</p>
+                                  <time dateTime={message.sentAt}>{timeLabel(message.sentAt)}</time>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="messages-report-trigger"
+                                  onClick={() => {
+                                    setReportTarget(message);
+                                    setReportError("");
+                                  }}
+                                  aria-label={`Report message from ${outgoing ? "you" : chat.conversation.participant.name}`}
+                                >
+                                  Report
+                                </button>
                               </div>
                             </div>
                           );
@@ -429,6 +486,108 @@ export default function Messages() {
           </section>
         </div>
       </main>
+      {reportTarget && (
+        <div className="messages-report-backdrop">
+          <section
+            className="messages-report-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="messages-report-title"
+          >
+            {reportSubmitted ? (
+              <div className="messages-report-confirmation">
+                <span>Done</span>
+                <h2 id="messages-report-title">Report submitted</h2>
+                <p>
+                  Your report is in the moderation queue. The reported person
+                  will not see who reported them.
+                </p>
+                <button type="button" onClick={closeReportDialog}>
+                  Done
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={submitMessageReport}>
+                <h2 id="messages-report-title">Report a message</h2>
+                <p className="messages-report-privacy">
+                  Your report is private. The other member will not see who
+                  reported them.
+                </p>
+                <div className="messages-report-selected">
+                  <span>Selected message</span>
+                  <p>{reportTarget.content}</p>
+                </div>
+                <label className="messages-report-field">
+                  <span>Reason <b aria-hidden="true">*</b></span>
+                  <select
+                    autoFocus
+                    required
+                    value={reportReason}
+                    onChange={(event) => {
+                      setReportReason(event.target.value);
+                      setReportError("");
+                    }}
+                  >
+                    <option value="">Select a reason</option>
+                    <option value="Harassment or bullying">Harassment or bullying</option>
+                    <option value="Threats or intimidation">Threats or intimidation</option>
+                    <option value="Scam or fraud">Scam or fraud</option>
+                    <option value="Inappropriate content">Inappropriate content</option>
+                    <option value="Spam">Spam</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </label>
+                {reportReason === "Other" && (
+                  <label className="messages-report-field">
+                    <span>Enter a reason <b aria-hidden="true">*</b></span>
+                    <input
+                      required
+                      maxLength={500}
+                      value={customReason}
+                      onChange={(event) => setCustomReason(event.target.value)}
+                      placeholder="Briefly explain your reason"
+                    />
+                  </label>
+                )}
+                <label className="messages-report-field">
+                  <span>What happened? (optional)</span>
+                  <textarea
+                    maxLength={2000}
+                    value={reportDetails}
+                    onChange={(event) => setReportDetails(event.target.value)}
+                    placeholder="Include context that will help a moderator review the report."
+                    rows={3}
+                  />
+                </label>
+                {reportError && (
+                  <p className="messages-report-error" role="alert">
+                    {reportError}
+                  </p>
+                )}
+                <div className="messages-report-actions">
+                  <button
+                    type="button"
+                    onClick={closeReportDialog}
+                    disabled={reportSubmitting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={
+                      reportSubmitting ||
+                      !reportReason ||
+                      (reportReason === "Other" && !customReason.trim())
+                    }
+                  >
+                    {reportSubmitting ? "Submitting…" : "Submit report"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </section>
+        </div>
+      )}
       <Footer />
     </div>
   );

@@ -28,6 +28,7 @@ import MyReports from "./pages/MyReports/MyReports";
 import StaffReports from "./pages/StaffReports/StaffReports";
 
 import AdminUsers from "./pages/Admin/AdminUsers";
+import AdminMessageReports from "./pages/Admin/AdminMessageReports";
 
 import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
 import CheckYourInbox from "./pages/CheckYourInbox/CheckYourInbox";
@@ -127,6 +128,10 @@ const router = createBrowserRouter([
   {
     element: <AdminProtectedRoute />,
     children: [
+      {
+        path: "/admin/message-reports",
+        element: <AdminMessageReports />,
+      },
       {
         path: "/admin/users",
         element: <AdminUsers />,

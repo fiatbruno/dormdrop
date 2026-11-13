@@ -32,6 +32,14 @@ export const markRead = async (id) => {
   await api.patch(`${path(id)}/read`);
 };
 
+export const reportMessage = async (conversationId, messageId, report) =>
+  (
+    await api.post(
+      `${path(conversationId)}/messages/${encodeURIComponent(messageId)}/reports`,
+      report,
+    )
+  ).data;
+
 export function websocketUrl(
   base = api.defaults.baseURL
 ) {

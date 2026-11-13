@@ -14,7 +14,7 @@ public final class PermissionPolicy {
         REVIEW_REPORTS, REVIEW_EVIDENCE, ASSIGN_CASES, MODERATE_LISTINGS, ISSUE_WARNINGS,
         VIEW_SELLER_CONTEXT, MANAGE_INTERNAL_NOTES, VIEW_SCOPED_ACTIVITY,
         MANAGE_SUSPENSIONS, DECIDE_APPEALS, MANAGE_ROLES, MANAGE_CAMPUS_POLICY,
-        VIEW_CAMPUS_ACTIVITY, VIEW_MEMBER_DIRECTORY
+        VIEW_CAMPUS_ACTIVITY, VIEW_MEMBER_DIRECTORY, VIEW_MESSAGE_REPORTS
     }
 
     private static final Set<Capability> STUDENT = Collections.unmodifiableSet(EnumSet.of(
@@ -30,7 +30,8 @@ public final class PermissionPolicy {
         EnumSet<Capability> admin = EnumSet.copyOf(moderator);
         admin.addAll(EnumSet.of(Capability.MANAGE_SUSPENSIONS, Capability.DECIDE_APPEALS,
                 Capability.MANAGE_ROLES, Capability.MANAGE_CAMPUS_POLICY,
-                Capability.VIEW_CAMPUS_ACTIVITY, Capability.VIEW_MEMBER_DIRECTORY));
+                Capability.VIEW_CAMPUS_ACTIVITY, Capability.VIEW_MEMBER_DIRECTORY,
+                Capability.VIEW_MESSAGE_REPORTS));
         ADMIN = Collections.unmodifiableSet(admin);
     }
 
