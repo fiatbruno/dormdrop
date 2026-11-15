@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 
-import { Flag, MessageSquareWarning, Users, Search, Menu, X, ArrowUpRight } from "lucide-react";
+import { Flag, Users, Search, Menu, X, ArrowUpRight } from "lucide-react";
 
 import AdminLogout from "../AdminLogout";
 import logo from "../../assets/Logo.png";
@@ -14,11 +14,6 @@ const navigation = [
     label: "Reported listings",
     icon: Flag,
     to: "/staff/reports",
-  },
-  {
-    label: "Reported messages",
-    icon: MessageSquareWarning,
-    to: "/admin/message-reports",
   },
   {
     label: "Community members",
