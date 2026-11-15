@@ -9,6 +9,11 @@ export async function submitListingReport(listingId, report, idempotencyKey) {
   return data;
 }
 
+export async function getAdminMessageReports() {
+  const { data } = await api.get("/admin/message-reports");
+  return data;
+}
+
 export async function getMyReports(page = 0, size = 20) {
   const { data } = await api.get("/me/reports", { params: { page, size } });
   return data;

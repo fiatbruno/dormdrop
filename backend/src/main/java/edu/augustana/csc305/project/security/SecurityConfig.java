@@ -67,6 +67,8 @@ public class SecurityConfig {
                         .access(requires(PermissionPolicy.Capability.VIEW_MEMBER_DIRECTORY))
                         .requestMatchers("/api/v1/admin/activity/**", "/api/v1/admin/activity")
                         .access(requires(PermissionPolicy.Capability.VIEW_CAMPUS_ACTIVITY))
+                        .requestMatchers("/api/v1/admin/message-reports/**", "/api/v1/admin/message-reports")
+                        .access(requires(PermissionPolicy.Capability.VIEW_MESSAGE_REPORTS))
                         .requestMatchers("/api/v1/admin/**", "/api/v1/staff/**")
                         .access(requires(PermissionPolicy.Capability.REVIEW_REPORTS))
                         .anyRequest().authenticated()
