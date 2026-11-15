@@ -89,9 +89,21 @@ the response remains the same listing array in the same order.
 
 MongoDB evaluates the substring search along with the existing filters and
 sort. Case-insensitive substring matching can require scanning candidates;
-inspect query plans on representative data before adding indexes. Database-backed
-search tests run when `MONGODB_TEST_URI` points
-to a MongoDB instance; they create and drop an isolated test database.
+inspect query plans on representative data before adding indexes.
+
+### Backend tests and CI
+
+Use Java 17 and Maven to run the backend unit tests from the repository root:
+
+```sh
+mvn --batch-mode --no-transfer-progress -f backend/pom.xml -DfailIfNoTests=true clean test
+```
+
+These tests check listing visibility and status rules without starting Spring or
+connecting to MongoDB. GitHub Actions runs the same command on pull requests
+targeting `main` and pushes to `main`, and uploads test reports on failure. No
+database, Docker, or GitHub secrets are needed for these tests. The workflow
+does not test database operations or change branch protection rules.
 
 The starter code ships with the following packages:
 
