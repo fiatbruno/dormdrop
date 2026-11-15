@@ -44,6 +44,7 @@ public class Listing {
     private ListingStatus status = ListingStatus.AVAILABLE;
 
     private ObjectId ownerId;
+    private ObjectId reservedOfferId;
 
     public Listing() {}
 
@@ -136,6 +137,7 @@ public class Listing {
     public ListingStatus getStatus() {
         return status;
     }
+
     public Visibility getModerationVisibility() {
         return moderationVisibility == null
                 ? Visibility.VISIBLE
@@ -156,8 +158,13 @@ public class Listing {
     }
 
     @JsonIgnore
-    public ObjectId getTemporaryHideCaseId() { return temporaryHideCaseId; }
-    public void setTemporaryHideCaseId(ObjectId caseId) { temporaryHideCaseId = caseId; }
+    public ObjectId getTemporaryHideCaseId() {
+        return temporaryHideCaseId;
+    }
+
+    public void setTemporaryHideCaseId(ObjectId caseId) {
+        temporaryHideCaseId = caseId;
+    }
 
     public void setStatus(ListingStatus status) {
         this.status = status;
@@ -165,6 +172,15 @@ public class Listing {
 
     public ObjectId getOwnerId() {
         return ownerId;
+    }
+
+    @JsonIgnore
+    public ObjectId getReservedOfferId() {
+        return reservedOfferId;
+    }
+
+    public void setReservedOfferId(ObjectId reservedOfferId) {
+        this.reservedOfferId = reservedOfferId;
     }
 
     public void setOwnerId(ObjectId ownerId) {

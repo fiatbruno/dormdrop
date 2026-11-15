@@ -47,7 +47,10 @@ function Home() {
   const [error, setError] = useState("");
   const [favoriteError, setFavoriteError] = useState("");
   const [listingAttempt, setListingAttempt] = useState(0);
-  useListingUpdates(() => setListingAttempt((value) => value + 1));
+
+  useListingUpdates(() =>
+    setListingAttempt((value) => value + 1)
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -55,7 +58,10 @@ function Home() {
 
     async function loadListings() {
       try {
-        const data = await getListings({ query: search, signal: controller.signal });
+        const data = await getListings({
+          query: search,
+          signal: controller.signal
+        });
 
         if (!cancelled) {
           setProducts(data);
@@ -73,7 +79,10 @@ function Home() {
       }
     }
 
-    const timer = window.setTimeout(loadListings, search.trim() ? 250 : 0);
+    const timer = window.setTimeout(
+      loadListings,
+      search.trim() ? 250 : 0
+    );
 
     return () => {
       cancelled = true;
@@ -108,8 +117,16 @@ function Home() {
     };
   }, []);
 
+  const availableProducts = products.filter((product) => {
+    const status = String(
+      product.status ?? ""
+    ).trim().toUpperCase();
+
+    return status !== "SOLD";
+  });
+
   const results = filterProducts(
-    products,
+    availableProducts,
     filters,
     ""
   );
@@ -131,17 +148,16 @@ function Home() {
       if (savedIds.includes(id)) {
         await removeFavorite(id);
 
-        setSavedIds(previous =>
-          previous.filter(savedId => savedId !== id)
+        setSavedIds((previous) =>
+          previous.filter((savedId) => savedId !== id)
         );
       } else {
         await addFavorite(id);
 
-        setSavedIds(previous =>
+        setSavedIds((previous) =>
           previous.includes(id)
             ? previous
-            : [...previous, id
-            ]
+            : [...previous, id]
         );
       }
     } catch (err) {
@@ -154,7 +170,7 @@ function Home() {
     <div className="home-page">
       <Navbar
         searchValue={search}
-        onSearchChange={value => {
+        onSearchChange={(value) => {
           setLoading(true);
           setError("");
           setSearch(value);
@@ -217,7 +233,7 @@ function Home() {
               role="group"
               aria-label="Quick marketplace filters"
             >
-              {categoryTabs.map(tab => {
+              {categoryTabs.map((tab) => {
                 const active = tab.listingType
                   ? filters.listingType === tab.listingType
                     && !filters.category
@@ -250,13 +266,22 @@ function Home() {
             )}
 
             {error && (
-              <div className="home-empty" role="alert">
+              <div
+                className="home-empty"
+                role="alert"
+              >
                 <p>{error}</p>
-                <button type="button" onClick={() => {
-                  setLoading(true);
-                  setError("");
-                  setListingAttempt((value) => value + 1);
-                }}>Try again</button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoading(true);
+                    setError("");
+                    setListingAttempt((value) => value + 1);
+                  }}
+                >
+                  Try again
+                </button>
               </div>
             )}
 
@@ -279,7 +304,7 @@ function Home() {
                   <div className="home-listing-grid">
                     {results
                       .slice(0, visibleCount)
-                      .map(product => (
+                      .map((product) => (
                         <ProductCard
                           key={product.id}
                           product={product}
@@ -300,7 +325,7 @@ function Home() {
                     className="home-load-more"
                     type="button"
                     onClick={() =>
-                      setVisibleCount(count => count + 9)
+                      setVisibleCount((count) => count + 9)
                     }
                   >
                     Load more campus drops
