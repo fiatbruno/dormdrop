@@ -4,7 +4,7 @@ import "./ListingPhotos.css";
 
 export const PHOTO_LIMIT = 5;
 
-export function Photo({ photo, ...props }) {
+export function Photo({ photo, fallback, ...props }) {
   const [url, setUrl] = useState("");
   useEffect(() => {
     if (!photo.file) return;
@@ -13,18 +13,26 @@ export function Photo({ photo, ...props }) {
     setUrl(next);
     return () => URL.revokeObjectURL(next);
   }, [photo.file]);
-  return photo.file ? <img {...props} src={url} /> : <ListingImage {...props} src={photo.url} />;
+  return photo.file ? <img {...props} src={url} /> : <ListingImage {...props} fallback={fallback} src={photo.url} />;
 }
 
-export function PhotoGallery({ photos, title, className = "preview-photo", fallback }) {
+export function PhotoGallery({ photos, title, className = "preview-photo", fallback, onPhotoChange }) {
   const [selected, setSelected] = useState(0);
   const index = Math.min(selected, Math.max(0, photos.length - 1));
+  function changePhoto(next) {
+    setSelected(next);
+    onPhotoChange?.(next);
+  }
   return <div className="listing-gallery">
-    {photos.length ? <Photo key={photos[index].key || photos[index].url} photo={photos[index]} className={className} alt={`${title || "Listing"} - photo ${index + 1}`} fallback={fallback} /> : fallback}
+    {photos.length ? photos.map((photo, photoIndex) => (
+      <div key={photo.key || photo.url} hidden={photoIndex !== index}>
+        <Photo photo={photo} className={className} alt={`${title || "Listing"} - photo ${photoIndex + 1}`} fallback={fallback} />
+      </div>
+    )) : fallback}
     {photos.length > 1 && <div className="photo-navigation" aria-label="Photo navigation">
-      <button type="button" aria-label="Previous photo" onClick={() => setSelected((index - 1 + photos.length) % photos.length)}>&lt;</button>
+      <button type="button" aria-label="Previous photo" onClick={() => changePhoto((index - 1 + photos.length) % photos.length)}>&lt;</button>
       <span aria-live="polite">{index + 1} / {photos.length}</span>
-      <button type="button" aria-label="Next photo" onClick={() => setSelected((index + 1) % photos.length)}>&gt;</button>
+      <button type="button" aria-label="Next photo" onClick={() => changePhoto((index + 1) % photos.length)}>&gt;</button>
     </div>}
   </div>;
 }
@@ -56,7 +64,7 @@ export default function ListingPhotos({ photos, onChange, error, onError, disabl
         </div>)}
         {Array.from({ length: Math.max(0, PHOTO_LIMIT - photos.length) }, (_, index) => <button className="listing-add-photo" type="button" disabled={disabled} key={index} onClick={() => input.current?.click()}><strong>+</strong><span>Add photo</span></button>)}
       </div>
-      <p>{photos.length} of 5 photos ? JPG or PNG ? Up to 5 MB each</p>
+      <p>{photos.length} of 5 photos * JPG or PNG * Up to 5 MB each</p>
       <p>Add up to 5 photos. The first photo is your cover.</p>
       <input ref={input} type="file" accept="image/jpeg,image/png" multiple hidden disabled={disabled} onChange={choose} />
     </div>

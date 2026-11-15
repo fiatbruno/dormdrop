@@ -112,6 +112,7 @@ function ItemDetailsContent({ id }) {
   }
 
   const [listing, setListing] = useState(null);
+  const [activePhoto, setActivePhoto] = useState(0);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -324,10 +325,11 @@ function ItemDetailsContent({ id }) {
                       photos={listing.images.map(url => ({ url, key: url }))}
                       title={listing.title}
                       className="item-gallery-image"
+                      onPhotoChange={setActivePhoto}
                       fallback={<div className="item-photo-placeholder"><ImageOff size={40} aria-hidden="true" /><span>Photo unavailable</span></div>}
                     />
                   </div>
-                  <p className="item-caption">{listing.images.length ? `${listing.images.length} seller photo${listing.images.length === 1 ? "" : "s"}` : "No seller photo provided"}</p>
+                  <p className="item-caption" aria-live="polite">{listing.images.length ? `Seller photo \u00b7 ${Math.min(activePhoto + 1, listing.images.length)} of ${listing.images.length}` : "No seller photo provided"}</p>
                 </section>
                 <section className="item-summary" aria-labelledby="item-title">
                   <p className="item-eyebrow">{listing.category}</p>

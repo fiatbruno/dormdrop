@@ -118,6 +118,19 @@ export async function saveListingPhotos(id, photos, originalUrls = []) {
     if (error.response?.status === 413) {
       throw new Error("The photos are too large to upload. Choose photos up to 5 MB each.");
     }
-    throw new Error(error.response?.data?.detail || error.response?.data?.message || "Photos could not be saved. Your selection is kept; please try again.");
+    const status = error.response?.status;
+    const reason = error.response?.data?.detail || error.response?.data?.message;
+    const messages = {
+      400: "The server rejected the photos. Check that each is JPG/PNG, nonempty, and no larger than 5 MB.",
+      401: "Your login expired. Please log in again before saving photos.",
+      403: "You do not have permission to change photos on this listing.",
+      409: "This listing changed while you were editing. Reload it before saving photos.",
+      500: "The backend could not save the photos. Check the backend console for the upload error.",
+    };
+    const message = typeof reason === "string" && reason.trim()
+      ? reason
+      : status ? messages[status] || "The photo request failed."
+        : "Cannot reach the photo upload endpoint. Check that the backend is running and the browser console has no CORS error.";
+    throw new Error(`${message}${status ? ` (HTTP ${status})` : ""} Your selection is kept.`);
   }
 }

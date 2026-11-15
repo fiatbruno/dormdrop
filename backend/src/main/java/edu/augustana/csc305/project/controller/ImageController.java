@@ -23,10 +23,16 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import java.net.URI;
+import tools.jackson.databind.json.JsonMapper;
 
 @RestController
 @RequestMapping("/images")
 public class ImageController {
+
+    private static final int MAX_PHOTOS = 5;
 
     private static final Logger log = LoggerFactory.getLogger(ImageController.class);
     private final ImageStorageService storage;
@@ -58,6 +64,21 @@ public class ImageController {
             @PathVariable String listingId,
             @RequestParam("file") MultipartFile file,
             Authentication auth) {
+
+        Listing listing = ownedListing(listingId, auth);
+        String url = storage.store(file);
+        listing.setImageUrl(url);
+        try {
+            listings.save(listing);
+        } catch (RuntimeException failure) {
+            storage.discardNewUpload(url);
+            throw failure;
+        }
+        broadcastUpdate();
+        return Map.of("imageUrl", url);
+    }
+
+    private Listing ownedListing(String listingId, Authentication auth) {
 
         if (auth == null) {
             throw new ResponseStatusException(
@@ -94,15 +115,10 @@ public class ImageController {
         }
 
         visibility.requireSellerMutation(listing, user);
-        String url = storage.store(file);
-        listing.setImageUrl(url);
-        try {
-            listings.save(listing);
-        } catch (RuntimeException failure) {
-            storage.discardNewUpload(url);
-            throw failure;
-        }
+        return listing;
+    }
 
+    private void broadcastUpdate() {
         if (messaging != null) {
             try {
                 messaging.convertAndSend("/topic/listings", "updated");
@@ -111,14 +127,76 @@ public class ImageController {
             }
         }
 
-        return Map.of("imageUrl", url);
+    }
+
+    // Both create and edit save listing details first, then call this endpoint.
+    @PutMapping(value = "/{listingId}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Map<String, Object> savePhotos(
+            @PathVariable("listingId") String listingId,
+            @RequestParam(name = "retainedImageUrls", defaultValue = "[]") String retainedImageUrls,
+            @RequestParam(name = "files", required = false) List<MultipartFile> files,
+            Authentication auth) {
+        Listing listing = ownedListing(listingId, auth);
+        List<String> retained = parseRetainedUrls(retainedImageUrls);
+        List<MultipartFile> uploads = files == null ? List.of() : files;
+        int total = retained.size() + uploads.size();
+        if (total < 1 || total > MAX_PHOTOS) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose between 1 and 5 photos.");
+        }
+        if (retained.stream().distinct().count() != retained.size()
+                || !listing.getImageUrls().containsAll(retained)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Only photos already on this listing can be retained.");
+        }
+
+        List<String> added = new ArrayList<>();
+        try {
+            for (MultipartFile file : uploads) added.add(storage.storeListingPhoto(file));
+            List<String> next = new ArrayList<>(retained);
+            next.addAll(added);
+            listing.setImageUrls(next);
+            // @Version rejects concurrent edits. Save the whole collection together.
+            listings.save(listing);
+        } catch (RuntimeException failure) {
+            added.forEach(storage::discardNewUpload);
+            log.error("Could not save photos for listing {}", listingId, failure);
+            throw failure;
+        }
+        broadcastUpdate();
+        // Unlinked files cannot be served; leave bytes for concurrent evidence retention.
+        return Map.of("imageUrls", listing.getImageUrls(), "imageUrl", listing.getImageUrl());
+    }
+
+    private List<String> parseRetainedUrls(String json) {
+        try {
+            String[] urls = JsonMapper.builder().build().readValue(json, String[].class);
+            if (urls == null || urls.length > MAX_PHOTOS) throw new IllegalArgumentException();
+            List<String> paths = new ArrayList<>();
+            for (String url : urls) {
+                // Frontend previews use absolute URLs. Compare their local stored paths.
+                URI uri = URI.create(url);
+                if (uri.getQuery() != null || uri.getFragment() != null) throw new IllegalArgumentException();
+                paths.add(uri.getPath());
+            }
+            return paths;
+        } catch (Exception invalid) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid retained photo list.");
+        }
+    }
+
+    // Return validation reasons to the frontend instead of hiding them behind
+    // Spring's default error response.
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, String>> photoError(ResponseStatusException error) {
+        return ResponseEntity.status(error.getStatusCode()).body(Map.of(
+                "message", error.getReason() == null ? "Photo request failed." : error.getReason()));
     }
 
     @GetMapping("/{filename}")
     public ResponseEntity<Resource> getImage(
             @PathVariable String filename) throws IOException {
 
-        var linked = listings.findAllByImageUrl(storage.imageUrl(filename));
+        var linked = listings.findAllByPhotoUrl(storage.imageUrl(filename));
         if (linked.isEmpty() || linked.stream().anyMatch(listing -> !visibility.visible(listing))) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image not found.");
         }
