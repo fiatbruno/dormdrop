@@ -13,31 +13,74 @@ export function Photo({ photo, fallback, ...props }) {
     setUrl(next);
     return () => URL.revokeObjectURL(next);
   }, [photo.file]);
-  return photo.file ? <img {...props} src={url} /> : <ListingImage {...props} fallback={fallback} src={photo.url} />;
+  return photo.file ? (
+    <img {...props} src={url} />
+  ) : (
+    <ListingImage {...props} fallback={fallback} src={photo.url} />
+  );
 }
 
-export function PhotoGallery({ photos, title, className = "preview-photo", fallback, onPhotoChange }) {
+export function PhotoGallery({
+  photos,
+  title,
+  className = "preview-photo",
+  fallback,
+  onPhotoChange,
+}) {
   const [selected, setSelected] = useState(0);
   const index = Math.min(selected, Math.max(0, photos.length - 1));
   function changePhoto(next) {
     setSelected(next);
     onPhotoChange?.(next);
   }
-  return <div className="listing-gallery">
-    {photos.length ? photos.map((photo, photoIndex) => (
-      <div key={photo.key || photo.url} hidden={photoIndex !== index}>
-        <Photo photo={photo} className={className} alt={`${title || "Listing"} - photo ${photoIndex + 1}`} fallback={fallback} />
-      </div>
-    )) : fallback}
-    {photos.length > 1 && <div className="photo-navigation" aria-label="Photo navigation">
-      <button type="button" aria-label="Previous photo" onClick={() => changePhoto((index - 1 + photos.length) % photos.length)}>&lt;</button>
-      <span aria-live="polite">{index + 1} / {photos.length}</span>
-      <button type="button" aria-label="Next photo" onClick={() => changePhoto((index + 1) % photos.length)}>&gt;</button>
-    </div>}
-  </div>;
+  return (
+    <div className="listing-gallery">
+      {photos.length
+        ? photos.map((photo, photoIndex) => (
+            <div key={photo.key || photo.url} hidden={photoIndex !== index}>
+              <Photo
+                photo={photo}
+                className={className}
+                alt={`${title || "Listing"} - photo ${photoIndex + 1}`}
+                fallback={fallback}
+              />
+            </div>
+          ))
+        : fallback}
+      {photos.length > 1 && (
+        <div className="photo-navigation" aria-label="Photo navigation">
+          <button
+            type="button"
+            aria-label="Previous photo"
+            onClick={() =>
+              changePhoto((index - 1 + photos.length) % photos.length)
+            }
+          >
+            &lt;
+          </button>
+          <span aria-live="polite">
+            {index + 1} / {photos.length}
+          </span>
+          <button
+            type="button"
+            aria-label="Next photo"
+            onClick={() => changePhoto((index + 1) % photos.length)}
+          >
+            &gt;
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
-export default function ListingPhotos({ photos, onChange, error, onError, disabled }) {
+export default function ListingPhotos({
+  photos,
+  onChange,
+  error,
+  onError,
+  disabled,
+}) {
   const input = useRef(null);
   function choose(event) {
     const files = Array.from(event.target.files || []);
@@ -47,27 +90,81 @@ export default function ListingPhotos({ photos, onChange, error, onError, disabl
       onError("You can add up to 5 photos. Remove a photo before adding more.");
       return;
     }
-    if (files.some(file => !["image/jpeg", "image/png"].includes(file.type) || !file.size || file.size > 5 * 1024 * 1024)) {
+    if (
+      files.some(
+        (file) =>
+          !["image/jpeg", "image/png"].includes(file.type) ||
+          !file.size ||
+          file.size > 5 * 1024 * 1024,
+      )
+    ) {
       onError("Choose JPG or PNG photos, up to 5 MB each.");
       return;
     }
-    onChange([...photos, ...files.map(file => ({ key: crypto.randomUUID(), file }))]);
+    onChange([
+      ...photos,
+      ...files.map((file) => ({ key: crypto.randomUUID(), file })),
+    ]);
     onError("");
   }
-  return <>
-    <div className="listing-photo-picker">
-      <div className="listing-photo-slots">
-        {photos.map((photo, index) => <div className="listing-photo-entry" key={photo.key}>
-          <Photo photo={photo} alt={`Selected photo ${index + 1}`} fallback={<span>Photo unavailable</span>} />
-          <span>{index === 0 ? "COVER PHOTO" : `PHOTO ${index + 1}`}</span>
-          <button type="button" disabled={disabled} aria-label={`Remove photo ${index + 1}`} onClick={() => { onChange(photos.filter(item => item.key !== photo.key)); onError(""); }}>Remove</button>
-        </div>)}
-        {Array.from({ length: Math.max(0, PHOTO_LIMIT - photos.length) }, (_, index) => <button className="listing-add-photo" type="button" disabled={disabled} key={index} onClick={() => input.current?.click()}><strong>+</strong><span>Add photo</span></button>)}
+  return (
+    <>
+      <div className="listing-photo-picker">
+        <div className="listing-photo-slots">
+          {photos.map((photo, index) => (
+            <div className="listing-photo-entry" key={photo.key}>
+              <Photo
+                photo={photo}
+                alt={`Selected photo ${index + 1}`}
+                fallback={<span>Photo unavailable</span>}
+              />
+              <span>{index === 0 ? "COVER PHOTO" : `PHOTO ${index + 1}`}</span>
+              <button
+                type="button"
+                disabled={disabled}
+                aria-label={`Remove photo ${index + 1}`}
+                onClick={() => {
+                  onChange(photos.filter((item) => item.key !== photo.key));
+                  onError("");
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+          {Array.from(
+            { length: Math.max(0, PHOTO_LIMIT - photos.length) },
+            (_, index) => (
+              <button
+                className="listing-add-photo"
+                type="button"
+                disabled={disabled}
+                key={index}
+                onClick={() => input.current?.click()}
+              >
+                <strong>+</strong>
+                <span>Add photo</span>
+              </button>
+            ),
+          )}
+        </div>
+        <p>{photos.length} of 5 photos * JPG or PNG * Up to 5 MB each</p>
+        <p>Add up to 5 photos. The first photo is your cover.</p>
+        <input
+          ref={input}
+          type="file"
+          accept="image/jpeg,image/png"
+          multiple
+          hidden
+          disabled={disabled}
+          onChange={choose}
+        />
       </div>
-      <p>{photos.length} of 5 photos * JPG or PNG * Up to 5 MB each</p>
-      <p>Add up to 5 photos. The first photo is your cover.</p>
-      <input ref={input} type="file" accept="image/jpeg,image/png" multiple hidden disabled={disabled} onChange={choose} />
-    </div>
-    {error && <p className="listing-error" role="alert">{error}</p>}
-  </>;
+      {error && (
+        <p className="listing-error" role="alert">
+          {error}
+        </p>
+      )}
+    </>
+  );
 }
