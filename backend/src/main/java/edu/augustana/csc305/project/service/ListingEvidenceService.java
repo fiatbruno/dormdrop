@@ -53,7 +53,7 @@ public class ListingEvidenceService {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Listing changed. Refresh before reporting.");
             }
             // Capture scalars before reading bytes, and recheck the persisted version afterward.
-            String imageUrl = listing.getImageUrl();
+            List<String> imageUrls = listing.getImageUrls();
             String sellerName = users.findById(listing.getOwnerId()).map(User::getName).orElse(null);
             Instant capturedAt = Instant.now();
             snapshot = new ListingSnapshot(report.snapshotId(), report.caseId(), listing.getId(),
@@ -61,21 +61,21 @@ public class ListingEvidenceService {
                     listing.getDescription(), listing.getCategory(), listing.getPrice(), listing.getCondition(),
                     listing.getPickupArea(), listing.getListingType(), listing.getStatus(), List.of(), capturedAt,
                     List.of());
-            List<RetainedImage> retained = imageUrl == null || imageUrl.isBlank()
-                    ? List.of() : List.of(images.retain(imageUrl));
+            List<String> mediaKeys = SnapshotPhotos.retain(mongo, images,
+                    snapshot.id(), snapshot.caseId(), imageUrls);
             Listing current = listings.findById(listing.getId()).orElseThrow(() ->
                     new ResponseStatusException(HttpStatus.CONFLICT, "Listing was deleted during retention."));
             if (!Objects.equals(current.getVersion(), snapshot.sourceListingVersion())
-                    || !Objects.equals(current.getImageUrl(), imageUrl)) {
+                    || !Objects.equals(current.getImageUrls(), imageUrls)) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Listing changed during retention. Retry.");
             }
             snapshot = new ListingSnapshot(snapshot.id(), snapshot.caseId(), snapshot.listingId(),
                     snapshot.sellerId(), snapshot.sellerDisplayName(), snapshot.sourceListingVersion(), snapshot.title(),
                     snapshot.description(), snapshot.category(), snapshot.price(), snapshot.condition(),
                     snapshot.pickupArea(), snapshot.listingType(), snapshot.lifecycleStatus(),
-                    retained.stream().map(RetainedImage::key).toList(), snapshot.capturedAt(), retained);
+                    mediaKeys, snapshot.capturedAt(), List.of());
             try {
-                mongo.insert(snapshot); // Metadata and bytes persist atomically in one BSON document.
+                mongo.insert(snapshot); // Publish only after every evidence photo has been copied.
             } catch (DuplicateKeyException concurrentRetry) {
                 snapshot = mongo.findById(report.snapshotId(), ListingSnapshot.class);
                 if (snapshot == null) throw concurrentRetry;

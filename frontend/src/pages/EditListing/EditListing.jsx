@@ -193,6 +193,7 @@ export default function EditListing() {
     };
 
     submitting.current = true;
+    setPhotoError("");
     setSaving(true);
 
     try {
@@ -202,8 +203,7 @@ export default function EditListing() {
         await saveListingPhotos(id, photos, originalPhotos.current);
       } catch (err) {
         setPhotoError(
-          err.message ||
-            "Your details were saved, but photos could not be saved. Try again.",
+          `Your listing details were saved, but your photos were not. ${err.message || "Your selection is kept. Please try saving again."}`,
         );
         return;
       }
