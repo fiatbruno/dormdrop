@@ -16,6 +16,7 @@ public record ListingDetailsResponse(
         String pickupArea,
         String listingType,
         String imageUrl,
+        java.util.List<String> imageUrls,
         LocalDateTime listedOn,
         ListingStatus status,
         String ownerId,
@@ -27,7 +28,7 @@ public record ListingDetailsResponse(
         return new ListingDetailsResponse(
                 listing.getIdString(), listing.getTitle(), listing.getDescription(),
                 listing.getCategory(), listing.getPrice(), listing.getCondition(),
-                listing.getPickupArea(), listing.getListingType(), listing.getImageUrl(),
+                listing.getPickupArea(), listing.getListingType(), listing.getImageUrl(), listing.getImageUrls(),
                 listing.getListedOn(), listing.getStatus(), listing.getOwnerId() == null ? null : listing.getOwnerId().toHexString(), sellerName,
                 listing.getModerationVisibility(), listing.getModerationVisibility() != edu.augustana.csc305.project.model.ModerationTypes.Visibility.VISIBLE
         );
