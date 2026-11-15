@@ -1,3 +1,4 @@
+
 .offer-details-page {
   width: min(820px, calc(100% - 32px));
   min-height: 60vh;
@@ -32,6 +33,56 @@
   color: #657b9b;
 }
 
+.offer-details-listing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.offer-details-listing-header h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.offer-details-listing-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 13px;
+  border-radius: 20px;
+  background: #f1f3f5;
+  color: #526278;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.offer-details-listing-status.is-available {
+  background: #e8f5ec;
+  color: #24633d;
+}
+
+.offer-details-listing-status.is-reserved {
+  background: #fff4dc;
+  color: #946200;
+}
+
+.offer-details-listing-status.is-sold {
+  background: #eaf2fa;
+  color: #194278;
+}
+
+.offer-details-listing p {
+  margin: 10px 0 0;
+  color: #657b9b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
 .offer-details-page button {
   padding: 9px 14px;
   border: 1px solid #194278;
@@ -39,4 +90,35 @@
   background: #194278;
   color: #fff;
   cursor: pointer;
+}
+
+.offer-details-page button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.offer-details-page button:focus-visible {
+  outline: 3px solid #2785d1;
+  outline-offset: 3px;
+}
+
+@media (max-width: 700px) {
+  .offer-details-page {
+    width: calc(100% - 24px);
+    margin: 20px auto 50px;
+  }
+
+  .offer-details-page h1 {
+    font-size: 25px;
+  }
+
+  .offer-details-listing,
+  .offer-details-unavailable {
+    margin: 12px;
+    padding: 14px;
+  }
+
+  .offer-details-listing-header {
+    align-items: flex-start;
+  }
 }
