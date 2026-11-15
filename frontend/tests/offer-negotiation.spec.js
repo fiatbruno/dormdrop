@@ -112,7 +112,9 @@ test("seller accepts buyer offer without implying payment or sale", async ({
 
   await expect(page.getByText("Agreed price: $60.00", { exact: true })).toBeVisible();
   await expect(page.getByText(/agreement only; no payment is taken/i)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Propose pickup" })).toBeVisible();
+  const acceptedCard = page.getByRole("article", { name: "Offer accepted" });
+  await acceptedCard.getByRole("button", { name: "Proposed pickup" }).click();
+  await expect(page.getByPlaceholder("Write a message…")).toBeFocused();
   expect(requestBody).toEqual({ action: "ACCEPT", expectedVersion: 0 });
 });
 

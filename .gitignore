@@ -1,4 +1,6 @@
 .mvn
+!backend/.mvn/
+!backend/.mvn/**
 .DS_Store
 
 
