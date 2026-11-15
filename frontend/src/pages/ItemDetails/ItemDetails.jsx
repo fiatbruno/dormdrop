@@ -6,7 +6,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { ImageOff, Share2, UserRound } from "lucide-react";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
-import ListingImage from "../../components/ListingImage";
+import { PhotoGallery } from "../../components/ListingPhotos";
 import ProductCard from "../../components/ProductCard/ProductCard";
 import ReportListing from "../../components/ReportListing/ReportListing";
 import { getMyListingOffer, submitOffer } from "../../api/offersApi";
@@ -317,25 +317,17 @@ function ItemDetailsContent({ id }) {
               <div className="item-layout">
                 <section
                   className="item-photo-section"
-                  aria-label="Seller photo"
+                  aria-label="Seller photos"
                 >
                   <div className="item-photo">
-                    <ListingImage
-                      src={listing.image}
-                      alt={listing.title}
-                      fallback={
-                        <div className="item-photo-placeholder">
-                          <ImageOff size={40} aria-hidden="true" />
-                          <span>Photo unavailable</span>
-                        </div>
-                      }
+                    <PhotoGallery
+                      photos={listing.images.map(url => ({ url, key: url }))}
+                      title={listing.title}
+                      className="item-gallery-image"
+                      fallback={<div className="item-photo-placeholder"><ImageOff size={40} aria-hidden="true" /><span>Photo unavailable</span></div>}
                     />
                   </div>
-                  <p className="item-caption">
-                    {listing.image
-                      ? "Seller photo · 1 of 1"
-                      : "No seller photo provided"}
-                  </p>
+                  <p className="item-caption">{listing.images.length ? `${listing.images.length} seller photo${listing.images.length === 1 ? "" : "s"}` : "No seller photo provided"}</p>
                 </section>
                 <section className="item-summary" aria-labelledby="item-title">
                   <p className="item-eyebrow">{listing.category}</p>

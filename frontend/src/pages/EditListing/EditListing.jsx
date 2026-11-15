@@ -1,14 +1,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Upload, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
 import {
   getListingById,
   updateListing,
-  uploadListingImage,
+  saveListingPhotos,
 } from "../../api/marketplaceApi";
-import ListingImage from "../../components/ListingImage";
+import ListingPhotos, { PhotoGallery } from "../../components/ListingPhotos";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import "../ListItem/ListItem.css";
@@ -60,32 +60,11 @@ const emptyForm = {
   pickupLocation: "",
 };
 
-function Photo({ photo, className, alt }) {
-  const [url, setUrl] = useState("");
-
-  useEffect(() => {
-    if (!photo.file) return;
-
-    const objectUrl = URL.createObjectURL(photo.file);
-    // Keep the preview synchronized with the browser-managed object URL.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setUrl(objectUrl);
-
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [photo]);
-
-  return photo.file ? (
-    <img src={url} className={className} alt={alt} />
-  ) : (
-    <ListingImage src={photo.url} className={className} alt={alt} />
-  );
-}
-
 export default function EditListing() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const fileInput = useRef(null);
   const submitting = useRef(false);
+  const originalPhotos = useRef([]);
 
   const [form, setForm] = useState(emptyForm);
   const [photos, setPhotos] = useState([]);
@@ -125,10 +104,9 @@ export default function EditListing() {
           pickupLocation: data.pickupLocation || "",
         });
 
+        originalPhotos.current = data.images;
         setPhotos(
-          data.image
-            ? [{ key: "existing", url: data.image }]
-            : []
+          data.images.map((url, index) => ({ key: `existing-${index}`, url }))
         );
 
         setStatus(data.status || "AVAILABLE");
@@ -168,51 +146,6 @@ export default function EditListing() {
           ? "0"
           : previous.price,
     }));
-  }
-
-  function addPhotos(event) {
-    const selected = Array.from(event.target.files || []);
-    event.target.value = "";
-
-    if (!selected.length) return;
-
-    if (photos.length + selected.length > 1) {
-      setPhotoError(
-        "Replace the existing photo before adding a new one. One photo is supported."
-      );
-      return;
-    }
-
-    const invalid = selected.some(
-      (file) =>
-        !["image/jpeg", "image/png"].includes(file.type) ||
-        file.size === 0 ||
-        file.size > 5 * 1024 * 1024
-    );
-
-    if (invalid) {
-      setPhotoError(
-        "Choose JPG or PNG photos, up to 5 MB each."
-      );
-      return;
-    }
-
-    setPhotos((previous) => [
-      ...previous,
-      ...selected.map((file) => ({
-        key: crypto.randomUUID(),
-        file,
-      })),
-    ]);
-
-    setPhotoError("");
-  }
-
-  function removePhoto(key) {
-    setPhotos((previous) =>
-      previous.filter((photo) => photo.key !== key)
-    );
-    setPhotoError("");
   }
 
   async function saveChanges(event) {
@@ -259,7 +192,7 @@ export default function EditListing() {
 
     if (photos.length === 0) {
       setPhotoError(
-        "Please add a photo before saving. To replace a photo, remove it and select a new one."
+        "Please add at least one photo before saving."
       );
       return;
     }
@@ -280,15 +213,11 @@ export default function EditListing() {
     try {
       await updateListing(id, data);
 
-      if (photos[0]?.file) {
-        try {
-          await uploadListingImage(id, photos[0].file);
-        } catch {
-          setError(
-            "Your listing details were saved, but the photo upload failed. Save again to retry the photo upload."
-          );
-          return;
-        }
+      try {
+        await saveListingPhotos(id, photos, originalPhotos.current);
+      } catch (err) {
+        setPhotoError(err.message || "Your details were saved, but photos could not be saved. Try again.");
+        return;
       }
 
       navigate("/profile#my-listings", {
@@ -369,76 +298,7 @@ export default function EditListing() {
               <fieldset disabled={saving}>
                 <h2>Photos</h2>
 
-                <div className="photo-box">
-                  <div className="photo-thumbnails">
-                    {photos.map((photo, index) => (
-                      <div
-                        className="photo-entry"
-                        key={photo.key}
-                      >
-                        <Photo
-                          photo={photo}
-                          className="photo-thumb"
-                          alt={`Listing photo ${index + 1}`}
-                        />
-
-                        <button
-                          type="button"
-                          aria-label={`Remove photo ${index + 1}`}
-                          onClick={() =>
-                            removePhoto(photo.key)
-                          }
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="photo-details">
-                    <button
-                      type="button"
-                      className="photo-button"
-                      onClick={() =>
-                        fileInput.current?.click()
-                      }
-                      disabled={photos.length >= 1}
-                    >
-                      <span className="upload-icon">
-                        <Upload
-                          size={18}
-                          aria-hidden="true"
-                        />
-                      </span>
-
-                      {photos.length
-                        ? "Add another photo"
-                        : "Upload a photo"}
-                    </button>
-
-                    <p>
-                      {photos.length} of 1 photo added ·
-                      JPG or PNG · Up to 5 MB each
-                    </p>
-                  </div>
-
-                  <input
-                    ref={fileInput}
-                    type="file"
-                    accept="image/jpeg,image/png"
-                    hidden
-                    onChange={addPhotos}
-                  />
-                </div>
-
-                {photoError && (
-                  <p
-                    className="listing-error"
-                    role="alert"
-                  >
-                    {photoError}
-                  </p>
-                )}
+                <ListingPhotos photos={photos} onChange={setPhotos} error={photoError} onError={setPhotoError} disabled={saving} />
 
                 <div className="field">
                   <label htmlFor="title">
@@ -679,20 +539,7 @@ export default function EditListing() {
               </p>
 
               <article className="preview-card">
-                {photos.length ? (
-                  <Photo
-                    photo={photos[0]}
-                    className="preview-photo"
-                    alt={
-                      form.title ||
-                      "Listing preview"
-                    }
-                  />
-                ) : (
-                  <div className="preview-placeholder">
-                    Your photo will appear here
-                  </div>
-                )}
+                <PhotoGallery photos={photos} title={form.title} fallback={<div className="preview-placeholder">Your photos will appear here</div>} />
 
                 <div className="preview-details">
                   <span className="preview-category">

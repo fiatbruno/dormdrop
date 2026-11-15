@@ -13,18 +13,18 @@ function normalizeListing(listing) {
       : rawPrice
   );
 
-  const imageUrl = listing.imageUrl;
   const backendUrl = new URL(api.defaults.baseURL, window.location.origin);
+  const imageUrls = Array.isArray(listing.imageUrls) && listing.imageUrls.length
+    ? listing.imageUrls
+    : listing.imageUrl ? [listing.imageUrl] : [];
+  const images = imageUrls.filter(url => typeof url === "string" && url).map(url => new URL(url, backendUrl).href);
 
   return {
     ...listing,
     id,
     price,
-    image: imageUrl
-      ? imageUrl.startsWith("http")
-        ? imageUrl
-        : new URL(imageUrl, backendUrl).href
-      : "",
+    image: images[0] || "",
+    images,
     pickupLocation: listing.pickupArea,
     listedOn: listing.listedOn
       ? listing.listedOn.slice(0, 10)
@@ -96,4 +96,28 @@ export async function updateListing(id, listing) {
     listingType: listing.listingType,
   });
   return data;
+}
+
+// Frontend contract for the future multi-photo backend. This request must replace
+// the photo collection atomically so retrying cannot duplicate uploaded photos.
+export async function saveListingPhotos(id, photos, originalUrls = []) {
+  if (photos.every(photo => !photo.file) &&
+      photos.length === originalUrls.length &&
+      photos.every((photo, index) => photo.url === originalUrls[index])) return;
+
+  const formData = new FormData();
+  formData.append("retainedImageUrls", JSON.stringify(photos.filter(photo => !photo.file).map(photo => photo.url)));
+  photos.filter(photo => photo.file).forEach(photo => formData.append("files", photo.file));
+  try {
+    const { data } = await api.put(`/images/${encodeURIComponent(id)}/photos`, formData);
+    return data;
+  } catch (error) {
+    if ([404, 405, 501].includes(error.response?.status)) {
+      throw new Error("Photo saving needs the multi-photo backend connection. Your selected photos are still here.");
+    }
+    if (error.response?.status === 413) {
+      throw new Error("The photos are too large to upload. Choose photos up to 5 MB each.");
+    }
+    throw new Error(error.response?.data?.detail || error.response?.data?.message || "Photos could not be saved. Your selection is kept; please try again.");
+  }
 }
