@@ -1,6 +1,7 @@
 .mvn
 !backend/.mvn/
-!backend/.mvn/**
+!backend/.mvn/wrapper/
+!backend/.mvn/wrapper/maven-wrapper.properties
 .DS_Store
 
 

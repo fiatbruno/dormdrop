@@ -5,12 +5,14 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
+import java.time.Instant;
 
 /** Shared moderation policy. Lifecycle and moderation visibility remain independent. */
 @Component
 public class ListingVisibilityPolicy {
-    /** Integration point for a future account policy; suspensions are deliberately not implemented here. */
-    protected boolean accountAllowsMarketplace(User user) { return true; }
+    protected boolean accountAllowsMarketplace(User user) {
+        return user != null && (user.getSuspendedUntil() == null || !Instant.now().isBefore(user.getSuspendedUntil()));
+    }
 
     public boolean visible(Listing listing) {
         return listing != null && listing.getModerationVisibility() == ModerationTypes.Visibility.VISIBLE;
@@ -56,6 +58,10 @@ public class ListingVisibilityPolicy {
         if (!accountAllowsMarketplace(viewer) || !visible(listing)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Restricted listings cannot be changed by the seller.");
         }
+    }
+    public void requireActiveMarketplaceAccess(User viewer) {
+        if (!accountAllowsMarketplace(viewer))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Marketplace access is restricted during your account suspension.");
     }
     public void requireStatusTransition(Listing listing, ListingStatus next) {
         if (next == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status is required.");

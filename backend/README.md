@@ -24,11 +24,7 @@ Running the application *requires* the following environment variables
 to be set:
 
   + `MONGODB_URI`: the URI for your backing MongoDB cluster. The URI
-    should start with `mongodb://` or `mongodb+srv://` and include your
-    credentials (username and password). For local MongoDB, a URI can look
-    like `mongodb://localhost:27017/dormdrop`; for Atlas, use the `mongodb+srv://`
-    connection string provided by your cluster. Percent-encode reserved
-    characters in the username or password.
+    should include your credentials (username and password).
   + `JWT_SECRET`: a base-64 encoded secret key for generating JWT
     tokens, which are used as part of user authentication. You can
     generate a key on the command line by saying `openssl rand -base64
@@ -43,10 +39,6 @@ public backend base URL, without the API prefix (for example,
 configured `api.prefix`. These default to `http://localhost:5173` and
 `http://localhost:8080` for local development. Set
 `MAIL_USERNAME` and `MAIL_PASSWORD` for the configured SMTP account as well.
-For local runs from the `backend` directory, Spring Boot also imports values
-from `.env`; in IntelliJ, keep the run configuration's working directory set
-to `backend` or configure the environment variables directly in the run
-configuration.
 
 First administrator provisioning is disabled by default. To bootstrap a new,
 empty database, set `ADMIN_BOOTSTRAP_ENABLED=true`, `ADMIN_EMAIL` to an

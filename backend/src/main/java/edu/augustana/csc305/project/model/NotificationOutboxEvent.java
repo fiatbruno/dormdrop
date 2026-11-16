@@ -37,7 +37,11 @@ public record NotificationOutboxEvent(
             case OFFER_ACCEPTED -> offerId != null && payload.status() == PrivateNotification.Status.ACCEPTED && payload.price() != null;
             case OFFER_REJECTED -> offerId != null && payload.status() == PrivateNotification.Status.REJECTED && payload.price() != null;
             case OFFER_COUNTERED -> offerId != null && payload.status() == PrivateNotification.Status.COUNTERED && payload.price() != null;
-            case MODERATION_NOTICE, REPORT_UPDATE -> java.util.Set.of(PrivateNotification.Status.KEPT,
+            case MODERATION_NOTICE -> java.util.Set.of(PrivateNotification.Status.KEPT,
+                    PrivateNotification.Status.HIDDEN, PrivateNotification.Status.REMOVED,
+                    PrivateNotification.Status.POLICY_WARNING, PrivateNotification.Status.ACCOUNT_SUSPENDED)
+                    .contains(payload.status());
+            case REPORT_UPDATE -> java.util.Set.of(PrivateNotification.Status.KEPT,
                     PrivateNotification.Status.HIDDEN, PrivateNotification.Status.REMOVED).contains(payload.status());
         };
         if (!valid) throw new IllegalArgumentException("Notification type and safe payload do not agree.");
