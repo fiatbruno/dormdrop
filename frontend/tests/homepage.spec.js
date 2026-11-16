@@ -12,6 +12,16 @@ test.beforeEach(async ({ page }) => {
     id: "buyer-1",
   })).toString("base64url");
   await page.addInitScript((token) => localStorage.setItem("token", token), `test.${payload}.signature`);
+  await page.route("**/api/v1/users/me", (route) =>
+    route.fulfill({
+      status: 200,
+      json: {
+        id: "buyer-1",
+        name: "Test Buyer",
+        email: "buyer@augustana.edu",
+      },
+    }),
+  );
   await page.route("**/api/v1/admin/users**", (route) => route.fulfill({ status: 403 }));
   await page.route("**/api/v1/me/notifications/unread-count", (route) => route.fulfill({ json: { count: 0 } }));
   await page.route("**/api/v1/conversations", (route) => route.fulfill({ json: [] }));

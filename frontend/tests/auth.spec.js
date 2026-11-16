@@ -20,6 +20,19 @@ const makeSessionToken = (expiresAt) => {
 
 /** @param {import('@playwright/test').Page} page */
 const mockMarketplace = async (page) => {
+  await page.route("**/api/v1/users/me", (route) =>
+    route.fulfill({
+      status: 200,
+      json: {
+        id: "buyer-1",
+        name: "Sample User",
+        email: "sample@augustana.edu",
+      },
+    }),
+  );
+  await page.route("**/api/v1/conversations", (route) =>
+    route.fulfill({ json: [] }),
+  );
   await page.route("**/api/v1/home", (route) => route.fulfill({ json: [] }));
   await page.route("**/api/v1/favorites", (route) =>
     route.fulfill({ json: [] }),
@@ -349,9 +362,16 @@ test.describe("Authentication gaps", () => {
   test("login returns a verified user to the shared item they requested", async ({
     page,
   }) => {
-    const token = makeSessionToken(Math.floor(Date.now() / 1000) + 3600);
+const token = makeSessionToken(Math.floor(Date.now() / 1000) + 3600);
+    await mockMarketplace(page);
     await page.route("**/api/v1/auth/login", (route) =>
       route.fulfill({ json: { token } }),
+    );
+    await page.route("**/api/v1/home/shared-item/my-offer", (route) =>
+      route.fulfill({
+        status: 200,
+        json: null,
+      }),
     );
     await page.route("**/api/v1/home/shared-item", (route) =>
       route.fulfill({
@@ -366,14 +386,6 @@ test.describe("Authentication gaps", () => {
         },
       }),
     );
-    await page.route("**/api/v1/home", (route) => route.fulfill({ json: [] }));
-    await page.route("**/api/v1/favorites", (route) =>
-      route.fulfill({ json: [] }),
-    );
-    await page.route("**/api/v1/me/notifications/unread-count", (route) =>
-      route.fulfill({ json: { count: 0 } }),
-    );
-
     await page.goto("/items/shared-item?source=share#details");
     await expect(page).toHaveURL("/login");
     await page.getByLabel("email").fill("sample@augustana.edu");

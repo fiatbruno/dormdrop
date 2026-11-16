@@ -693,7 +693,7 @@ export default function Messages() {
 
                           <textarea
                             ref={composerInput}
-                            placeholder="Write a messageâ€¦"
+                            placeholder={"Write a message" + String.fromCharCode(8230)}
                             value={chat.draft}
                             onChange={(event) =>
                               chat.setDraft(event.target.value)

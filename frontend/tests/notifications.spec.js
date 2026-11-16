@@ -48,6 +48,16 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript((token) => {
     localStorage.setItem("token", token);
   }, makeSessionToken());
+  await page.route("**/api/v1/users/me", (route) =>
+    route.fulfill({
+      status: 200,
+      json: {
+        id: "buyer-1",
+        name: "Test Buyer",
+        email: "buyer@augustana.edu",
+      },
+    }),
+  );
   // The bell combines notification and message unread counts.
   await page.route("**/api/v1/conversations", (route) =>
     route.fulfill({ json: [] }),

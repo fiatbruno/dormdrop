@@ -25,7 +25,7 @@ const offer = {
 };
 
 async function preparePage(page) {
-  const tokenPayload = Buffer.from(
+const tokenPayload = Buffer.from(
     JSON.stringify({
       exp: Math.floor(Date.now() / 1000) + 3600,
       id: "buyer-1",
@@ -34,6 +34,19 @@ async function preparePage(page) {
   await page.addInitScript(
     (token) => localStorage.setItem("token", token),
     `test.${tokenPayload}.signature`,
+  );
+  await page.route("**/api/v1/users/me", (route) =>
+    route.fulfill({
+      status: 200,
+      json: {
+        id: "buyer-1",
+        name: "Test Buyer",
+        email: "buyer@augustana.edu",
+      },
+    }),
+  );
+  await page.route("**/api/v1/conversations", (route) =>
+    route.fulfill({ status: 200, json: [] }),
   );
   await page.route("**/api/v1/admin/users**", (route) =>
     route.fulfill({ status: 403, json: { message: "Not an administrator" } }),
