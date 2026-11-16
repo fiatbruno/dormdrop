@@ -520,7 +520,7 @@ export default function OfferNegotiation({
               disabled={!canAccept || busy}
               onClick={() => void decide("ACCEPT")}
             >
-              {pendingAction === "ACCEPT" ? "Accepting…" : "Accept"}
+              {pendingAction === "ACCEPT" ? "Acceptingâ€¦" : "Accept"}
             </button>
 
             <button
@@ -528,7 +528,7 @@ export default function OfferNegotiation({
               disabled={busy}
               onClick={() => void decide("REJECT")}
             >
-              {pendingAction === "REJECT" ? "Rejecting…" : "Reject"}
+              {pendingAction === "REJECT" ? "Rejectingâ€¦" : "Reject"}
             </button>
 
             <button
@@ -549,7 +549,7 @@ export default function OfferNegotiation({
           <div className="offer-receipt-entry">
             {receiptChecking && (
               <p role="status">
-                Checking exchange status…
+                Checking exchange statusâ€¦
               </p>
             )}
 
@@ -650,7 +650,7 @@ export default function OfferNegotiation({
             </h2>
 
             <p className="offer-receipt-item">
-              {itemTitle} · Agreed price {formatMoney(agreedPrice)}
+              {itemTitle} Â· Agreed price {formatMoney(agreedPrice)}
             </p>
 
             <div className="offer-receipt-info">
@@ -683,7 +683,7 @@ export default function OfferNegotiation({
                 disabled={receiptBusy}
                 onClick={() => void handleConfirmReceipt()}
               >
-                {receiptBusy ? "Confirming…" : "Yes, received"}
+                {receiptBusy ? "Confirmingâ€¦" : "Yes, received"}
               </button>
             </div>
           </div>

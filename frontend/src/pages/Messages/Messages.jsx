@@ -262,7 +262,7 @@ export default function Messages() {
             <input
               type="search"
               aria-label="Search conversations"
-              placeholder="Search conversations…"
+              placeholder="Search conversationsâ€¦"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -291,7 +291,7 @@ export default function Messages() {
 
             {chat.listLoading && (
               <p role="status" className="messages-state">
-                Loading conversations…
+                Loading conversationsâ€¦
               </p>
             )}
 
@@ -377,12 +377,12 @@ export default function Messages() {
             ) : (
               <>
                 <Link to="/messages" className="messages-back">
-                  ← Back to conversations
+                  â† Back to conversations
                 </Link>
 
                 {chat.loading ? (
                   <p role="status" className="messages-state">
-                    Loading conversation…
+                    Loading conversationâ€¦
                   </p>
                 ) : chat.error ? (
                   <div role="alert" className="messages-state">
@@ -428,7 +428,7 @@ export default function Messages() {
                             <div>
                               <h3>{item.title}</h3>
                               <p>
-                                {priceLabel(item)} ·{" "}
+                                {priceLabel(item)} Â·{" "}
                                 {item.status.toLowerCase()}
                               </p>
                             </div>
@@ -562,7 +562,7 @@ export default function Messages() {
                                     {formattedListingPrice
                                       ? `Listing price ${formattedListingPrice}`
                                       : "Listing price unavailable"}
-                                    {" · Campus pickup"}
+                                    {" Â· Campus pickup"}
                                   </p>
 
                                   <p className="offer-accepted-card__agreement">
@@ -654,7 +654,7 @@ export default function Messages() {
                           className="messages-new"
                           onClick={bottom}
                         >
-                          New messages ↓
+                          New messages â†“
                         </button>
                       )}
 
@@ -693,7 +693,7 @@ export default function Messages() {
 
                           <textarea
                             ref={composerInput}
-                            placeholder="Write a message…"
+                            placeholder="Write a messageâ€¦"
                             value={chat.draft}
                             onChange={(event) =>
                               chat.setDraft(event.target.value)
@@ -710,11 +710,11 @@ export default function Messages() {
                             chat.sending || !chat.draft.trim()
                           }
                         >
-                          {chat.sending ? "Sending…" : "Send"}
+                          {chat.sending ? "Sendingâ€¦" : "Send"}
                         </button>
 
                         <span className="messages-character-count">
-                          {chat.draft.length}/5000 · Propose pickups in messages.
+                          {chat.draft.length}/5000 Â· Propose pickups in messages.
                         </span>
                       </form>
                     </>
@@ -857,7 +857,7 @@ export default function Messages() {
                     }
                   >
                     {reportSubmitting
-                      ? "Submitting…"
+                      ? "Submittingâ€¦"
                       : "Submit report"}
                   </button>
                 </div>
