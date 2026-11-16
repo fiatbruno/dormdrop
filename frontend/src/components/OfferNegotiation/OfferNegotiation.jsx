@@ -271,7 +271,7 @@ export default function OfferNegotiation({
 
       setConfirmation(
         action === "ACCEPT"
-          ? `Agreed price: ${formatMoney(amount)}. The listing is reserved for this exchange. No payment has been taken and the item is not yet marked sold.`
+          ? `Agreement only; no payment is taken. Agreed price: ${formatMoney(amount)}. The listing is reserved for this exchange and is not yet marked as sold.`
           : `Offer rejected at ${formatMoney(amount)}.`,
       );
 
