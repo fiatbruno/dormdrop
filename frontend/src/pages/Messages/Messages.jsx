@@ -171,8 +171,14 @@ export default function Messages() {
             <h1>Messages</h1>
             <p>A good find starts with a conversation.</p>
           </div>
-          <div className="messages-connection">
+          <div className="messages-heading-actions">
             <span role="status">{chat.connection}</span>
+            <button type="button" disabled>
+              Your Exchange
+            </button>
+            <button type="button" onClick={arrangePickup} disabled={!chat.conversation}>
+              Propose pickup
+            </button>
           </div>
         </header>
         <div
@@ -351,68 +357,120 @@ export default function Messages() {
                         aria-label="Message history"
                       >
                         {timeline.length === 0 && (
-                          <p className="messages-state">Say hello and ask about the item.</p>
+                          <p className="messages-state">
+                            Say hello and ask about the item.
+                          </p>
                         )}
                         {timeline.map((event, index) => {
-                          const date = Number.isFinite(Date.parse(event.at)) ? dateLabel(event.at) : "";
-                          const previousDate = Number.isFinite(Date.parse(timeline[index - 1]?.at))
-                            ? dateLabel(timeline[index - 1].at) : "";
+                          const date = Number.isFinite(Date.parse(event.at))
+                            ? dateLabel(event.at)
+                            : "";
+                          const previousDate = Number.isFinite(
+                            Date.parse(timeline[index - 1]?.at),
+                          )
+                            ? dateLabel(timeline[index - 1].at)
+                            : "";
                           const showDate = date && date !== previousDate;
-                          if (event.type === "offer") return (
-                            <div key={`offer-${offer.id}`}>
-                              {showDate && <p className="messages-date">{date}</p>}
-                              <OfferNegotiation
-                                offer={offer}
-                                listing={item}
-                                currentUserId={chat.conversation.currentUserId}
-                                participant={chat.conversation.participant}
-                                onOfferUpdated={chat.updateOffer}
-                              />
-                              <Link to={`/offers/${encodeURIComponent(offer.id)}`}>
-                                View offer details
-                              </Link>
-                              {["REJECTED", "EXPIRED"].includes(offer.status) && item?.id &&
-                                item.status === "AVAILABLE" &&
-                                String(item.listingType || "").toLowerCase() === "for sale" && Number(item.price) > 0 &&
-                                String(chat.conversation.currentUserId) === String(offer.buyerId) && (
-                                <Link to={`/items/${encodeURIComponent(item.id)}`}>
-                                  Make another offer
+                          if (event.type === "offer")
+                            return (
+                              <div key={`offer-${offer.id}`}>
+                                {showDate && (
+                                  <p className="messages-date">{date}</p>
+                                )}
+                                <OfferNegotiation
+                                  offer={offer}
+                                  listing={item}
+                                  currentUserId={
+                                    chat.conversation.currentUserId
+                                  }
+                                  participant={chat.conversation.participant}
+                                  onOfferUpdated={chat.updateOffer}
+                                />
+                                <Link
+                                  to={`/offers/${encodeURIComponent(offer.id)}`}
+                                >
+                                  View offer details
                                 </Link>
-                              )}
-                            </div>
-                          );
-                          if (event.type === "accepted") return formattedAgreedPrice ? (
-                            <div key={`accepted-${offer.id}`}>
-                              {showDate && <p className="messages-date">{date}</p>}
-                              <article className="offer-accepted-card" aria-label="Offer accepted">
-                                <div className="offer-accepted-card__eyebrow">
-                                  <Tag size={15} aria-hidden="true" />
-                                  <span>Offer accepted</span>
-                                </div>
-                                <p className="offer-accepted-card__price">{formattedAgreedPrice}</p>
-                                <p className="offer-accepted-card__listing-price">
-                                  {formattedListingPrice ? `Listing price ${formattedListingPrice}` : "Listing price unavailable"}
-                                  {" · Campus pickup"}
-                                </p>
-                                <p className="offer-accepted-card__agreement">
-                                  You and {chat.conversation.participant.name} agreed on {formattedAgreedPrice}. Propose pickup in chat.
-                                </p>
-                                <p className="offer-accepted-card__note">Accepting an offer does not mark the item as sold.</p>
-                                <button type="button" className="offer-accepted-card__button" onClick={arrangePickup}>
-                                  Proposed pickup
-                                </button>
-                              </article>
-                            </div>
-                          ) : null;
+                                {["REJECTED", "EXPIRED"].includes(
+                                  offer.status,
+                                ) &&
+                                  item?.id &&
+                                  item.status === "AVAILABLE" &&
+                                  String(
+                                    item.listingType || "",
+                                  ).toLowerCase() === "for sale" &&
+                                  Number(item.price) > 0 &&
+                                  String(chat.conversation.currentUserId) ===
+                                    String(offer.buyerId) && (
+                                    <Link
+                                      to={`/items/${encodeURIComponent(item.id)}`}
+                                    >
+                                      Make another offer
+                                    </Link>
+                                  )}
+                              </div>
+                            );
+                          if (event.type === "accepted")
+                            return formattedAgreedPrice ? (
+                              <div key={`accepted-${offer.id}`}>
+                                {showDate && (
+                                  <p className="messages-date">{date}</p>
+                                )}
+                                <article
+                                  className="offer-accepted-card"
+                                  aria-label="Offer accepted"
+                                >
+                                  <div className="offer-accepted-card__eyebrow">
+                                    <Tag size={15} aria-hidden="true" />
+                                    <span>Offer accepted</span>
+                                  </div>
+                                  <p className="offer-accepted-card__price">
+                                    {formattedAgreedPrice}
+                                  </p>
+                                  <p className="offer-accepted-card__listing-price">
+                                    {formattedListingPrice
+                                      ? `Listing price ${formattedListingPrice}`
+                                      : "Listing price unavailable"}
+                                    {" · Campus pickup"}
+                                  </p>
+                                  <p className="offer-accepted-card__agreement">
+                                    You and {chat.conversation.participant.name}{" "}
+                                    agreed on {formattedAgreedPrice}. Propose
+                                    pickup in chat.
+                                  </p>
+                                  <p className="offer-accepted-card__note">
+                                    Accepting an offer does not mark the item as
+                                    sold.
+                                  </p>
+                                  <button
+                                    type="button"
+                                    className="offer-accepted-card__button"
+                                    onClick={arrangePickup}
+                                  >
+                                    Proposed pickup
+                                  </button>
+                                </article>
+                              </div>
+                            ) : null;
                           const { message } = event;
-                          const outgoing = message.senderId === chat.conversation.currentUserId;
+                          const outgoing =
+                            message.senderId ===
+                            chat.conversation.currentUserId;
                           return (
                             <div key={`message-${message.id}`}>
-                              {showDate && <p className="messages-date">{date}</p>}
-                              <div className={`messages-message-row ${outgoing ? "outgoing" : "incoming"}`}>
-                                <div className={`messages-bubble ${outgoing ? "outgoing" : "incoming"}`}>
+                              {showDate && (
+                                <p className="messages-date">{date}</p>
+                              )}
+                              <div
+                                className={`messages-message-row ${outgoing ? "outgoing" : "incoming"}`}
+                              >
+                                <div
+                                  className={`messages-bubble ${outgoing ? "outgoing" : "incoming"}`}
+                                >
                                   <p>{message.content}</p>
-                                  <time dateTime={message.sentAt}>{timeLabel(message.sentAt)}</time>
+                                  <time dateTime={message.sentAt}>
+                                    {timeLabel(message.sentAt)}
+                                  </time>
                                 </div>
                                 <button
                                   type="button"
@@ -518,7 +576,9 @@ export default function Messages() {
                   <p>{reportTarget.content}</p>
                 </div>
                 <label className="messages-report-field">
-                  <span>Reason <b aria-hidden="true">*</b></span>
+                  <span>
+                    Reason <b aria-hidden="true">*</b>
+                  </span>
                   <select
                     autoFocus
                     required
@@ -529,17 +589,25 @@ export default function Messages() {
                     }}
                   >
                     <option value="">Select a reason</option>
-                    <option value="Harassment or bullying">Harassment or bullying</option>
-                    <option value="Threats or intimidation">Threats or intimidation</option>
+                    <option value="Harassment or bullying">
+                      Harassment or bullying
+                    </option>
+                    <option value="Threats or intimidation">
+                      Threats or intimidation
+                    </option>
                     <option value="Scam or fraud">Scam or fraud</option>
-                    <option value="Inappropriate content">Inappropriate content</option>
+                    <option value="Inappropriate content">
+                      Inappropriate content
+                    </option>
                     <option value="Spam">Spam</option>
                     <option value="Other">Other</option>
                   </select>
                 </label>
                 {reportReason === "Other" && (
                   <label className="messages-report-field">
-                    <span>Enter a reason <b aria-hidden="true">*</b></span>
+                    <span>
+                      Enter a reason <b aria-hidden="true">*</b>
+                    </span>
                     <input
                       required
                       maxLength={500}
