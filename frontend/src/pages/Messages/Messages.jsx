@@ -5,6 +5,7 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ListingImage from "../../components/ListingImage";
 import useMessaging from "../../hooks/useMessaging";
+import { getMyReportedMessageIds, reportMessage } from "../../api/messagingApi";
 import "./Messages.css";
 import OfferNegotiation from "../../components/OfferNegotiation/OfferNegotiation";
 
@@ -45,6 +46,14 @@ export default function Messages() {
   const [search, setSearch] = useState("");
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [newMessages, setNewMessages] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [reportError, setReportError] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportSubmitted, setReportSubmitted] = useState(false);
+  const [reportedMessageIds, setReportedMessageIds] = useState([]);
+  const [reportedMessageIdsError, setReportedMessageIdsError] = useState("");
   const scroll = useRef(null);
   const composerInput = useRef(null);
   const nearBottom = useRef(true);
@@ -65,6 +74,27 @@ export default function Messages() {
     else if (last && last !== previous.current.last) setNewMessages(true);
     previous.current = { id: conversationId, last, sent: chat.sentVersion };
   }, [chat.messages, conversationId, chat.sentVersion]);
+  useEffect(() => {
+    let active = true;
+    if (!conversationId) return;
+    getMyReportedMessageIds(conversationId)
+      .then((ids) => {
+        if (active) {
+          setReportedMessageIds(ids);
+          setReportedMessageIdsError("");
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setReportedMessageIdsError(
+            "Previously reported messages could not be checked. The server will prevent duplicate reports.",
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [conversationId]);
 
   const query = search.trim().toLowerCase();
   const conversations = chat.conversations.filter(
@@ -116,6 +146,52 @@ export default function Messages() {
 
   function arrangePickup() {
     composerInput.current?.focus();
+  }
+
+  function closeReportDialog() {
+    if (reportSubmitting) return;
+    setReportTarget(null);
+    setReportReason("");
+    setReportDetails("");
+    setReportError("");
+    setReportSubmitted(false);
+  }
+
+  async function submitMessageReport(event) {
+    event.preventDefault();
+    const reason = reportReason.trim();
+    if (!reason || !reportDetails.trim()) {
+      setReportError(
+        !reason && !reportDetails.trim()
+          ? "Select a reason and explain what happened before submitting."
+          : !reason
+            ? "Select a reason before submitting."
+            : "Enter what happened before submitting.",
+      );
+      return;
+    }
+
+    setReportSubmitting(true);
+    setReportError("");
+    try {
+      await reportMessage(conversationId, reportTarget.id, {
+        reason,
+        details: reportDetails.trim() || undefined,
+      });
+      setReportedMessageIds((ids) => [...ids, reportTarget.id]);
+      setReportSubmitted(true);
+    } catch (error) {
+      setReportError(
+        error.response?.status === 409
+          ? "You have already reported this message."
+          : error.response?.status === 403
+            ? "You can't report your own message."
+            : error.response?.data?.message ||
+              "We couldn't submit your report. Please try again.",
+      );
+    } finally {
+      setReportSubmitting(false);
+    }
   }
 
   return (
@@ -365,9 +441,26 @@ export default function Messages() {
                           return (
                             <div key={`message-${message.id}`}>
                               {showDate && <p className="messages-date">{date}</p>}
-                              <div className={`messages-bubble ${outgoing ? "outgoing" : "incoming"}`}>
-                                <p>{message.content}</p>
-                                <time dateTime={message.sentAt}>{timeLabel(message.sentAt)}</time>
+                              <div className={`messages-message-row ${outgoing ? "outgoing" : "incoming"}`}>
+                                <div className={`messages-bubble ${outgoing ? "outgoing" : "incoming"}`}>
+                                  <p>{message.content}</p>
+                                  <time dateTime={message.sentAt}>{timeLabel(message.sentAt)}</time>
+                                </div>
+                                {!outgoing && !reportedMessageIds.includes(message.id) && (
+                                  <button
+                                    type="button"
+                                    className="messages-report-trigger"
+                                    onClick={() => {
+                                      setReportTarget(message);
+                                      setReportReason("");
+                                      setReportDetails("");
+                                      setReportError("");
+                                    }}
+                                    aria-label="Report message"
+                                  >
+                                    Report
+                                  </button>
+                                )}
                               </div>
                             </div>
                           );
@@ -429,6 +522,100 @@ export default function Messages() {
           </section>
         </div>
       </main>
+      {reportedMessageIdsError && conversationId && (
+        <p className="messages-error" role="status">{reportedMessageIdsError}</p>
+      )}
+      {reportTarget && (
+        <div className="messages-report-backdrop">
+          <section
+            className={`messages-report-dialog${reportSubmitted ? " messages-report-dialog--confirmation" : ""}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="messages-report-title"
+          >
+            {reportSubmitted ? (
+              <div className="messages-report-confirmation">
+                <span>Done</span>
+                <h2 id="messages-report-title">Report submitted</h2>
+                <p>
+                  Your report is in the moderation queue. The reported person
+                  will not see who reported them.
+                </p>
+                <button type="button" onClick={closeReportDialog}>
+                  Done
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={submitMessageReport} noValidate>
+                <h2 id="messages-report-title">Report a message</h2>
+                <p className="messages-report-privacy">
+                  Your report is private. The other member will not see who
+                  reported them.
+                </p>
+                <div className="messages-report-selected">
+                  <span>Selected message</span>
+                  <p>“{reportTarget.content}”</p>
+                </div>
+                <label className="messages-report-field">
+                  <span>Reason <b aria-hidden="true">*</b></span>
+                  <select
+                    autoFocus
+                    required
+                    value={reportReason}
+                    onChange={(event) => {
+                      setReportReason(event.target.value);
+                      setReportError("");
+                    }}
+                  >
+                    <option value="">Select a reason</option>
+                    <option value="Harassment or bullying">Harassment or bullying</option>
+                    <option value="Threats or intimidation">Threats or intimidation</option>
+                    <option value="Scam or fraud">Scam or fraud</option>
+                    <option value="Inappropriate content">Inappropriate content</option>
+                    <option value="Spam">Spam</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </label>
+                <label className="messages-report-field">
+                  <span>What happened? <b aria-hidden="true">*</b></span>
+                  <input
+                    value={reportDetails}
+                    onChange={(event) => {
+                      setReportDetails(event.target.value);
+                      setReportError("");
+                    }}
+                    maxLength={2000}
+                    required
+                  />
+                </label>
+                <p className="messages-report-hint">
+                  Include context that will help a moderator review the report.
+                </p>
+                {reportError && (
+                  <p className="messages-report-error" role="alert">
+                    {reportError}
+                  </p>
+                )}
+                <div className="messages-report-actions">
+                  <button
+                    type="button"
+                    onClick={closeReportDialog}
+                    disabled={reportSubmitting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={reportSubmitting}
+                  >
+                    {reportSubmitting ? "Submitting…" : "Submit report"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </section>
+        </div>
+      )}
       <Footer />
     </div>
   );

@@ -200,6 +200,7 @@ public class ListingService {
             String email) {
 
         User user = currentUser(email);
+        visibility.requireActiveMarketplaceAccess(user);
         Listing listing = new Listing();
 
         applyChanges(listing, request);
