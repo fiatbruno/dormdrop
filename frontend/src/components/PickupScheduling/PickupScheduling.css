@@ -1,0 +1,185 @@
+
+.pickup-section {
+  margin: 10px 24px;
+  padding: 14px;
+  border: 1px solid #dce4ed;
+  border-radius: 12px;
+  background: #f7fafd;
+  max-height: 230px;
+  overflow-y: auto;
+}
+
+.pickup-section-header,
+.pickup-card-heading,
+.pickup-dialog-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.pickup-section-header {
+  margin-bottom: 12px;
+}
+
+.pickup-section-header strong {
+  font-size: 14px;
+}
+
+.pickup-section .pickup-muted,
+.pickup-dialog .pickup-muted {
+  color: #657b9b;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 7px 0;
+}
+
+.pickup-card {
+  background: #fff;
+  border: 1px solid #dce4ed;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+.pickup-card p {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 6px 0;
+  overflow-wrap: anywhere;
+}
+
+.pickup-card-heading {
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.pickup-status {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 5px 8px;
+  border-radius: 20px;
+  background: #edf4fa;
+}
+
+.pickup-status-accepted {
+  color: #186347;
+  background: #e4f4eb;
+}
+
+.pickup-status-rejected {
+  color: #a12626;
+  background: #fce9e9;
+}
+
+.pickup-status-pending {
+  color: #8b570a;
+  background: #fff2d5;
+}
+
+.pickup-card-actions,
+.pickup-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.messages-page button.pickup-primary {
+  background: #194278;
+  color: #fff;
+  border-color: #194278;
+}
+
+.messages-page button.pickup-primary:hover {
+  background: #12345e;
+}
+
+.pickup-error {
+  color: #b42318;
+  font-size: 12px;
+  margin: 8px 0;
+}
+
+.pickup-warning {
+  color: #855900;
+  background: #fff6df;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 12px;
+}
+
+.pickup-overlay {
+  position: fixed;
+  inset: 0;
+  background: #091b36a8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 16px;
+}
+
+.pickup-dialog {
+  width: min(100%, 480px);
+  max-height: 90dvh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 70px #0004;
+  color: #10295c;
+}
+
+.pickup-dialog h2 {
+  font-size: 22px;
+  margin: 0;
+}
+
+.messages-page .pickup-dialog-heading button {
+  border: 0;
+  padding: 4px 10px;
+  font-size: 25px;
+}
+
+.pickup-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.pickup-form label {
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pickup-form input,
+.pickup-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid #cbd6e4;
+  border-radius: 8px;
+  padding: 12px;
+  font: inherit;
+  color: #10295c;
+  background: white;
+}
+
+.pickup-form textarea {
+  resize: vertical;
+}
+
+@media (max-width: 700px) {
+  .pickup-section {
+    margin: 8px 12px;
+    padding: 10px;
+    max-height: 185px;
+  }
+
+  .pickup-dialog {
+    padding: 18px;
+  }
+}

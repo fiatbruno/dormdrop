@@ -10,6 +10,22 @@ function makeToken(claims = {}) {
 
 async function loginAs(page, claims = {}) {
   await page.addInitScript((token) => localStorage.setItem("token", token), makeToken(claims));
+  await page.route("**/api/v1/users/me", (route) =>
+    route.fulfill({
+      status: 200,
+      json: {
+        id: claims.id || "buyer-1",
+        name: "Test User",
+        email: "user@augustana.edu",
+        role: "STUDENT",
+        capabilities: [],
+      },
+    }),
+  );
+
+  await page.route("**/api/v1/conversations", (route) =>
+    route.fulfill({ status: 200, json: [] }),
+  );
   await page.route("**/api/v1/me/notifications/unread-count", (route) =>
     route.fulfill({ json: { count: 0 } }),
   );

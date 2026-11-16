@@ -10,6 +10,26 @@ const makeToken = () => {
 
 async function mockListingPage(page, listingId = "shared-listing") {
   await page.addInitScript((token) => localStorage.setItem("token", token), makeToken());
+  await page.route("**/api/v1/users/me", (route) =>
+    route.fulfill({
+      status: 200,
+      json: {
+        id: "buyer-1",
+        name: "Test Buyer",
+        email: "buyer@augustana.edu",
+      },
+    }),
+  );
+
+  await page.route("**/api/v1/conversations", (route) =>
+    route.fulfill({ status: 200, json: [] }),
+  );
+  await page.route("**/api/v1/home/*/my-offer", (route) =>
+    route.fulfill({
+      status: 200,
+      json: null,
+    }),
+  );
   await page.route("**/api/v1/me/notifications/unread-count", (route) =>
     route.fulfill({ json: { count: 0 } }),
   );

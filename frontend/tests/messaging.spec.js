@@ -15,6 +15,17 @@ test("notification bell combines unread messages with offer notifications", asyn
   );
   await page.route("**/api/v1/home", (route) => route.fulfill({ json: [] }));
   await page.route("**/api/v1/favorites", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/v1/users/me", (route) =>
+    route.fulfill({
+      status: 200,
+      json: {
+        id: "buyer-1",
+        name: "Jamie Lee",
+        email: "jamie@augustana.edu",
+        capabilities: ["MARKETPLACE"],
+      },
+    }),
+  );
   await page.goto("/home");
   await expect(page.getByRole("button", { name: "Notifications, 4 unread" })).toBeVisible();
   unread = 0;
@@ -73,6 +84,30 @@ test("accepted offer appears as a pickup card in the conversation", async ({
   );
   await page.route("**/api/v1/conversations/conversation-1/messages", (route) =>
     route.fulfill({ json: [] }),
+  );
+  await page.route("**/api/v1/users/me", (route) =>
+    route.fulfill({
+      status: 200,
+      json: {
+        id: "buyer-1",
+        name: "Jamie Lee",
+        email: "jamie@augustana.edu",
+        capabilities: ["MARKETPLACE"],
+      },
+    }),
+  );
+  await page.route("**/api/v1/conversations/conversation-1/pickup-proposals", route =>
+    route.fulfill({
+      status: 200,
+      json: [],
+    })
+  );
+
+  await page.route("**/api/v1/conversations/conversation-1/read", route =>
+    route.fulfill({
+      status: 200,
+      json: {},
+    })
   );
 
   await page.goto("/messages/conversation-1");
@@ -138,6 +173,30 @@ test("a message report requires a reason and shows submission confirmation", asy
         json: { id: "report-1", status: "OPEN", createdAt: new Date().toISOString() },
       });
     },
+  );
+  await page.route("**/api/v1/users/me", (route) =>
+    route.fulfill({
+      status: 200,
+      json: {
+        id: "buyer-1",
+        name: "Jamie Lee",
+        email: "jamie@augustana.edu",
+        capabilities: ["MARKETPLACE"],
+      },
+    }),
+  );
+  await page.route("**/api/v1/conversations/conversation-1/pickup-proposals", route =>
+    route.fulfill({
+      status: 200,
+      json: [],
+    })
+  );
+
+  await page.route("**/api/v1/conversations/conversation-1/read", route =>
+    route.fulfill({
+      status: 200,
+      json: {},
+    })
   );
 
   await page.goto("/messages/conversation-1");

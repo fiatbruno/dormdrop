@@ -1,3 +1,4 @@
+
 import api from "./client";
 
 const offerPath = (offerId) => `/offers/${encodeURIComponent(offerId)}`;
@@ -45,6 +46,20 @@ export async function decideOffer(
     `${offerPath(offerId)}/decisions`,
     { action, expectedVersion },
     { headers: { "Idempotency-Key": idempotencyKey } },
+  );
+  return data;
+}
+
+export async function confirmItemReceived(offerId) {
+  const { data } = await api.post(
+    `${offerPath(offerId)}/transaction/confirm-receipt`,
+  );
+  return data;
+}
+
+export async function getCompletedTransaction(offerId) {
+  const { data } = await api.get(
+    `${offerPath(offerId)}/transaction`,
   );
   return data;
 }

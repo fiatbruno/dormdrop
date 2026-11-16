@@ -1,6 +1,22 @@
 // @ts-check
 import { expect, test } from "@playwright/test";
 
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/v1/users/me", (route) =>
+    route.fulfill({
+      status: 200,
+      json: {
+        id: "buyer-1",
+        name: "Bailey Buyer",
+        email: "buyer@augustana.edu",
+      },
+    }),
+  );
+
+  await page.route("**/api/v1/conversations", (route) =>
+    route.fulfill({ status: 200, json: [] }),
+  );
+});
 const makeToken = (userId) => {
   const payload = Buffer.from(
     JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600, id: userId }),
@@ -40,6 +56,19 @@ const makeOffer = (overrides = {}) => ({
 
 async function openMessageOffer(page, userId, offer) {
   await page.addInitScript((token) => localStorage.setItem("token", token), makeToken(userId));
+
+  await page.route("**/api/v1/users/me", (route) =>
+    route.fulfill({
+      status: 200,
+      json: {
+        id: userId,
+        name: userId === "buyer-1" ? "Bailey Buyer" : "Sam Seller",
+        email: userId === "buyer-1"
+          ? "buyer@augustana.edu"
+          : "seller@augustana.edu",
+      },
+    }),
+  );
   await page.route("**/api/v1/me/notifications/unread-count", (route) =>
     route.fulfill({ json: { count: 0 } }),
   );
@@ -74,6 +103,12 @@ async function openMessageOffer(page, userId, offer) {
       },
     }),
   );
+  await page.route("**/api/v1/conversations/conversation-1/pickup-proposals", (route) =>
+    route.fulfill({
+      status: 200,
+      json: [],
+    }),
+  );
   await page.route("**/api/v1/conversations/conversation-1/messages", (route) =>
     route.fulfill({ json: [] }),
   );
@@ -84,7 +119,7 @@ async function openMessageOffer(page, userId, offer) {
 test("seller accepts buyer offer without implying payment or sale", async ({
   page,
 }) => {
-  const offer = makeOffer();
+const offer = makeOffer();
   let requestBody;
   await page.route("**/api/v1/offers/offer-1/decisions", async (route) => {
     requestBody = route.request().postDataJSON();
@@ -133,6 +168,7 @@ test("an offer notification refreshes an already open conversation", async ({ pa
 
 test("an offer notification refreshes the open offer details page", async ({ page }) => {
   await page.addInitScript((token) => localStorage.setItem("token", token), makeToken("buyer-1"));
+
   await page.route("**/api/v1/me/notifications/unread-count", (route) =>
     route.fulfill({ json: { count: 0 } }),
   );
@@ -418,6 +454,7 @@ test("a buyer can submit an offer from a listing and land in that listing's conv
   page,
 }) => {
   await page.addInitScript((token) => localStorage.setItem("token", token), makeToken("buyer-1"));
+
   await page.route("**/api/v1/me/notifications/unread-count", (route) =>
     route.fulfill({ json: { count: 0 } }),
   );
@@ -467,6 +504,12 @@ test("a buyer can submit an offer from a listing and land in that listing's conv
         listing,
         offer: makeOffer(),
       },
+    }),
+  );
+  await page.route("**/api/v1/conversations/conversation-1/pickup-proposals", (route) =>
+    route.fulfill({
+      status: 200,
+      json: [],
     }),
   );
   await page.route("**/api/v1/conversations/conversation-1/messages", (route) =>
