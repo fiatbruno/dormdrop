@@ -1,11 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Tag } from "lucide-react";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ListingImage from "../../components/ListingImage";
 import useMessaging from "../../hooks/useMessaging";
-import { reportMessage } from "../../api/messagingApi";
+import {
+  reportMessage,
+  getPickupProposals,
+  createPickupProposal,
+  respondToPickupProposal,
+} from "../../api/messagingApi";
+import PickupForm from "../../components/PickupForm/PickupForm";
 import "./Messages.css";
 import OfferNegotiation from "../../components/OfferNegotiation/OfferNegotiation";
 
@@ -30,6 +36,19 @@ const timeLabel = (date) =>
         minute: "2-digit",
       })
     : "";
+const pickupTimeLabel = (value) => {
+  const date = new Date(`${value}Z`);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat(undefined, {
+        timeZone: "UTC",
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }).format(date);
+};
 function priceLabel(item) {
   if (item.listingType === "Free / Donate") return "Free";
   if (item.listingType === "Trade") return "Trade";
@@ -40,9 +59,53 @@ function priceLabel(item) {
   }).format(item.price);
 }
 
+function PickupDetails({ proposal, canRespond, onRespond }) {
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const pending = useRef(false);
+  const status = proposal.status === "REJECTED" ? "Declined" : proposal.status === "ACCEPTED" ? "Accepted" : "Pending";
+
+  async function respond(decision) {
+    if (pending.current) return;
+    pending.current = true;
+    setSubmitting(true);
+    setError("");
+    try { await onRespond(proposal.id, decision); }
+    catch (err) {
+      setError(err.response?.status === 409
+        ? "This proposal has already been answered. Its latest status has been requested."
+        : err.response?.data?.detail || err.response?.data?.message ||
+          "Could not confirm your response. Refresh the conversation before trying again.");
+    } finally { pending.current = false; setSubmitting(false); }
+  }
+
+  return <>
+    <p className="pickup-card__status">{status}</p>
+    <details>
+      <summary>View pickup details →</summary>
+      {proposal.meetingNote && <p>{proposal.meetingNote}</p>}
+      {proposal.status === "PENDING" && canRespond && typeof proposal.id === "string" &&
+        <div className="pickup-card__actions">
+          <button type="button" disabled={submitting} onClick={() => void respond("ACCEPTED")}>Accept</button>
+          <button type="button" disabled={submitting} onClick={() => void respond("REJECTED")}>Decline</button>
+        </div>}
+      {error && <p role="alert" className="pickup-card__error">{error}</p>}
+    </details>
+  </>;
+}
+
 export default function Messages() {
   const { conversationId } = useParams();
   const chat = useMessaging(conversationId);
+  const [pickupFormConversation, setPickupFormConversation] = useState(null);
+  const [pickupState, setPickupState] = useState({
+    id: null,
+    proposals: [],
+    error: "",
+  });
+  const pickupRevision = useRef(0);
+  const selectedPickupConversation = useRef(conversationId);
+  useLayoutEffect(() => { selectedPickupConversation.current = conversationId; }, [conversationId]);
   const [search, setSearch] = useState("");
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [newMessages, setNewMessages] = useState(false);
@@ -57,6 +120,27 @@ export default function Messages() {
   const composerInput = useRef(null);
   const nearBottom = useRef(true);
   const previous = useRef({ id: null, last: null, sent: 0 });
+  const refreshPickups = useCallback(async (current) => {
+    if (!current) return;
+    const revision = ++pickupRevision.current;
+    try {
+      const proposals = await getPickupProposals(current);
+      if (!Array.isArray(proposals)) throw new Error("Invalid pickup proposals response");
+      if (revision === pickupRevision.current && selectedPickupConversation.current === current)
+        setPickupState({ id: current, proposals, error: "" });
+    } catch {
+      if (revision === pickupRevision.current && selectedPickupConversation.current === current)
+        setPickupState((previous) => ({ id: current, proposals: previous.id === current ? previous.proposals : [],
+          error: "Could not load pickup proposals. Try again." }));
+    }
+  }, []);
+  useEffect(() => {
+    const revisionRef = pickupRevision;
+    // The refresh only updates state after the request settles.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refreshPickups(conversationId);
+    return () => { revisionRef.current++; setPickupFormConversation(null); };
+  }, [conversationId, refreshPickups]);
   const bottom = () => {
     if (scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight;
     nearBottom.current = true;
@@ -72,7 +156,7 @@ export default function Messages() {
       bottom();
     else if (last && last !== previous.current.last) setNewMessages(true);
     previous.current = { id: conversationId, last, sent: chat.sentVersion };
-  }, [chat.messages, conversationId, chat.sentVersion]);
+  }, [chat.messages, conversationId, chat.sentVersion, pickupState]);
 
   const query = search.trim().toLowerCase();
   const conversations = chat.conversations.filter(
@@ -90,11 +174,28 @@ export default function Messages() {
   const item = chat.conversation?.listing;
   const offer = chat.conversation?.offer;
   const offerAccepted = offer?.status === "ACCEPTED";
-  const acceptedAt = offer?.history?.findLast((entry) => entry.action === "ACCEPTED")?.createdAt
-    || offer?.updatedAt || offer?.createdAt;
+  const acceptedAt =
+    offer?.history?.findLast((entry) => entry.action === "ACCEPTED")
+      ?.createdAt ||
+    offer?.updatedAt ||
+    offer?.createdAt;
   const timeline = [
-    ...chat.messages.map((message) => ({ type: "message", at: message.sentAt, message })),
-    ...(offer ? [{ type: "offer", at: offer.createdAt || offer.history?.[0]?.createdAt }] : []),
+    ...chat.messages.map((message) => ({
+      type: "message",
+      at: message.sentAt,
+      message,
+    })),
+    ...(pickupState.id === conversationId ? pickupState.proposals : []).map(
+      (proposal) => ({ type: "pickup", at: proposal.timeCreated, proposal }),
+    ),
+    ...(offer
+      ? [
+          {
+            type: "offer",
+            at: offer.createdAt || offer.history?.[0]?.createdAt,
+          },
+        ]
+      : []),
     ...(offerAccepted ? [{ type: "accepted", at: acceptedAt }] : []),
   ].sort((a, b) => {
     const first = Date.parse(a.at);
@@ -102,7 +203,7 @@ export default function Messages() {
     const firstTime = Number.isFinite(first) ? first : -Infinity;
     const secondTime = Number.isFinite(second) ? second : -Infinity;
     if (firstTime !== secondTime) return firstTime - secondTime;
-    const order = { offer: 0, accepted: 1, message: 2 };
+    const order = { offer: 0, accepted: 1, message: 2, pickup: 3 };
     return order[a.type] - order[b.type];
   });
   const agreedPrice = Number(offer?.amount);
@@ -123,7 +224,43 @@ export default function Messages() {
       : "";
 
   function arrangePickup() {
-    composerInput.current?.focus();
+    setPickupFormConversation(conversationId);
+  }
+
+  async function submitPickup({ location, pickupDate, pickupTime }) {
+    const current = conversationId;
+    const proposal = await createPickupProposal(current, {
+      meetingPlace: location,
+      timePickup: `${pickupDate}T${pickupTime}:00`,
+    });
+    if (selectedPickupConversation.current !== current) return;
+    pickupRevision.current++;
+    nearBottom.current = true;
+    setPickupState((previous) => ({
+      id: current,
+      proposals: [
+        ...(previous.id === current ? previous.proposals : []),
+        proposal,
+      ],
+      error: "",
+    }));
+    void refreshPickups(current);
+  }
+
+  async function respondPickup(proposalId, decision) {
+    const current = conversationId;
+    try {
+      const proposal = await respondToPickupProposal(current, proposalId, decision);
+      if (selectedPickupConversation.current !== current) return;
+      pickupRevision.current++;
+      setPickupState((previous) => previous.id !== current ? previous : {
+        ...previous, proposals: previous.proposals.map((item) => item.id === proposal.id ? proposal : item),
+      });
+      void refreshPickups(current);
+    } catch (error) {
+      if (error.response?.status === 409) void refreshPickups(current);
+      throw error;
+    }
   }
 
   function closeReportDialog() {
@@ -138,7 +275,8 @@ export default function Messages() {
 
   async function submitMessageReport(event) {
     event.preventDefault();
-    const reason = reportReason === "Other" ? customReason.trim() : reportReason;
+    const reason =
+      reportReason === "Other" ? customReason.trim() : reportReason;
     if (!reason) {
       setReportError("Select or enter a reason before submitting.");
       return;
@@ -176,7 +314,11 @@ export default function Messages() {
             <button type="button" disabled>
               Your Exchange
             </button>
-            <button type="button" onClick={arrangePickup} disabled={!chat.conversation}>
+            <button
+              type="button"
+              onClick={arrangePickup}
+              disabled={!chat.conversation}
+            >
               Propose pickup
             </button>
           </div>
@@ -356,6 +498,13 @@ export default function Messages() {
                         }}
                         aria-label="Message history"
                       >
+                        {pickupState.id === conversationId &&
+                          pickupState.error && (
+                            <p role="alert" className="messages-error">
+                              {pickupState.error}
+                              <button type="button" onClick={() => void refreshPickups(conversationId)}>Try again</button>
+                            </p>
+                          )}
                         {timeline.length === 0 && (
                           <p className="messages-state">
                             Say hello and ask about the item.
@@ -371,6 +520,38 @@ export default function Messages() {
                             ? dateLabel(timeline[index - 1].at)
                             : "";
                           const showDate = date && date !== previousDate;
+                          if (event.type === "pickup") {
+                            const proposal = event.proposal;
+                            const outgoing =
+                              (typeof proposal.idSuggester === "string" &&
+                                proposal.idSuggester ===
+                                  chat.conversation.currentUserId);
+                            const sender = outgoing
+                              ? " · Sent by you"
+                              : typeof proposal.idSuggester === "string"
+                                ? ` · Sent by ${chat.conversation.participant.name}`
+                                : "";
+                            return (
+                              <div
+                                key={`pickup-${typeof proposal.id === "string" ? proposal.id : index}`}
+                              >
+                                {showDate && (
+                                  <p className="messages-date">{date}</p>
+                                )}
+                                <article
+                                  className={`pickup-card ${outgoing ? "outgoing" : ""}`}
+                                  aria-label="Pickup proposal"
+                                >
+                                  <p className="pickup-card__eyebrow">
+                                    Pickup proposal{sender}
+                                  </p>
+                                  <h3>{proposal.meetingPlace}</h3>
+                                  <p>{pickupTimeLabel(proposal.timePickUp)}</p>
+                                  <PickupDetails proposal={proposal} canRespond={typeof proposal.idSuggester === "string" && typeof chat.conversation.currentUserId === "string" && proposal.idSuggester !== chat.conversation.currentUserId} onRespond={respondPickup} />
+                                </article>
+                              </div>
+                            );
+                          }
                           if (event.type === "offer")
                             return (
                               <div key={`offer-${offer.id}`}>
@@ -544,6 +725,13 @@ export default function Messages() {
           </section>
         </div>
       </main>
+      {pickupFormConversation === conversationId && conversationId && (
+        <PickupForm
+          key={conversationId}
+          onClose={() => setPickupFormConversation(null)}
+          onSubmit={submitPickup}
+        />
+      )}
       {reportTarget && (
         <div className="messages-report-backdrop">
           <section
