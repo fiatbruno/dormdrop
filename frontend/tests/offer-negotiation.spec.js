@@ -1,6 +1,11 @@
 // @ts-check
 import { expect, test } from "@playwright/test";
 
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/v1/users/me", route => route.fulfill({ json: { id: "buyer", name: "Test User" } }));
+  await page.route("**/api/v1/conversations/*/pickup-proposals", route => route.fulfill({ json: [] }));
+});
+
 const makeToken = (userId) => {
   const payload = Buffer.from(
     JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600, id: userId }),
@@ -114,7 +119,7 @@ test("seller accepts buyer offer without implying payment or sale", async ({
   await expect(page.getByText(/agreement only; no payment is taken/i)).toBeVisible();
   const acceptedCard = page.getByRole("article", { name: "Offer accepted" });
   await acceptedCard.getByRole("button", { name: "Proposed pickup" }).click();
-  await expect(page.getByPlaceholder("Write a message…")).toBeFocused();
+  await expect(page.getByRole("dialog", { name: "Propose a pickup" })).toBeVisible();
   expect(requestBody).toEqual({ action: "ACCEPT", expectedVersion: 0 });
 });
 
