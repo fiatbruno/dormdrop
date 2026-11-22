@@ -6,6 +6,7 @@ import Footer from "../../components/Footer/Footer";
 import "./ListItem.css";
 import Navbar from "../../components/Navbar/Navbar";
 import { useNavigate } from "react-router-dom";
+import useAuth from "../../hooks/useAuth";
 
 const emptyForm = {
   title: "",
@@ -197,6 +198,19 @@ function Dropdown({
 }
 
 function ListItem() {
+  const { token } = useAuth();
+  let accountId;
+  try {
+    const claims = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    accountId = claims.id;
+  } catch {
+    // The protected route handles missing or expired sessions.
+  }
+  const retryKey = accountId ? `dormdrop-pending-listing:${accountId}` : null;
+  return <ListItemForm key={retryKey} retryKey={retryKey} />;
+}
+
+function ListItemForm({ retryKey }) {
   const navigate = useNavigate();
 
   const [form, setForm] = useState(emptyForm);
@@ -213,10 +227,12 @@ function ListItem() {
   // Restore saved text details when returning to this page.
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("dormdrop-listing-draft");
-      if (!saved) return;
-
-      const draft = JSON.parse(saved);
+      const pending = retryKey ? JSON.parse(sessionStorage.getItem(retryKey)) : null;
+      const draft = pending?.form ?? JSON.parse(localStorage.getItem("dormdrop-listing-draft"));
+      if (typeof pending?.id === "string" && pending.id) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore the unfinished upload after a refresh.
+        setCreatedListingId(pending.id);
+      }
 
       if (!draft || typeof draft !== "object") return;
 
@@ -248,7 +264,7 @@ function ListItem() {
     } catch {
       setError("Could not restore your saved draft.");
     }
-  }, []);
+  }, [retryKey]);
 
   function setField(name, value) {
     setForm((previous) => ({ ...previous, [name]: value }));
@@ -270,7 +286,11 @@ function ListItem() {
 
   function saveDraft() {
     try {
-      localStorage.setItem("dormdrop-listing-draft", JSON.stringify(form));
+      if (createdListingId && retryKey) {
+        sessionStorage.setItem(retryKey, JSON.stringify({ id: createdListingId, form }));
+      } else {
+        localStorage.setItem("dormdrop-listing-draft", JSON.stringify(form));
+      }
       setError("");
       setSuccess(
         "Draft saved on this device. Select your photos again when you return.",
@@ -353,7 +373,13 @@ function ListItem() {
         await updateListing(id, { ...listing, pickupLocation: listing.pickupArea });
       }
 
+      // Save the listing ID before uploading so a refresh can resume this listing.
+      if (retryKey) {
+        sessionStorage.setItem(retryKey, JSON.stringify({ id, form }));
+      }
+
       await saveListingPhotos(id, photos);
+      if (retryKey) sessionStorage.removeItem(retryKey);
 
       // Clear the form after successful publishing
       setForm(emptyForm);
@@ -421,6 +447,12 @@ function ListItem() {
           <form className="listing-form" onSubmit={publishListing} noValidate>
             <fieldset disabled={loading}>
               <h2>Photos</h2>
+
+              {createdListingId && (
+                <p className="field-help">
+                  Your listing details are saved. Select your photos again if you refreshed, then retry publishing to finish this listing.
+                </p>
+              )}
 
               <ListingPhotos photos={photos} onChange={setPhotos} error={photoError} onError={setPhotoError} disabled={loading} />
 
@@ -567,7 +599,7 @@ function ListItem() {
 
               <div className="form-buttons">
                 <button className="publish-button" type="submit">
-                  {loading ? "Publishing..." : "Publish listing"}
+                  {loading ? "Publishing..." : createdListingId ? "Retry publishing" : "Publish listing"}
                 </button>
                 <button
                   className="draft-button"
