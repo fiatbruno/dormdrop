@@ -21,10 +21,12 @@ const offer = {
   status: "PENDING",
   version: 0,
   createdAt: "2026-11-04T20:00:00Z",
-  expiresAt: "2026-11-18T20:00:00Z",
+  expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
 };
 
 async function preparePage(page) {
+  // Keep test credentials away from any running backend.
+  await page.route("**/api/v1/**", (route) => route.abort());
   const tokenPayload = Buffer.from(
     JSON.stringify({
       exp: Math.floor(Date.now() / 1000) + 3600,
@@ -51,6 +53,9 @@ async function preparePage(page) {
     }
     return route.fulfill({ json: [] });
   });
+  await page.route("**/api/v1/conversations", (route) =>
+    route.fulfill({ json: [] }),
+  );
   await page.route("**/api/v1/favorites", (route) =>
     route.fulfill({ json: [] }),
   );
