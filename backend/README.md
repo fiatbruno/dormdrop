@@ -103,6 +103,12 @@ suspension expiry does not release a listing-review hide or restore a removed
 listing. Expiry runs on a schedule (60 seconds by default) and requires the
 same MongoDB transaction support as report moderation.
 
+Suspended users cannot authenticate or use an existing authenticated session.
+After a valid password is supplied, login returns HTTP 403 with code
+`ACCOUNT_SUSPENDED` and `daysRemaining` rounded up to whole days. Login is
+allowed as soon as the suspension timestamp passes, independently of the
+scheduled listing-restoration task.
+
 Use Java 17 and Maven to run the backend unit tests from the repository root:
 
 ```sh

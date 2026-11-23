@@ -45,7 +45,8 @@ public class WebSocketSessions implements WebSocketHandlerDecoratorFactory {
         identities.forEach((sessionId, identity) -> {
             try {
                 var user = users.findById(identity.userId());
-                if (user.isEmpty() || user.get().getRoleVersion() != identity.version()) close(sessionId);
+                if (user.isEmpty() || user.get().getRoleVersion() != identity.version()
+                        || user.get().isSuspendedAt(java.time.Instant.now())) close(sessionId);
             } catch (RuntimeException ex) { close(sessionId); }
         });
     }

@@ -183,6 +183,10 @@ public class User {
 
     public void setSuspendedUntil(Instant suspendedUntil) { this.suspendedUntil = suspendedUntil; }
 
+    public boolean isSuspendedAt(Instant now) {
+        return suspendedUntil != null && now.isBefore(suspendedUntil);
+    }
+
     @com.fasterxml.jackson.annotation.JsonIgnore
     public ObjectId getSuspensionReportId() { return suspensionReportId; }
 

@@ -6,6 +6,60 @@
   background: white;
 }
 
+#loginPage .suspension-dialog {
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
+  width: min(496px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  overflow: auto;
+  padding: clamp(20px, 5vw, 32px);
+  border: 1px solid #ecedf0;
+  border-radius: 12px;
+  background: #fff;
+  color: #0b2255;
+  box-shadow: 0 20px 60px rgb(13 30 55 / 24%);
+  font-family: var(--sans, "Inter", sans-serif);
+}
+
+#loginPage .suspension-dialog::backdrop {
+  background: rgb(11 34 85 / 45%);
+}
+
+#loginPage .suspension-dialog h2 {
+  margin: 0 0 20px;
+  color: #0b2255;
+  font-family: var(--heading, sans-serif);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 36px;
+}
+
+#loginPage .suspension-dialog p {
+  margin: 0 0 20px;
+  color: #596b82;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+#loginPage .suspension-dialog button {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid #134074;
+  border-radius: 8px;
+  background: #134074;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#loginPage .suspension-dialog button:focus-visible {
+  outline: 3px solid #2785d1;
+  outline-offset: 2px;
+}
+
 #loginPage .loginFormTitle {
   margin: 0 0 14px;
 

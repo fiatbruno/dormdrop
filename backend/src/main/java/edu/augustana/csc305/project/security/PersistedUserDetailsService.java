@@ -4,6 +4,7 @@ import edu.augustana.csc305.project.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.stereotype.Service;
 
 /** Resolves current authorities from storage rather than trusting token claims. */
@@ -35,6 +36,9 @@ public class PersistedUserDetailsService implements UserDetailsService {
         }
         var user = users.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        if (user.isSuspendedAt(java.time.Instant.now())) {
+            throw new LockedException("Account is suspended.");
+        }
         return new VersionedUserDetails(user);
     }
 }

@@ -79,6 +79,38 @@ test.describe("Authentication", () => {
       await expect(page.getByRole("button", { name: "Log In" })).toBeEnabled();
     });
 
+    test("suspended login shows remaining days and allows a later login", async ({ page }) => {
+      let suspended = true;
+      await page.route("**/api/v1/auth/login", (route) =>
+        route.fulfill(suspended
+          ? { status: 403, json: { code: "ACCOUNT_SUSPENDED", daysRemaining: 2 } }
+          : { json: { token: makeSessionToken(Math.floor(Date.now() / 1000) + 3600) } }),
+      );
+      await page.route("**/api/v1/users/me", (route) =>
+        route.fulfill({ json: { capabilities: ["MARKETPLACE"] } }),
+      );
+      await mockMarketplace(page);
+      await page.getByLabel("email").fill("sample@augustana.edu");
+      await page.getByLabel("password").fill("passwordsample");
+      await page.getByRole("button", { name: "Log In" }).click();
+
+      const dialog = page.getByRole("dialog", { name: "Account suspended" });
+      await expect(dialog).toContainText("2 more days or less");
+      await expect(dialog).toHaveCSS("border-radius", "12px");
+      await expect(dialog).toHaveCSS("background-color", "rgb(255, 255, 255)");
+      const bounds = await dialog.boundingBox();
+      expect(bounds).not.toBeNull();
+      const viewport = page.viewportSize();
+      expect(Math.abs(bounds.x + bounds.width / 2 - viewport.width / 2)).toBeLessThan(2);
+      expect(Math.abs(bounds.y + bounds.height / 2 - viewport.height / 2)).toBeLessThan(2);
+      await expect(page).toHaveURL("/login");
+      expect(await page.evaluate(() => localStorage.getItem("token"))).toBeNull();
+      await dialog.getByRole("button", { name: "Close" }).click();
+      suspended = false;
+      await page.getByRole("button", { name: "Log In" }).click();
+      await expect(page).toHaveURL("/home");
+    });
+
     test("login prevents another submission while waiting", async ({
       page,
     }) => {

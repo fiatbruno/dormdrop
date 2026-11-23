@@ -2,7 +2,7 @@
 import "./Login.css";
 import "../../components/AuthLeftPanel/AuthPage.css";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import useAuth from "../../hooks/useAuth";
 
 import AuthLeftPanel from "../../components/AuthLeftPanel/AuthLeftPanel.jsx";
@@ -28,6 +28,30 @@ import { loginSchema } from "../../schemas/authSchemas.js";
 import { loginUser } from "../../api/backendApi.js";
 import Navbar from "../../components/Navbar/Navbar.jsx";
 
+function SuspensionDialog({ days, onClose }) {
+  const dialog = useRef(null);
+
+  useEffect(() => {
+    dialog.current.showModal();
+  }, []);
+
+  return (
+    <dialog
+      ref={dialog}
+      className="suspension-dialog"
+      aria-labelledby="suspension-title"
+      onClose={onClose}
+    >
+      <h2 id="suspension-title">Account suspended</h2>
+      <p>
+        Your account is suspended for {days} more {days === 1 ? "day" : "days"} or less.
+        You can sign in once the suspension expires.
+      </p>
+      <button type="button" onClick={() => dialog.current.close()}>Close</button>
+    </dialog>
+  );
+}
+
 function Login() {
   const {
     register,
@@ -40,6 +64,7 @@ function Login() {
 
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [suspensionDays, setSuspensionDays] = useState(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -71,13 +96,26 @@ function Login() {
         : destination, {
         replace: true,
       });
-    } catch {
-      setError("Invalid email or password.");
+    } catch (requestError) {
+      const response = requestError.response;
+      if (response?.status === 403 && response.data?.code === "ACCOUNT_SUSPENDED"
+          && Number.isSafeInteger(response.data.daysRemaining) && response.data.daysRemaining > 0) {
+        setSuspensionDays(response.data.daysRemaining);
+      } else if (response?.status === 401) {
+        setError("Invalid email or password.");
+      } else if (response?.status === 403) {
+        setError("Please verify your email before logging in.");
+      } else {
+        setError("Unable to sign in. Please try again.");
+      }
     }
   };
 
   return (
     <div id="loginPage" className="authPage">
+      {suspensionDays !== null && (
+        <SuspensionDialog days={suspensionDays} onClose={() => setSuspensionDays(null)} />
+      )}
       <Navbar variant="auth" />
 
       <main className="loginMain authPage__main">

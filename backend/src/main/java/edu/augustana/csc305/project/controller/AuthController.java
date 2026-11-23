@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 import java.time.Instant;
+import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,6 +79,14 @@ public class AuthController {
             );
         }
 
+        Instant now = Instant.now();
+        if (user.isSuspendedAt(now)) {
+            Duration remaining = Duration.between(now, user.getSuspendedUntil());
+            long days = remaining.toDays();
+            if (remaining.compareTo(Duration.ofDays(days)) > 0) days++;
+            throw new SuspendedLoginException(days);
+        }
+
         if (!user.isEmailVerified()) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
@@ -101,6 +110,21 @@ public class AuthController {
                         user.getEmail()
                 )
         );
+    }
+
+    private static class SuspendedLoginException extends RuntimeException {
+        private final long daysRemaining;
+
+        private SuspendedLoginException(long daysRemaining) {
+            this.daysRemaining = daysRemaining;
+        }
+    }
+
+    @ExceptionHandler(SuspendedLoginException.class)
+    public ResponseEntity<Map<String, Object>> suspendedLogin(SuspendedLoginException error) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(Map.of("code", "ACCOUNT_SUSPENDED", "daysRemaining", error.daysRemaining));
     }
 
     @PostMapping("/register")
