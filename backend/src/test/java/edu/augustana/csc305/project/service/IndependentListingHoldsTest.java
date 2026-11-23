@@ -43,6 +43,7 @@ class IndependentListingHoldsTest {
     private final User staff = new User(new ObjectId(), "Admin", "admin@example.com", "hash");
     private final ObjectId suspensionId = new ObjectId();
     private final Listing listing = new Listing();
+    private boolean statusMissing;
     private ModerationCase reportCase;
     private MessageReportReviewService suspension;
     private ModerationDecisionService decisions;
@@ -73,7 +74,7 @@ class IndependentListingHoldsTest {
         when(mongo.findById(any(), eq(Listing.class))).thenAnswer(call -> listing);
         when(mongo.find(any(Query.class), eq(Report.class))).thenReturn(List.of());
         when(mongo.find(any(Query.class), eq(User.class))).thenAnswer(call ->
-                matches(call.getArgument(0), member) ? List.of(member) : List.of());
+                matches(call.getArgument(0, Query.class), member) ? List.of(member) : List.of());
         when(mongo.insert(any())).thenAnswer(call -> call.getArgument(0));
         when(mongo.updateFirst(any(Query.class), any(Update.class), eq(MessageReport.class)))
                 .thenReturn(UpdateResult.acknowledged(1, 1L, null));
@@ -123,6 +124,36 @@ class IndependentListingHoldsTest {
         assertNull(listing.getTemporaryHideCaseId());
         expire();
         assertEquals(Visibility.VISIBLE, listing.getModerationVisibility());
+    }
+
+    @Test
+    void suspensionHidesLegacyListingWithoutStoredStatus() {
+        statusMissing = true;
+        suspend();
+        assertEquals(Visibility.HIDDEN, listing.getModerationVisibility());
+        assertEquals(suspensionId, listing.getAccountSuspensionId());
+        expire();
+        assertEquals(Visibility.VISIBLE, listing.getModerationVisibility());
+    }
+
+    @Test
+    void suspensionHoldsLegacyReportHiddenListingAfterReviewIsCleared() {
+        statusMissing = true;
+        decide(DecisionAction.HIDE);
+        suspend();
+        assertEquals(suspensionId, listing.getAccountSuspensionId());
+        decide(DecisionAction.KEEP);
+        assertEquals(Visibility.HIDDEN, listing.getModerationVisibility());
+        expire();
+        assertEquals(Visibility.VISIBLE, listing.getModerationVisibility());
+    }
+
+    @Test
+    void suspensionDoesNotHideSoldListing() {
+        listing.setStatus(ListingStatus.SOLD);
+        suspend();
+        assertEquals(Visibility.VISIBLE, listing.getModerationVisibility());
+        assertNull(listing.getAccountSuspensionId());
     }
 
     @Test
@@ -226,7 +257,15 @@ class IndependentListingHoldsTest {
     }
 
     private boolean matches(Query query, Object entity) {
-        for (var entry : query.getQueryObject().entrySet()) {
+        return matches(query.getQueryObject(), entity);
+    }
+
+    private boolean matches(Document query, Object entity) {
+        for (var entry : query.entrySet()) {
+            if (entry.getKey().equals("$or")) {
+                if (((List<?>) entry.getValue()).stream().noneMatch(part -> matches((Document) part, entity))) return false;
+                continue;
+            }
             Object value = switch (entry.getKey()) {
                 case "_id" -> entity instanceof User user ? user.getId() : listing.getId();
                 case "ownerId" -> listing.getOwnerId();
@@ -241,9 +280,11 @@ class IndependentListingHoldsTest {
             };
             Object expected = entry.getValue();
             if (expected instanceof Document operator) {
-                if (operator.containsKey("$in") && ((List<?>) operator.get("$in")).stream().noneMatch(item -> equalValue(value, item))) return false;
+                if (operator.containsKey("$in") && (entry.getKey().equals("status") && statusMissing
+                        || ((List<?>) operator.get("$in")).stream().noneMatch(item -> equalValue(value, item)))) return false;
                 if (operator.containsKey("$ne") && equalValue(value, operator.get("$ne"))) return false;
                 if (operator.containsKey("$lte") && (value == null || ((Instant) value).isAfter((Instant) operator.get("$lte")))) return false;
+                if (operator.containsKey("$exists") && !Objects.equals(operator.get("$exists"), !statusMissing)) return false;
             } else if (!equalValue(value, expected)) {
                 return false;
             }

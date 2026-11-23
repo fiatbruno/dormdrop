@@ -139,16 +139,16 @@ public class MessageReportReviewService {
                     .set("suspensionReportId", report.id());
             mongo.updateFirst(Query.query(Criteria.where("_id").is(member.getId())), userUpdate, User.class);
             Query activeVisible = Query.query(Criteria.where("ownerId").is(member.getId())
-                    .and("status").in(List.of(ListingStatus.AVAILABLE, ListingStatus.RESERVED))
-                    .and("moderationVisibility").in("VISIBLE", null));
+                    .and("moderationVisibility").in("VISIBLE", null))
+                    .addCriteria(activeListingCriteria());
             Update hide = new Update().set("moderationVisibility", ModerationTypes.Visibility.HIDDEN)
                     .set("accountSuspensionId", report.id()).inc("version", 1L);
             long hiddenListings = mongo.updateMulti(activeVisible, hide, Listing.class).getModifiedCount();
             Query reportHidden = Query.query(Criteria.where("ownerId").is(member.getId())
-                    .and("status").in(List.of(ListingStatus.AVAILABLE, ListingStatus.RESERVED))
                     .and("moderationVisibility").is(ModerationTypes.Visibility.HIDDEN)
                     .and("temporaryHideCaseId").ne(null)
-                    .and("accountSuspensionId").is(null));
+                    .and("accountSuspensionId").is(null))
+                    .addCriteria(activeListingCriteria());
             mongo.updateMulti(reportHidden, new Update().set("accountSuspensionId", report.id())
                     .inc("version", 1L), Listing.class);
 
@@ -159,6 +159,12 @@ public class MessageReportReviewService {
                     PrivateNotification.Status.ACCOUNT_SUSPENDED, request.policyReason().strip(), now);
             return new Receipt(report.id().toHexString(), "SUSPENDED", now, expiresAt, hiddenListings);
         });
+    }
+
+    private Criteria activeListingCriteria() {
+        return new Criteria().orOperator(
+                Criteria.where("status").in(ListingStatus.AVAILABLE, ListingStatus.RESERVED),
+                Criteria.where("status").exists(false));
     }
 
     private void enqueueNotice(User member, MessageReport report, String message,

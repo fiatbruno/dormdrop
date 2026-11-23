@@ -39,6 +39,10 @@ public backend base URL, without the API prefix (for example,
 configured `api.prefix`. These default to `http://localhost:5173` and
 `http://localhost:8080` for local development. Set
 `MAIL_USERNAME` and `MAIL_PASSWORD` for the configured SMTP account as well.
+For local runs from the `backend` directory, Spring Boot also imports values
+from `.env`; in IntelliJ, keep the run configuration's working directory set
+to `backend` or configure the environment variables directly in the run
+configuration.
 
 First administrator provisioning is disabled by default. To bootstrap a new,
 empty database, set `ADMIN_BOOTSTRAP_ENABLED=true`, `ADMIN_EMAIL` to an
