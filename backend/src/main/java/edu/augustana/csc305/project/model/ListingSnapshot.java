@@ -29,6 +29,7 @@ public record ListingSnapshot(
         ListingStatus lifecycleStatus,
         List<String> privateEvidenceKeys,
         Instant capturedAt,
+        // Legacy inline photos remain readable; new copies live in snapshotPhotos.
         List<RetainedImage> retainedImages
 ) {
     public ListingSnapshot {

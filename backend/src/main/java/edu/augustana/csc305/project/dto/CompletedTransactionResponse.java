@@ -13,7 +13,8 @@ public record CompletedTransactionResponse(
         String conversationId,
         String pickupProposalId,
         String status,
-        Instant completedAt
+        Instant completedAt,
+        CompletedTransaction.SellerReview sellerReview
 ) {
     public static CompletedTransactionResponse from(
             CompletedTransaction transaction
@@ -27,7 +28,8 @@ public record CompletedTransactionResponse(
                 transaction.getConversationId().toHexString(),
                 transaction.getPickupProposalId().toHexString(),
                 "COMPLETED",
-                transaction.getCompletedAt()
+                transaction.getCompletedAt(),
+                transaction.getSellerReview()
         );
     }
 }

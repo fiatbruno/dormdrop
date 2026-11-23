@@ -1,104 +1,14 @@
-.pickup-dialog {
-  width: min(600px, calc(100% - 32px));
-  max-height: calc(100dvh - 32px);
-  overflow: auto;
-  border: 0;
-  border-radius: 14px;
-  padding: 32px;
-  color: #10295c;
-  font-family: var(--sans, Arial, sans-serif);
-  box-shadow: 0 18px 60px #10295c33;
-}
-.pickup-dialog::backdrop {
-  background: #091a3c88;
-}
-.pickup-dialog h2 {
-  margin: 0;
-  font-size: 28px;
-}
-.pickup-dialog form > p,
-.pickup-confirmation > p {
-  color: #657b9b;
-  line-height: 1.5;
-  margin: 22px 0;
-}
-.pickup-field {
-  margin: 20px 0;
-}
-.pickup-field label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
+.pickup-field { margin: 18px 0; }
+.pickup-field label { display: block; font-weight: 600; margin-bottom: 6px; }
 .pickup-field input {
-  box-sizing: border-box;
   width: 100%;
   min-height: 48px;
-  border: 1px solid #cbd6e3;
+  border: 1px solid #c8d4e3;
   border-radius: 8px;
-  padding: 12px;
+  padding: 10px 12px;
   color: #10295c;
-  background: white;
+  background: #fff;
   font: inherit;
 }
-.pickup-field input:focus-visible,
-.pickup-dialog button:focus-visible {
-  outline: 3px solid #386aa3;
-  outline-offset: 2px;
-}
-.pickup-field input[aria-invalid="true"] {
-  border-color: #b33a3a;
-}
-.pickup-field p,
-.pickup-dialog .pickup-error {
-  color: #a32b2b;
-  font-size: 14px;
-  margin: 6px 0;
-}
-.pickup-actions {
-  display: flex;
-  gap: 16px;
-}
-.pickup-dialog button {
-  border: 1px solid #cbd6e3;
-  border-radius: 8px;
-  padding: 12px 20px;
-  background: white;
-  color: #194278;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-.pickup-actions button:first-child {
-  flex: 1;
-}
-.pickup-dialog button.pickup-primary {
-  flex: 2;
-  background: #194278;
-  color: white;
-  border-color: #194278;
-}
-.pickup-dialog button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-.pickup-confirmation > span {
-  display: inline-block;
-  background: #e9f5ed;
-  color: #28764c;
-  padding: 6px 30px;
-  border-radius: 5px;
-  font-size: 13px;
-  margin-bottom: 22px;
-}
-.pickup-confirmation button {
-  width: 100%;
-}
-@media (max-width: 500px) {
-  .pickup-dialog {
-    padding: 22px;
-  }
-  .pickup-actions {
-    gap: 8px;
-  }
-}
+.pickup-field input[aria-invalid="true"] { border-color: #b33a3a; }
+.pickup-field p { color: #a32b2b; margin: 6px 0 0; }

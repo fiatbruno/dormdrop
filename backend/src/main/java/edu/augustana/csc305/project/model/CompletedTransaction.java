@@ -18,6 +18,9 @@ public class CompletedTransaction {
     private ObjectId conversationId;
     private ObjectId pickupProposalId;
     private Instant completedAt;
+    private SellerReview sellerReview;
+
+    public record SellerReview(int rating, String comment, Instant submittedAt) {}
 
     public CompletedTransaction() {
     }
@@ -71,5 +74,9 @@ public class CompletedTransaction {
 
     public Instant getCompletedAt() {
         return completedAt;
+    }
+
+    public SellerReview getSellerReview() {
+        return sellerReview;
     }
 }

@@ -64,8 +64,19 @@ public class ListingEvidenceController {
     public ResponseEntity<byte[]> media(@PathVariable String caseId, @PathVariable String snapshotId,
                                         @PathVariable String key, Authentication auth) {
         ListingSnapshot snapshot = authorizedSnapshot(caseId, snapshotId, auth);
+        // Keep evidence from older, single-photo snapshots readable.
         RetainedImage image = snapshot.retainedImages().stream().filter(item -> item.key().equals(key))
-                .findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evidence not found."));
+                .findFirst().orElse(null);
+        if (image == null && snapshot.privateEvidenceKeys().contains(key)) {
+            SnapshotPhoto photo = mongo.findById(SnapshotPhoto.idFor(snapshot.id(), key), SnapshotPhoto.class);
+            if (photo != null && snapshot.id().equals(photo.snapshotId())
+                    && snapshot.caseId().equals(photo.caseId()) && key.equals(photo.key())) {
+                image = new RetainedImage(key, photo.contentType(), photo.bytes());
+            }
+        }
+        if (image == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Evidence not found.");
+        }
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
                 .header("X-Content-Type-Options", "nosniff")
                 .contentType(MediaType.parseMediaType(image.contentType())).body(image.bytes());

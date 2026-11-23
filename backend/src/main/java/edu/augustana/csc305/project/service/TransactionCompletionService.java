@@ -11,19 +11,19 @@ import edu.augustana.csc305.project.model.PickupProposal;
 import edu.augustana.csc305.project.model.PickupStatus;
 import edu.augustana.csc305.project.model.User;
 import edu.augustana.csc305.project.repository.UserRepository;
-
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.LockSupport;
-
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -244,9 +244,7 @@ public class TransactionCompletionService {
             );
         }
 
-        ListingStatus currentStatus = listing.getStatus();
-
-        if (currentStatus != ListingStatus.RESERVED
+        if (listing.getStatus() != ListingStatus.RESERVED
                 || !offer.id().equals(listing.getReservedOfferId())) {
             throw error(
                     HttpStatus.CONFLICT,
@@ -350,6 +348,110 @@ public class TransactionCompletionService {
                 ),
                 CompletedTransaction.class
         );
+    }
+
+    public CompletedTransaction submitReview(
+            String offerId,
+            Authentication authentication,
+            int rating,
+            String comment
+    ) {
+        CompletedTransaction transaction =
+                getCompletedTransaction(offerId, authentication);
+
+        if (!transaction.getBuyerId().equals(
+                currentUser(authentication).getId()
+        )) {
+            throw error(
+                    HttpStatus.FORBIDDEN,
+                    "Only the buyer can review the seller."
+            );
+        }
+
+        if (rating < 1 || rating > 5) {
+            throw error(
+                    HttpStatus.BAD_REQUEST,
+                    "Rating must be between 1 and 5."
+            );
+        }
+
+        String reviewText = comment == null ? "" : comment.strip();
+
+        if (reviewText.length() > 500) {
+            throw error(
+                    HttpStatus.BAD_REQUEST,
+                    "Review comment must not exceed 500 characters."
+            );
+        }
+
+        CompletedTransaction.SellerReview review =
+                new CompletedTransaction.SellerReview(
+                        rating,
+                        reviewText,
+                        Instant.now()
+                );
+
+        Query query = Query.query(
+                Criteria.where("_id")
+                        .is(transaction.getId())
+                        .and("sellerReview")
+                        .isNull()
+        );
+
+        CompletedTransaction updated = mongo.findAndModify(
+                query,
+                new Update().set("sellerReview", review),
+                FindAndModifyOptions.options().returnNew(true),
+                CompletedTransaction.class
+        );
+
+        if (updated != null) {
+            return updated;
+        }
+
+        CompletedTransaction existing =
+                findByOffer(transaction.getOfferId());
+
+        CompletedTransaction.SellerReview saved =
+                existing == null ? null : existing.getSellerReview();
+
+        if (saved != null
+                && saved.rating() == rating
+                && saved.comment().equals(reviewText)) {
+            return existing;
+        }
+
+        throw error(
+                HttpStatus.CONFLICT,
+                "A review has already been submitted for this exchange."
+        );
+    }
+
+    public List<CompletedTransaction.SellerReview> getSellerReviews(
+            String offerId,
+            Authentication authentication
+    ) {
+        CompletedTransaction transaction =
+                getCompletedTransaction(offerId, authentication);
+
+        Query query = Query.query(
+                Criteria.where("sellerId")
+                        .is(transaction.getSellerId())
+                        .and("sellerReview")
+                        .ne(null)
+        ).with(
+                Sort.by(
+                        Sort.Order.desc("sellerReview.submittedAt"),
+                        Sort.Order.desc("_id")
+                )
+        ).limit(50);
+
+        return mongo.find(
+                        query,
+                        CompletedTransaction.class
+                ).stream()
+                .map(CompletedTransaction::getSellerReview)
+                .toList();
     }
 
     private User currentUser(Authentication authentication) {

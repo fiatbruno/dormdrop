@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const campusNow = () => {
+export const campusNow = () => {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Chicago",
     year: "numeric",
