@@ -5,6 +5,7 @@ import {
   getMyListings,
   saveProfile,
   updateListingStatus,
+  updateListingVisibility,
   resetPassword,
 } from "../api/profileApi";
 
@@ -103,6 +104,15 @@ export default function useProfile() {
     );
   }
 
+  async function handleUpdateVisibility(id, hidden) {
+    const saved = await updateListingVisibility(id, hidden);
+    setListings((previous) =>
+      previous.map((item) =>
+        String(item.id) === String(id) ? { ...item, sellerHidden: saved.sellerHidden } : item
+      )
+    );
+  }
+
   async function handleResetPassword() {
     if (!user?.email) {
       throw new Error("Your email address is unavailable.");
@@ -121,6 +131,7 @@ export default function useProfile() {
     onSaveProfile: handleSaveProfile,
     onMarkSold: (id) => handleUpdateStatus(id, "SOLD"),
     onRelist: (id) => handleUpdateStatus(id, "AVAILABLE"),
+    onUpdateVisibility: handleUpdateVisibility,
     onResetPassword: handleResetPassword,
   };
 }

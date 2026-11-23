@@ -32,6 +32,7 @@ public class Listing {
     private String pickupArea;
     private String listingType = "For sale";
     private String imageUrl;
+    private boolean sellerHidden;
     private Visibility moderationVisibility = Visibility.VISIBLE;
     private ObjectId temporaryHideCaseId;
     private ObjectId accountSuspensionId;
@@ -117,6 +118,10 @@ public class Listing {
     public void setListingType(String listingType) {
         this.listingType = listingType;
     }
+
+    public boolean isSellerHidden() { return sellerHidden; }
+
+    public void setSellerHidden(boolean sellerHidden) { this.sellerHidden = sellerHidden; }
 
     public String getImageUrl() {
         return imageUrl;

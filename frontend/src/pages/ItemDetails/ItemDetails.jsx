@@ -276,11 +276,12 @@ function ItemDetailsContent({ id }) {
       : String(listing?.ownerId?.$oid || listing?.ownerId?.hexString || "");
   const isOwner =
     currentUserId != null && listingOwnerId === String(currentUserId);
+  const canActAsBuyer = !isOwner && !listing?.sellerHidden;
   const canMakeOffer =
     listing?.status === "AVAILABLE" &&
     String(listing.listingType || "").toLowerCase() === "for sale" &&
     Number(listing.price) > 0 &&
-    !isOwner && offerStatusReady && !offerStatusError &&
+    canActAsBuyer && offerStatusReady && !offerStatusError &&
     !["PENDING", "ACCEPTED"].includes(ownOffer?.status);
 
   return (
@@ -348,9 +349,9 @@ function ItemDetailsContent({ id }) {
                         : currency.format(listing.price)}
                   </p>
                   <span
-                    className={`item-status ${listing.status === "AVAILABLE" ? "is-available" : ""}`}
+                    className={`item-status ${!listing.sellerHidden && listing.status === "AVAILABLE" ? "is-available" : ""}`}
                   >
-                    {statuses[listing.status] || "Status unavailable"}
+                    {listing.sellerHidden ? "Hidden" : statuses[listing.status] || "Status unavailable"}
                   </span>
                   <p className="item-meta">
                     {[listing.condition, posted && `Posted ${posted}`]
@@ -366,7 +367,7 @@ function ItemDetailsContent({ id }) {
                       Agree on a public meeting spot before pickup.
                     </p>
                   </div>
-                  {!isOwner && (
+                  {canActAsBuyer && (
                     <button
                       className="item-primary"
                       type="button"
@@ -393,12 +394,12 @@ function ItemDetailsContent({ id }) {
                       Make an offer
                     </button>
                   )}
-                  {!isOwner && offerStatusError && (
+                  {canActAsBuyer && offerStatusError && (
                     <p className="item-feedback" role="alert">
                       Couldn't check your offer status. <button type="button" onClick={() => setOfferAttempt((value) => value + 1)}>Retry</button>
                     </p>
                   )}
-                  {!isOwner && !offerStatusError && ["PENDING", "ACCEPTED"].includes(ownOffer?.status) && (
+                  {canActAsBuyer && !offerStatusError && ["PENDING", "ACCEPTED"].includes(ownOffer?.status) && (
                     <p className="item-feedback" role="status">
                       {ownOffer.status === "ACCEPTED" ? "Your offer has been accepted." : "You already have a pending offer."}{" "}
                       <Link to={`/offers/${encodeURIComponent(ownOffer.id)}`}>View offer</Link>
@@ -431,7 +432,7 @@ function ItemDetailsContent({ id }) {
                      Share listing
                    </button>
 
-                   {!isOwner && (
+                   {canActAsBuyer && (
                      <button
                        type="button"
                        onClick={() => setReportOpen(true)}
@@ -563,7 +564,7 @@ function ItemDetailsContent({ id }) {
           )
         )}
       </main>
-      {reportOpen && listing && !isOwner && (
+      {reportOpen && listing && canActAsBuyer && (
         <ReportListing
           listing={listing}
           onClose={() => setReportOpen(false)}
