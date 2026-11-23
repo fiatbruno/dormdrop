@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "../Button/Button";
+import ExchangeDialog from "../ExchangeDialog/ExchangeDialog";
 import { pickupSchema } from "../../schemas/pickupSchema";
 import "./PickupForm.css";
 
 export default function PickupForm({ onClose, onSubmit }) {
-  const dialog = useRef(null);
   const [sent, setSent] = useState(false);
   const [serverError, setServerError] = useState("");
   const {
@@ -17,17 +17,6 @@ export default function PickupForm({ onClose, onSubmit }) {
     resolver: zodResolver(pickupSchema),
     defaultValues: { location: "", pickupDate: "", pickupTime: "" },
   });
-
-  useEffect(() => {
-    const previous = document.activeElement;
-    const node = dialog.current;
-    node.showModal();
-    return () => {
-      node.close();
-      if (previous instanceof HTMLElement && previous.isConnected)
-        previous.focus();
-    };
-  }, []);
 
   async function submit(data) {
     setServerError("");
@@ -51,27 +40,21 @@ export default function PickupForm({ onClose, onSubmit }) {
   }
 
   return (
-    <dialog
-      ref={dialog}
-      className="pickup-dialog"
-      aria-labelledby="pickup-dialog-title"
-      onCancel={(event) => {
-        event.preventDefault();
-        if (!isSubmitting) onClose();
-      }}
+    <ExchangeDialog
+      title={sent ? "Proposal sent" : "Propose a pickup"}
+      badge={sent ? "Done" : undefined}
+      busy={isSubmitting}
+      onClose={onClose}
     >
       {sent ? (
-        <div className="pickup-confirmation">
-          <span>Done</span>
-          <h2 id="pickup-dialog-title">Proposal sent</h2>
+        <>
           <p>Your pickup proposal is now in the conversation.</p>
-          <Button type="button" className="pickup-primary" onClick={onClose}>
-            Done
-          </Button>
-        </div>
+          <div className="exchange-dialog__actions exchange-dialog__actions--stacked">
+            <Button type="button" className="exchange-primary" onClick={onClose}>Done</Button>
+          </div>
+        </>
       ) : (
         <form onSubmit={handleSubmit(submit)} noValidate>
-          <h2 id="pickup-dialog-title">Propose a pickup</h2>
           <p>
             Choose a public campus location, date, and time. Times are in campus
             time.
@@ -101,17 +84,17 @@ export default function PickupForm({ onClose, onSubmit }) {
             </div>
           ))}
           {serverError && (
-            <p className="pickup-error" role="alert">
+            <p className="exchange-error" role="alert">
               {serverError}
             </p>
           )}
-          <div className="pickup-actions">
+          <div className="exchange-dialog__actions">
             <Button type="button" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
             <Button
               type="submit"
-              className="pickup-primary"
+              className="exchange-primary"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Sending…" : "Send proposal"}
@@ -119,6 +102,6 @@ export default function PickupForm({ onClose, onSubmit }) {
           </div>
         </form>
       )}
-    </dialog>
+    </ExchangeDialog>
   );
 }

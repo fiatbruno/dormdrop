@@ -1,9 +1,11 @@
 // @ts-check
 import { expect, test } from "@playwright/test";
 
-test.beforeEach(async ({ page }) => {
-  await page.route("**/api/v1/users/me", route => route.fulfill({ json: { id: "buyer", name: "Test User" } }));
-  await page.route("**/api/v1/conversations/*/pickup-proposals", route => route.fulfill({ json: [] }));
+test.beforeEach(async ({ context }) => {
+  await context.route("**/api/v1/users/me", route => route.fulfill({ json: { id: "buyer", name: "Test User" } }));
+  await context.route("**/api/v1/conversations", route => route.fulfill({ json: [] }));
+  await context.route("**/api/v1/conversations/*/pickup-proposals", route => route.fulfill({ json: [] }));
+  await context.route("**/api/v1/conversations/*/message-reports/mine", route => route.fulfill({ json: [] }));
 });
 
 const makeToken = (userId) => {
