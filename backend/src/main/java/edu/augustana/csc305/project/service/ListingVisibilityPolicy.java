@@ -1,6 +1,8 @@
 package edu.augustana.csc305.project.service;
 
 import edu.augustana.csc305.project.model.*;
+import edu.augustana.csc305.project.security.PermissionPolicy;
+import edu.augustana.csc305.project.security.StaffAccess;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -13,22 +15,31 @@ public class ListingVisibilityPolicy {
     protected boolean accountAllowsMarketplace(User user) { return true; }
 
     public boolean visible(Listing listing) {
+        return moderationVisible(listing) && !listing.isSellerHidden();
+    }
+    private boolean moderationVisible(Listing listing) {
         return listing != null && listing.getModerationVisibility() == ModerationTypes.Visibility.VISIBLE;
     }
     public Criteria visibleCriteria() {
+        return moderatableBySellerCriteria().and("sellerHidden").ne(true);
+    }
+    public Criteria moderatableBySellerCriteria() {
         // Mongo null matches missing fields, so unmigrated legacy listings stay visible.
         return Criteria.where("moderationVisibility").in("VISIBLE", null);
     }
     public boolean maySeeRestrictedSummary(Listing listing, User viewer) {
         return listing != null && viewer != null && accountAllowsMarketplace(viewer)
-                && (viewer.getId().equals(listing.getOwnerId()) || viewer.getRole().name().equals("ADMIN")
-                    || viewer.getRole().name().equals("MODERATOR"));
+                && (viewer.getId().equals(listing.getOwnerId())
+                    || StaffAccess.permits(viewer.getRole(), PermissionPolicy.Capability.REVIEW_REPORTS));
     }
     public Listing view(Listing listing, User viewer) {
         if (listing == null || !accountAllowsMarketplace(viewer)) throw notFound();
-        if (visible(listing)) return listing;
+        if (visible(listing) || (moderationVisible(listing) && maySeeRestrictedSummary(listing, viewer))) return listing;
         if (!maySeeRestrictedSummary(listing, viewer)) throw notFound();
         return restrictedSummary(listing);
+    }
+    public boolean maySeePhoto(Listing listing, User viewer) {
+        return visible(listing) || (moderationVisible(listing) && maySeeRestrictedSummary(listing, viewer));
     }
     public Listing restrictedSummary(Listing listing) {
         Listing summary = new Listing();
@@ -37,6 +48,7 @@ public class ListingVisibilityPolicy {
         summary.setListingType(null);
         summary.setStatus(listing.getStatus());
         summary.setModerationVisibility(listing.getModerationVisibility());
+        summary.setSellerHidden(listing.isSellerHidden());
         summary.setVersion(listing.getVersion());
         return summary;
     }
@@ -53,7 +65,7 @@ public class ListingVisibilityPolicy {
         if (!viewer.getId().equals(listing.getOwnerId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not own this listing.");
         }
-        if (!accountAllowsMarketplace(viewer) || !visible(listing)) {
+        if (!accountAllowsMarketplace(viewer) || !moderationVisible(listing)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Restricted listings cannot be changed by the seller.");
         }
     }
