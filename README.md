@@ -127,7 +127,11 @@ Offers use MongoDB transactions and require a replica set or sharded cluster. A 
 curl http://localhost:8080/api/v1/healthCheck
 ```
 
-The backend does **not** automatically load `.env` files. The admin variables configure a development seed account when the users collection is empty; the usual student signup still uses verification emails.
+When started from the `backend` directory, Spring Boot also loads an optional
+`backend/.env` file using Java properties syntax (`KEY=value`). Keep secrets
+out of Git. Administrator bootstrapping is disabled by default; to provision
+an admin in an empty database, also set `ADMIN_BOOTSTRAP_ENABLED=true`. The
+usual student signup still uses verification emails.
 
 ### 3. Start the frontend
 

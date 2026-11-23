@@ -125,7 +125,7 @@ public class ReportSubmissionService {
         }
         Listing listing = mongo.findById(listingId, Listing.class);
         if (listing == null || listing.getStatus() != ListingStatus.AVAILABLE
-                || listing.getModerationVisibility() != Visibility.VISIBLE) {
+                || listing.isSellerHidden() || listing.getModerationVisibility() != Visibility.VISIBLE) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing is not available for reporting.");
         }
         if (reporter.getId().equals(listing.getOwnerId())) {
@@ -161,7 +161,7 @@ public class ReportSubmissionService {
                 new Update().inc("version", 1L).set("updatedAt", now), ModerationCase.class);
         var listingWrite = mongo.updateFirst(Query.query(Criteria.where("_id").is(listingId)
                 .and("version").is(listing.getVersion()).and("status").is(ListingStatus.AVAILABLE)
-                .and("moderationVisibility").is(Visibility.VISIBLE)), new Update().inc("version", 1L), Listing.class);
+                .and("moderationVisibility").is(Visibility.VISIBLE).and("sellerHidden").ne(true)), new Update().inc("version", 1L), Listing.class);
         if (caseWrite.getModifiedCount() != 1 || listingWrite.getModifiedCount() != 1) {
             throw new org.springframework.dao.OptimisticLockingFailureException("Listing or case changed.");
         }

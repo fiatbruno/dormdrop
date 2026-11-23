@@ -108,7 +108,7 @@ export default function EditListing() {
           data.images.map((url, index) => ({ key: `existing-${index}`, url })),
         );
 
-        setStatus(data.status || "AVAILABLE");
+        setStatus(data.sellerHidden ? "HIDDEN" : data.status || "AVAILABLE");
         setLoaded(true);
       })
       .catch((err) => {
@@ -482,7 +482,7 @@ export default function EditListing() {
                     <strong>{previewPrice}</strong>
 
                     <span className="available">
-                      {status === "SOLD" ? "Sold" : "Available"}
+                      {status === "HIDDEN" ? "Hidden" : status === "SOLD" ? "Sold" : "Available"}
                     </span>
                   </div>
                 </div>

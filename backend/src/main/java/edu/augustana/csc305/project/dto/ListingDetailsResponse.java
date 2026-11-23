@@ -22,6 +22,7 @@ public record ListingDetailsResponse(
         String ownerId,
         String sellerName,
         edu.augustana.csc305.project.model.ModerationTypes.Visibility moderationVisibility,
+        boolean sellerHidden,
         boolean restricted
 ) {
     public static ListingDetailsResponse from(Listing listing, String sellerName) {
@@ -30,7 +31,7 @@ public record ListingDetailsResponse(
                 listing.getCategory(), listing.getPrice(), listing.getCondition(),
                 listing.getPickupArea(), listing.getListingType(), listing.getImageUrl(), listing.getImageUrls(),
                 listing.getListedOn(), listing.getStatus(), listing.getOwnerId() == null ? null : listing.getOwnerId().toHexString(), sellerName,
-                listing.getModerationVisibility(), listing.getModerationVisibility() != edu.augustana.csc305.project.model.ModerationTypes.Visibility.VISIBLE
+                listing.getModerationVisibility(), listing.isSellerHidden(), listing.getModerationVisibility() != edu.augustana.csc305.project.model.ModerationTypes.Visibility.VISIBLE
         );
     }
 }
