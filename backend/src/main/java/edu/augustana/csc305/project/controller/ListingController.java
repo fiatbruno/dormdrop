@@ -11,6 +11,8 @@ import jakarta.validation.Valid;
 import org.bson.types.ObjectId;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.slf4j.Logger;
@@ -133,6 +135,22 @@ public class ListingController {
         );
         broadcastUpdate();
         return updated;
+    }
+
+    @PatchMapping("/{id}/visibility")
+    public ResponseEntity<?> updateVisibility(@PathVariable("id") String id,
+                                      @RequestParam("hidden") boolean hidden,
+                                      Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required");
+        }
+        try {
+            Listing updated = service.updateSellerVisibility(convertToObjectId(id), hidden, authentication.getName());
+            broadcastUpdate();
+            return ResponseEntity.ok(updated);
+        } catch (ResponseStatusException error) {
+            return ResponseEntity.status(error.getStatusCode()).body(Map.of("message", error.getReason()));
+        }
     }
 
     private void broadcastUpdate() {

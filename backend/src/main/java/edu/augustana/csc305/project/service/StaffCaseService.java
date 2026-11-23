@@ -87,7 +87,9 @@ public class StaffCaseService {
             var activity = mongo.find(caseQuery(caseId), ActivityEvent.class).stream().map(event ->
                     new StaffActivity(hex(event.id()), hex(event.actorId()), event.type(), hex(event.relatedRecordId()),
                             hex(event.correctsEventId()), event.internalNote(), event.createdAt())).toList();
-            return new CaseDetail(summary(reportCase), groups, snapshots, seller, decisions, activity);
+            Listing liveListing = mongo.findById(reportCase.listingId(), Listing.class);
+            return new CaseDetail(summary(reportCase), groups, snapshots, seller, decisions, activity,
+                    liveListing == null ? null : liveListing.isSellerHidden());
         });
     }
 
