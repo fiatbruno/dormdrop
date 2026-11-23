@@ -25,5 +25,5 @@ public final class StaffCaseDtos {
     public record CaseDetail(CaseSummary caseSummary, List<ReportGroup> reportGroups,
                              List<SnapshotMetadata> snapshots,
                              SellerContext seller, List<ModerationDtos.StaffDecision> decisions,
-                             List<StaffActivity> activity) {}
+                             List<StaffActivity> activity, Boolean sellerHidden) {}
 }

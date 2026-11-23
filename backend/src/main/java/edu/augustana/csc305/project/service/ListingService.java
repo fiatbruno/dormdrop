@@ -220,6 +220,13 @@ public class ListingService {
         return repository.save(listing);
     }
 
+    public Listing updateSellerVisibility(ObjectId id, boolean hidden, String email) {
+        Listing listing = ownedListing(id, email);
+        if (listing.isSellerHidden() == hidden) return listing;
+        listing.setSellerHidden(hidden);
+        return repository.save(listing);
+    }
+
     public void deleteListing(ObjectId id, String email) {
         Listing listing = ownedListing(id, email);
         repository.delete(listing);
@@ -237,7 +244,7 @@ public class ListingService {
                 : Criteria.where("status").is(listing.getStatus());
         Query query = Query.query(new Criteria().andOperator(
                 Criteria.where("_id").is(id), Criteria.where("ownerId").is(listing.getOwnerId()),
-                Criteria.where("version").is(listing.getVersion()), visibility.visibleCriteria(), lifecycle));
+                Criteria.where("version").is(listing.getVersion()), visibility.moderatableBySellerCriteria(), lifecycle));
         Update update = new Update().set("status", status);
         if (listing.getVersion() == null) update.set("version", 1L);
         else update.inc("version", 1L);
