@@ -71,17 +71,3 @@ export async function decideOffer(
   );
   return data;
 }
-
-export async function confirmItemReceived(offerId) {
-  const { data } = await api.post(
-    `${offerPath(offerId)}/transaction/confirm-receipt`,
-  );
-  return data;
-}
-
-export async function getCompletedTransaction(offerId) {
-  const { data } = await api.get(
-    `${offerPath(offerId)}/transaction`,
-  );
-  return data;
-}
