@@ -96,6 +96,13 @@ test.describe("Authentication", () => {
 
       const dialog = page.getByRole("dialog", { name: "Account suspended" });
       await expect(dialog).toContainText("2 more days or less");
+      await expect(dialog).toHaveCSS("border-radius", "12px");
+      await expect(dialog).toHaveCSS("background-color", "rgb(255, 255, 255)");
+      const bounds = await dialog.boundingBox();
+      expect(bounds).not.toBeNull();
+      const viewport = page.viewportSize();
+      expect(Math.abs(bounds.x + bounds.width / 2 - viewport.width / 2)).toBeLessThan(2);
+      expect(Math.abs(bounds.y + bounds.height / 2 - viewport.height / 2)).toBeLessThan(2);
       await expect(page).toHaveURL("/login");
       expect(await page.evaluate(() => localStorage.getItem("token"))).toBeNull();
       await dialog.getByRole("button", { name: "Close" }).click();
