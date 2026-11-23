@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getOffer } from "../../api/offersApi";
+import api from "../../api/client";
 import { getListingById } from "../../api/marketplaceApi";
 import Footer from "../../components/Footer/Footer";
 import Navbar from "../../components/Navbar/Navbar";
@@ -33,6 +34,7 @@ function OfferDetailsContent({ offerId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
+  const [conversationId, setConversationId] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -122,6 +124,57 @@ function OfferDetailsContent({ offerId }) {
   }
 
   const currentUserId = userIdFromToken(token);
+
+  useEffect(() => {
+    if (!offer?.listingId || !currentUserId) {
+      setConversationId(null);
+      return undefined;
+    }
+
+    let active = true;
+
+    async function findConversation() {
+      setConversationId(null);
+
+      try {
+        const { data } = await api.get("/conversations");
+        const conversations = Array.isArray(data) ? data : [];
+
+        const otherUserId =
+          String(currentUserId) === String(offer.buyerId)
+            ? String(offer.sellerId)
+            : String(offer.buyerId);
+
+        const match = conversations.find((conversation) => {
+          const listingId =
+            conversation.listing?.id || conversation.listingId;
+
+          const participantId =
+            conversation.participant?.id ||
+            conversation.participantId;
+
+          return (
+            String(listingId) === String(offer.listingId) &&
+            String(participantId) === otherUserId
+          );
+        });
+
+        if (active) {
+          setConversationId(match?.id || null);
+        }
+      } catch {
+        if (active) {
+          setConversationId(null);
+        }
+      }
+    }
+
+    void findConversation();
+
+    return () => {
+      active = false;
+    };
+  }, [offer?.listingId, offer?.buyerId, offer?.sellerId, currentUserId]);
 
   return (
     <div className="offer-details-shell">
@@ -214,6 +267,7 @@ function OfferDetailsContent({ offerId }) {
 
             <OfferNegotiation
               offer={offer}
+              conversationId={conversationId}
               listing={listing}
               currentUserId={currentUserId}
               participant={

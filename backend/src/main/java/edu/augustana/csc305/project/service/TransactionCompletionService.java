@@ -247,7 +247,7 @@ public class TransactionCompletionService {
         ListingStatus currentStatus = listing.getStatus();
 
         if (currentStatus != ListingStatus.RESERVED
-                && currentStatus != ListingStatus.AVAILABLE) {
+                || !offer.id().equals(listing.getReservedOfferId())) {
             throw error(
                     HttpStatus.CONFLICT,
                     "Listing cannot be completed in its current state."
@@ -260,7 +260,9 @@ public class TransactionCompletionService {
                 Criteria.where("ownerId")
                         .is(offer.sellerId()),
                 Criteria.where("status")
-                        .is(currentStatus),
+                        .is(ListingStatus.RESERVED),
+                Criteria.where("reservedOfferId")
+                        .is(offer.id()),
                 Criteria.where("version")
                         .is(listing.getVersion())
         );

@@ -149,7 +149,7 @@ const offer = makeOffer();
   await expect(page.getByText(/agreement only; no payment is taken/i)).toBeVisible();
   const acceptedCard = page.getByRole("article", { name: "Offer accepted" });
   await acceptedCard.getByRole("button", { name: "Proposed pickup" }).click();
-  await expect(page.getByPlaceholder("Write a message…")).toBeFocused();
+  await expect(page.getByRole("heading", { name: "Arrange pickup" })).toBeVisible();
   expect(requestBody).toEqual({ action: "ACCEPT", expectedVersion: 0 });
 });
 

@@ -21,7 +21,7 @@ const offer = {
   status: "PENDING",
   version: 0,
   createdAt: "2026-11-04T20:00:00Z",
-  expiresAt: "2026-11-18T20:00:00Z",
+  expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
 };
 
 async function preparePage(page) {

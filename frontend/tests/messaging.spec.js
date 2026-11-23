@@ -119,7 +119,7 @@ test("accepted offer appears as a pickup card in the conversation", async ({
   await expect(acceptedCard.getByText(/You and Alex Morgan agreed/)).toBeVisible();
 
   await acceptedCard.getByRole("button", { name: "Proposed pickup" }).click();
-  await expect(page.getByPlaceholder("Write a message…")).toBeFocused();
+  await expect(page.getByRole("heading", { name: "Arrange pickup" })).toBeVisible();
 });
 
 test("a message report requires a reason and shows submission confirmation", async ({

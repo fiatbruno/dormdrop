@@ -7,6 +7,7 @@ import {
   getOffer,
   sendCounteroffer,
 } from "../../api/offersApi";
+import { getPickupProposals } from "../../api/pickupApi";
 import CounterofferModal from "./CounterofferModal";
 import "./OfferNegotiation.css";
 
@@ -33,12 +34,17 @@ function receiptErrorMessage(error) {
   }
 
   if (status === 409) {
-    return serverMessage ||
-      "The exchange is not ready for receipt confirmation. Check the pickup details and try again.";
+    return (
+      serverMessage ||
+      "The exchange is not ready for receipt confirmation. Check the pickup details and try again."
+    );
   }
 
   if (status === 400) {
-    return serverMessage || "This receipt confirmation could not be processed.";
+    return (
+      serverMessage ||
+      "This receipt confirmation could not be processed."
+    );
   }
 
   return serverMessage || "Something went wrong. Please try again.";
@@ -46,6 +52,7 @@ function receiptErrorMessage(error) {
 
 export default function OfferNegotiation({
   offer: initialOffer,
+  conversationId,
   listing,
   currentUserId,
   participant,
@@ -66,6 +73,9 @@ export default function OfferNegotiation({
   const [completedTransaction, setCompletedTransaction] = useState(null);
   const [receiptChecked, setReceiptChecked] = useState(false);
   const [completionOpen, setCompletionOpen] = useState(false);
+  const [pickupProposals, setPickupProposals] = useState([]);
+  const [pickupLoaded, setPickupLoaded] = useState(false);
+  const [pickupClock, setPickupClock] = useState(Date.now());
 
   const keys = useRef(new Map());
   const summaryRef = useRef(null);
@@ -152,6 +162,53 @@ export default function OfferNegotiation({
   }, [acceptedBuyer, offerId]);
 
   useEffect(() => {
+    if (!acceptedBuyer || !conversationId) {
+      setPickupProposals([]);
+      setPickupLoaded(false);
+      return undefined;
+    }
+
+    let active = true;
+
+    async function refreshPickup() {
+      try {
+        const result = await getPickupProposals(conversationId);
+
+        if (active) {
+          setPickupProposals(Array.isArray(result) ? result : []);
+          setPickupLoaded(true);
+          setPickupClock(Date.now());
+        }
+      } catch {
+        if (active) {
+          setPickupProposals([]);
+          setPickupLoaded(false);
+        }
+      }
+    }
+
+    void refreshPickup();
+
+    const interval = window.setInterval(() => {
+      setPickupClock(Date.now());
+      void refreshPickup();
+    }, 12000);
+
+    const onFocus = () => {
+      setPickupLoaded(false);
+      void refreshPickup();
+    };
+
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [acceptedBuyer, conversationId]);
+
+  useEffect(() => {
     if (!receiptOpen && !completionOpen) return undefined;
 
     const onKeyDown = (event) => {
@@ -216,14 +273,63 @@ export default function OfferNegotiation({
 
   const history = Array.isArray(offer.history) ? offer.history : [];
   const agreedPrice = offer.agreedAmount ?? offer.amount;
-  const itemTitle = listing?.title || "Your item";
+
+  const latestPickup = [...pickupProposals].sort((a, b) => {
+    const byTime =
+      Date.parse(b.timeCreated || "") -
+      Date.parse(a.timeCreated || "");
+
+    if (Number.isFinite(byTime) && byTime !== 0) {
+      return byTime;
+    }
+
+    return String(b.id || "").localeCompare(String(a.id || ""));
+  })[0];
+
+  const campusParts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(pickupClock));
+
+  const campusPart = (type) =>
+    campusParts.find((part) => part.type === type)?.value || "00";
+
+  const campusTime =
+    `${campusPart("year")}-${campusPart("month")}-${campusPart("day")}` +
+    `T${campusPart("hour")}:${campusPart("minute")}:${campusPart("second")}`;
+
+  const scheduledPickupTime = String(
+    latestPickup?.timePickUp || "",
+  ).replace(" ", "T");
+
+  const validPickupTime =
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(scheduledPickupTime);
+
+  const pickupHasPassed =
+    pickupLoaded &&
+    String(latestPickup?.status || "").toUpperCase() === "ACCEPTED" &&
+    validPickupTime &&
+    scheduledPickupTime.slice(0, 19).padEnd(19, "0") <= campusTime;
+
+  const currentReservation =
+    String(listing?.status || "").toUpperCase() === "RESERVED" &&
+    (!listing?.reservedOfferId ||
+      String(listing.reservedOfferId) === String(offerId));
 
   const canConfirmReceipt =
     acceptedBuyer &&
     receiptChecked &&
     !receiptChecking &&
     !receiptLookupError &&
-    !completedTransaction;
+    !completedTransaction &&
+    currentReservation &&
+    pickupHasPassed;
 
   function operationKey(decision) {
     const operationId = `${offer.id}:${version}:${decision}`;
@@ -520,7 +626,7 @@ export default function OfferNegotiation({
               disabled={!canAccept || busy}
               onClick={() => void decide("ACCEPT")}
             >
-              {pendingAction === "ACCEPT" ? "Acceptingâ€¦" : "Accept"}
+              {pendingAction === "ACCEPT" ? "Accepting..." : "Accept"}
             </button>
 
             <button
@@ -528,7 +634,7 @@ export default function OfferNegotiation({
               disabled={busy}
               onClick={() => void decide("REJECT")}
             >
-              {pendingAction === "REJECT" ? "Rejectingâ€¦" : "Reject"}
+              {pendingAction === "REJECT" ? "Rejecting..." : "Reject"}
             </button>
 
             <button
@@ -549,7 +655,7 @@ export default function OfferNegotiation({
           <div className="offer-receipt-entry">
             {receiptChecking && (
               <p role="status">
-                Checking exchange statusâ€¦
+                Checking exchange status...
               </p>
             )}
 
@@ -650,7 +756,7 @@ export default function OfferNegotiation({
             </h2>
 
             <p className="offer-receipt-item">
-              {itemTitle} Â· Agreed price {formatMoney(agreedPrice)}
+              Agreed price {formatMoney(agreedPrice)}
             </p>
 
             <div className="offer-receipt-info">
@@ -683,7 +789,7 @@ export default function OfferNegotiation({
                 disabled={receiptBusy}
                 onClick={() => void handleConfirmReceipt()}
               >
-                {receiptBusy ? "Confirmingâ€¦" : "Yes, received"}
+                {receiptBusy ? "Confirming..." : "Yes, received"}
               </button>
             </div>
           </div>

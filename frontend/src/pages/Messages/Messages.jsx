@@ -38,6 +38,7 @@ const timeLabel = (date) =>
 function priceLabel(item) {
   if (item.listingType === "Free / Donate") return "Free";
   if (item.listingType === "Trade") return "Trade";
+
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -48,6 +49,7 @@ function priceLabel(item) {
 export default function Messages() {
   const { conversationId } = useParams();
   const chat = useMessaging(conversationId);
+
   const [search, setSearch] = useState("");
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [newMessages, setNewMessages] = useState(false);
@@ -69,6 +71,7 @@ export default function Messages() {
     if (scroll.current) {
       scroll.current.scrollTop = scroll.current.scrollHeight;
     }
+
     nearBottom.current = true;
     setNewMessages(false);
   };
@@ -183,15 +186,10 @@ export default function Messages() {
     setPickupOpen(true);
   }
 
-  function proposePickupInMessage() {
-    if (!chat.draft?.trim()) {
-      chat.setDraft("Would you like to arrange a time and place for pickup?");
-    }
-    composerInput.current?.focus();
-  }
 
   function closeReportDialog() {
     if (reportSubmitting) return;
+
     setReportTarget(null);
     setReportReason("");
     setCustomReason("");
@@ -209,7 +207,9 @@ export default function Messages() {
         : reportReason;
 
     if (!reason) {
-      setReportError("Select or enter a reason before submitting.");
+      setReportError(
+        "Select or enter a reason before submitting.",
+      );
       return;
     }
 
@@ -221,6 +221,7 @@ export default function Messages() {
         reason,
         details: reportDetails.trim() || undefined,
       });
+
       setReportSubmitted(true);
     } catch (error) {
       setReportError(
@@ -262,7 +263,7 @@ export default function Messages() {
             <input
               type="search"
               aria-label="Search conversations"
-              placeholder="Search conversationsâ€¦"
+              placeholder="Search conversations..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -291,7 +292,7 @@ export default function Messages() {
 
             {chat.listLoading && (
               <p role="status" className="messages-state">
-                Loading conversationsâ€¦
+                Loading conversations...
               </p>
             )}
 
@@ -320,10 +321,14 @@ export default function Messages() {
                   key={conversation.id}
                   to={`/messages/${conversation.id}`}
                   className={`messages-conversation ${
-                    conversation.id === conversationId ? "selected" : ""
+                    conversation.id === conversationId
+                      ? "selected"
+                      : ""
                   }`}
                   aria-current={
-                    conversation.id === conversationId ? "page" : undefined
+                    conversation.id === conversationId
+                      ? "page"
+                      : undefined
                   }
                 >
                   <span
@@ -335,14 +340,17 @@ export default function Messages() {
 
                   <div>
                     <div className="messages-conversation-top">
-                      <strong>{conversation.participant.name}</strong>
+                      <strong>
+                        {conversation.participant.name}
+                      </strong>
                       <time dateTime={conversation.lastMessageAt}>
                         {dateLabel(conversation.lastMessageAt)}
                       </time>
                     </div>
 
                     <p className="messages-item-title">
-                      {conversation.listing?.title || "Listing unavailable"}
+                      {conversation.listing?.title ||
+                        "Listing unavailable"}
                     </p>
 
                     <p className="messages-preview">
@@ -376,18 +384,27 @@ export default function Messages() {
               </div>
             ) : (
               <>
-                <Link to="/messages" className="messages-back">
-                  â† Back to conversations
+                <Link
+                  to="/messages"
+                  className="messages-back"
+                >
+                  Back to conversations
                 </Link>
 
                 {chat.loading ? (
                   <p role="status" className="messages-state">
-                    Loading conversationâ€¦
+                    Loading conversation...
                   </p>
                 ) : chat.error ? (
-                  <div role="alert" className="messages-state">
+                  <div
+                    role="alert"
+                    className="messages-state"
+                  >
                     <p>{chat.error}</p>
-                    <button type="button" onClick={chat.refresh}>
+                    <button
+                      type="button"
+                      onClick={chat.refresh}
+                    >
                       Try again
                     </button>
                   </div>
@@ -399,13 +416,18 @@ export default function Messages() {
                           className="messages-avatar"
                           aria-hidden="true"
                         >
-                          {initials(chat.conversation.participant.name)}
+                          {initials(
+                            chat.conversation.participant.name,
+                          )}
                         </span>
 
                         <div>
-                          <h2>{chat.conversation.participant.name}</h2>
+                          <h2>
+                            {chat.conversation.participant.name}
+                          </h2>
                           <p>
-                            {chat.conversation.participant.emailVerified
+                            {chat.conversation.participant
+                              .emailVerified
                               ? "Verified college email"
                               : "DormDrop community member"}
                           </p>
@@ -428,7 +450,7 @@ export default function Messages() {
                             <div>
                               <h3>{item.title}</h3>
                               <p>
-                                {priceLabel(item)} Â·{" "}
+                                {priceLabel(item)} -{" "}
                                 {item.status.toLowerCase()}
                               </p>
                             </div>
@@ -445,8 +467,8 @@ export default function Messages() {
                           </>
                         ) : (
                           <p>
-                            Listing unavailable. You can still continue this
-                            conversation.
+                            Listing unavailable. You can still
+                            continue this conversation.
                           </p>
                         )}
                       </div>
@@ -456,6 +478,9 @@ export default function Messages() {
                         ref={scroll}
                         onScroll={() => {
                           const node = scroll.current;
+
+                          if (!node) return;
+
                           nearBottom.current =
                             node.scrollHeight -
                               node.scrollTop -
@@ -475,35 +500,47 @@ export default function Messages() {
                         )}
 
                         {timeline.map((event, index) => {
-                          const date = Number.isFinite(Date.parse(event.at))
+                          const date = Number.isFinite(
+                            Date.parse(event.at),
+                          )
                             ? dateLabel(event.at)
                             : "";
 
                           const previousDate = Number.isFinite(
                             Date.parse(timeline[index - 1]?.at),
                           )
-                            ? dateLabel(timeline[index - 1].at)
+                            ? dateLabel(
+                                timeline[index - 1].at,
+                              )
                             : "";
 
-                          const showDate = date && date !== previousDate;
+                          const showDate =
+                            date && date !== previousDate;
 
                           if (event.type === "offer") {
                             return (
                               <div key={`offer-${offer.id}`}>
                                 {showDate && (
-                                  <p className="messages-date">{date}</p>
+                                  <p className="messages-date">
+                                    {date}
+                                  </p>
                                 )}
 
                                 <OfferNegotiation
                                   offer={offer}
                                   listing={item}
+                                  conversationId={conversationId}
                                   currentUserId={
-                                    chat.conversation.currentUserId
+                                    chat.conversation
+                                      .currentUserId
                                   }
                                   participant={
-                                    chat.conversation.participant
+                                    chat.conversation
+                                      .participant
                                   }
-                                  onOfferUpdated={chat.updateOffer}
+                                  onOfferUpdated={
+                                    chat.updateOffer
+                                  }
                                 />
 
                                 <Link
@@ -514,18 +551,25 @@ export default function Messages() {
                                   View offer details
                                 </Link>
 
-                                {["REJECTED", "EXPIRED"].includes(
-                                  offer.status,
-                                ) &&
+                                {[
+                                  "REJECTED",
+                                  "EXPIRED",
+                                ].includes(offer.status) &&
                                   item?.id &&
-                                  item.status === "AVAILABLE" &&
+                                  item.status ===
+                                    "AVAILABLE" &&
                                   String(
                                     item.listingType || "",
-                                  ).toLowerCase() === "for sale" &&
+                                  ).toLowerCase() ===
+                                    "for sale" &&
                                   Number(item.price) > 0 &&
                                   String(
-                                    chat.conversation.currentUserId,
-                                  ) === String(offer.buyerId) && (
+                                    chat.conversation
+                                      .currentUserId,
+                                  ) ===
+                                    String(
+                                      offer.buyerId,
+                                    ) && (
                                     <Link
                                       to={`/items/${encodeURIComponent(
                                         item.id,
@@ -540,9 +584,13 @@ export default function Messages() {
 
                           if (event.type === "accepted") {
                             return formattedAgreedPrice ? (
-                              <div key={`accepted-${offer.id}`}>
+                              <div
+                                key={`accepted-${offer.id}`}
+                              >
                                 {showDate && (
-                                  <p className="messages-date">{date}</p>
+                                  <p className="messages-date">
+                                    {date}
+                                  </p>
                                 )}
 
                                 <article
@@ -550,8 +598,13 @@ export default function Messages() {
                                   aria-label="Offer accepted"
                                 >
                                   <div className="offer-accepted-card__eyebrow">
-                                    <Tag size={15} aria-hidden="true" />
-                                    <span>Offer accepted</span>
+                                    <Tag
+                                      size={15}
+                                      aria-hidden="true"
+                                    />
+                                    <span>
+                                      Offer accepted
+                                    </span>
                                   </div>
 
                                   <p className="offer-accepted-card__price">
@@ -562,36 +615,32 @@ export default function Messages() {
                                     {formattedListingPrice
                                       ? `Listing price ${formattedListingPrice}`
                                       : "Listing price unavailable"}
-                                    {" Â· Campus pickup"}
+                                    {" - Campus pickup"}
                                   </p>
 
                                   <p className="offer-accepted-card__agreement">
                                     You and{" "}
-                                    {chat.conversation.participant.name}{" "}
-                                    agreed on {formattedAgreedPrice}.
+                                    {
+                                      chat.conversation
+                                        .participant.name
+                                    }{" "}
+                                    agreed on{" "}
+                                    {formattedAgreedPrice}.
                                     Arrange pickup in chat.
                                   </p>
 
                                   <p className="offer-accepted-card__note">
-                                    Accepting an offer does not mark the item
-                                    as sold.
+                                    Accepting an offer does not
+                                    mark the item as sold.
                                   </p>
 
                                   <div className="offer-accepted-card__actions">
                                     <button
                                       type="button"
                                       className="offer-accepted-card__button"
-                                      onClick={proposePickupInMessage}
-                                    >
-                                      Proposed pickup
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      className="offer-accepted-card__button"
                                       onClick={arrangePickup}
                                     >
-                                      Arrange pickup
+                                      Proposed pickup
                                     </button>
                                   </div>
                                 </article>
@@ -606,24 +655,36 @@ export default function Messages() {
                             chat.conversation.currentUserId;
 
                           return (
-                            <div key={`message-${message.id}`}>
+                            <div
+                              key={`message-${message.id}`}
+                            >
                               {showDate && (
-                                <p className="messages-date">{date}</p>
+                                <p className="messages-date">
+                                  {date}
+                                </p>
                               )}
 
                               <div
                                 className={`messages-message-row ${
-                                  outgoing ? "outgoing" : "incoming"
+                                  outgoing
+                                    ? "outgoing"
+                                    : "incoming"
                                 }`}
                               >
                                 <div
                                   className={`messages-bubble ${
-                                    outgoing ? "outgoing" : "incoming"
+                                    outgoing
+                                      ? "outgoing"
+                                      : "incoming"
                                   }`}
                                 >
                                   <p>{message.content}</p>
-                                  <time dateTime={message.sentAt}>
-                                    {timeLabel(message.sentAt)}
+                                  <time
+                                    dateTime={message.sentAt}
+                                  >
+                                    {timeLabel(
+                                      message.sentAt,
+                                    )}
                                   </time>
                                 </div>
 
@@ -637,7 +698,8 @@ export default function Messages() {
                                   aria-label={`Report message from ${
                                     outgoing
                                       ? "you"
-                                      : chat.conversation.participant.name
+                                      : chat.conversation
+                                          .participant.name
                                   }`}
                                 >
                                   Report
@@ -654,7 +716,7 @@ export default function Messages() {
                           className="messages-new"
                           onClick={bottom}
                         >
-                          New messages â†“
+                          New messages below
                         </button>
                       )}
 
@@ -666,7 +728,9 @@ export default function Messages() {
                             chat.conversation.currentUserId
                           }
                           open={pickupOpen}
-                          onClose={() => setPickupOpen(false)}
+                          onClose={() =>
+                            setPickupOpen(false)
+                          }
                         />
                       )}
 
@@ -696,7 +760,9 @@ export default function Messages() {
                             placeholder={"Write a message" + String.fromCharCode(8230)}
                             value={chat.draft}
                             onChange={(event) =>
-                              chat.setDraft(event.target.value)
+                              chat.setDraft(
+                                event.target.value,
+                              )
                             }
                             maxLength={5000}
                             disabled={chat.sending}
@@ -707,14 +773,18 @@ export default function Messages() {
                         <button
                           type="submit"
                           disabled={
-                            chat.sending || !chat.draft.trim()
+                            chat.sending ||
+                            !chat.draft.trim()
                           }
                         >
-                          {chat.sending ? "Sendingâ€¦" : "Send"}
+                          {chat.sending
+                            ? "Sending..."
+                            : "Send"}
                         </button>
 
                         <span className="messages-character-count">
-                          {chat.draft.length}/5000 Â· Propose pickups in messages.
+                          {chat.draft.length}/5000 - Propose
+                          pickups in messages.
                         </span>
                       </form>
                     </>
@@ -737,11 +807,14 @@ export default function Messages() {
             {reportSubmitted ? (
               <div className="messages-report-confirmation">
                 <span>Done</span>
-                <h2 id="messages-report-title">Report submitted</h2>
+                <h2 id="messages-report-title">
+                  Report submitted
+                </h2>
 
                 <p>
                   Your report is in the moderation queue.
-                  The reported person will not see who reported them.
+                  The reported person will not see who
+                  reported them.
                 </p>
 
                 <button
@@ -753,11 +826,13 @@ export default function Messages() {
               </div>
             ) : (
               <form onSubmit={submitMessageReport}>
-                <h2 id="messages-report-title">Report a message</h2>
+                <h2 id="messages-report-title">
+                  Report a message
+                </h2>
 
                 <p className="messages-report-privacy">
-                  Your report is private. The other member will not see who
-                  reported them.
+                  Your report is private. The other member
+                  will not see who reported them.
                 </p>
 
                 <div className="messages-report-selected">
@@ -767,7 +842,8 @@ export default function Messages() {
 
                 <label className="messages-report-field">
                   <span>
-                    Reason <b aria-hidden="true">*</b>
+                    Reason{" "}
+                    <b aria-hidden="true">*</b>
                   </span>
 
                   <select
@@ -775,32 +851,47 @@ export default function Messages() {
                     required
                     value={reportReason}
                     onChange={(event) => {
-                      setReportReason(event.target.value);
+                      setReportReason(
+                        event.target.value,
+                      );
                       setReportError("");
                     }}
                   >
-                    <option value="">Select a reason</option>
+                    <option value="">
+                      Select a reason
+                    </option>
+
                     <option value="Harassment or bullying">
                       Harassment or bullying
                     </option>
+
                     <option value="Threats or intimidation">
                       Threats or intimidation
                     </option>
+
                     <option value="Scam or fraud">
                       Scam or fraud
                     </option>
+
                     <option value="Inappropriate content">
                       Inappropriate content
                     </option>
-                    <option value="Spam">Spam</option>
-                    <option value="Other">Other</option>
+
+                    <option value="Spam">
+                      Spam
+                    </option>
+
+                    <option value="Other">
+                      Other
+                    </option>
                   </select>
                 </label>
 
                 {reportReason === "Other" && (
                   <label className="messages-report-field">
                     <span>
-                      Enter a reason <b aria-hidden="true">*</b>
+                      Enter a reason{" "}
+                      <b aria-hidden="true">*</b>
                     </span>
 
                     <input
@@ -808,7 +899,9 @@ export default function Messages() {
                       maxLength={500}
                       value={customReason}
                       onChange={(event) =>
-                        setCustomReason(event.target.value)
+                        setCustomReason(
+                          event.target.value,
+                        )
                       }
                       placeholder="Briefly explain your reason"
                     />
@@ -816,13 +909,17 @@ export default function Messages() {
                 )}
 
                 <label className="messages-report-field">
-                  <span>What happened? (optional)</span>
+                  <span>
+                    What happened? (optional)
+                  </span>
 
                   <textarea
                     maxLength={2000}
                     value={reportDetails}
                     onChange={(event) =>
-                      setReportDetails(event.target.value)
+                      setReportDetails(
+                        event.target.value,
+                      )
                     }
                     placeholder="Include context that will help a moderator review the report."
                     rows={3}
@@ -857,7 +954,7 @@ export default function Messages() {
                     }
                   >
                     {reportSubmitting
-                      ? "Submittingâ€¦"
+                      ? "Submitting..."
                       : "Submit report"}
                   </button>
                 </div>
