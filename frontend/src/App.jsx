@@ -133,6 +133,10 @@ const router = createBrowserRouter([
         element: <AdminMessageReports />,
       },
       {
+        path: "/admin/message-reports/:reportId",
+        element: <AdminMessageReports />,
+      },
+      {
         path: "/admin/users",
         element: <AdminUsers />,
       },

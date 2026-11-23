@@ -40,6 +40,13 @@ export const reportMessage = async (conversationId, messageId, report) =>
     )
   ).data;
 
+export const getMyReportedMessageIds = async (conversationId) =>
+  (
+    await api.get(
+      `${path(conversationId)}/message-reports/mine`,
+    )
+  ).data;
+
 export function websocketUrl(
   base = api.defaults.baseURL
 ) {

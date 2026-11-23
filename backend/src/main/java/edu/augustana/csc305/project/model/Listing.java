@@ -35,6 +35,7 @@ public class Listing {
     private boolean sellerHidden;
     private Visibility moderationVisibility = Visibility.VISIBLE;
     private ObjectId temporaryHideCaseId;
+    private ObjectId accountSuspensionId;
 
     @Version
     private Long version;
@@ -163,6 +164,9 @@ public class Listing {
     @JsonIgnore
     public ObjectId getTemporaryHideCaseId() { return temporaryHideCaseId; }
     public void setTemporaryHideCaseId(ObjectId caseId) { temporaryHideCaseId = caseId; }
+    @JsonIgnore
+    public ObjectId getAccountSuspensionId() { return accountSuspensionId; }
+    public void setAccountSuspensionId(ObjectId accountSuspensionId) { this.accountSuspensionId = accountSuspensionId; }
 
     public void setStatus(ListingStatus status) {
         this.status = status;

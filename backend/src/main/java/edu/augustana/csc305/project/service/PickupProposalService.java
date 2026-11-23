@@ -164,6 +164,9 @@ public class PickupProposalService {
         }
 
         User user = getCurrentUser(email);
+        if (user.getSuspendedUntil() != null && Instant.now().isBefore(user.getSuspendedUntil())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Messaging is restricted during your account suspension.");
+        }
 
         PickupProposal proposal = new PickupProposal(
                 conversation.getId(),

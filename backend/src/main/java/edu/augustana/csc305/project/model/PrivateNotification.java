@@ -22,7 +22,7 @@ public record PrivateNotification(
 
     public enum Status {
         PENDING, ACCEPTED, REJECTED, COUNTERED,
-        KEPT, HIDDEN, REMOVED
+        KEPT, HIDDEN, REMOVED, POLICY_WARNING, ACCOUNT_SUSPENDED
     }
 
     public record Payload(

@@ -16,6 +16,8 @@ export function notificationTitle(type) {
       return "Offer expired";
     case "MESSAGE_CREATED":
       return "New message";
+    case "MODERATION_NOTICE":
+      return "Moderation update";
     default:
       return "DormDrop update";
   }
