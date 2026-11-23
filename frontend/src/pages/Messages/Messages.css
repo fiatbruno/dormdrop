@@ -29,6 +29,16 @@
   color: #657b9b;
   font-size: 16px;
 }
+.messages-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+@media (max-width: 700px) {
+  .messages-heading-actions {
+    flex-wrap: wrap;
+  }
+}
 .messages-connection {
   display: flex;
   align-items: center;
@@ -751,3 +761,39 @@
     font-size: 16px;
   }
 }
+
+.pickup-card {
+  max-width: 480px;
+  margin: 16px 0;
+  padding: 20px;
+  border: 1px solid #dce4ed;
+  border-radius: 8px;
+  background: #edf4fa;
+  color: #10295c;
+  overflow-wrap: anywhere;
+}
+.pickup-card.outgoing {
+  margin-left: auto;
+}
+.pickup-card h3 {
+  margin: 10px 0;
+  font-size: 20px;
+}
+.pickup-card p {
+  margin: 8px 0;
+  color: #657b9b;
+}
+.pickup-card .pickup-card__eyebrow {
+  color: #947028;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+.pickup-card summary {
+  color: #194278;
+  cursor: pointer;
+  font-size: 14px;
+}
+.pickup-card .pickup-card__status { color: #194278; font-size: 13px; font-weight: 600; }
+.pickup-card__actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.messages-page .pickup-card__actions button:first-child { background: #194278; border-color: #194278; color: white; }
+.pickup-card .pickup-card__error { color: #a32b2b; font-size: 13px; }
