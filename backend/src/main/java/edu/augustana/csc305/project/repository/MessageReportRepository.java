@@ -6,4 +6,6 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 
 public interface MessageReportRepository extends MongoRepository<MessageReport, ObjectId> {
     java.util.List<MessageReport> findAllByOrderByCreatedAtDesc();
+    java.util.List<MessageReport> findByConversationIdAndReporterId(ObjectId conversationId, ObjectId reporterId);
+    boolean existsByMessageIdAndReporterId(ObjectId messageId, ObjectId reporterId);
 }

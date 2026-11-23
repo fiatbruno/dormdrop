@@ -2,12 +2,18 @@ package edu.augustana.csc305.project.model;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.List;
 
 @Document(collection = "message_reports")
+@CompoundIndex(
+        name = "one_report_per_reporter_per_message",
+        def = "{'messageId': 1, 'reporterId': 1}",
+        unique = true
+)
 public record MessageReport(
         @Id ObjectId id,
         ObjectId conversationId,

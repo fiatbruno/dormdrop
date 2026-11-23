@@ -6,6 +6,7 @@ import Footer from "../../components/Footer/Footer";
 import ListingImage from "../../components/ListingImage";
 import useMessaging from "../../hooks/useMessaging";
 import {
+  getMyReportedMessageIds,
   reportMessage,
   getPickupProposals,
   createPickupProposal,
@@ -111,11 +112,12 @@ export default function Messages() {
   const [newMessages, setNewMessages] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const [reportReason, setReportReason] = useState("");
-  const [customReason, setCustomReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
   const [reportError, setReportError] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportSubmitted, setReportSubmitted] = useState(false);
+  const [reportedMessageIds, setReportedMessageIds] = useState([]);
+  const [reportedMessageIdsError, setReportedMessageIdsError] = useState("");
   const scroll = useRef(null);
   const composerInput = useRef(null);
   const nearBottom = useRef(true);
@@ -157,6 +159,27 @@ export default function Messages() {
     else if (last && last !== previous.current.last) setNewMessages(true);
     previous.current = { id: conversationId, last, sent: chat.sentVersion };
   }, [chat.messages, conversationId, chat.sentVersion, pickupState]);
+  useEffect(() => {
+    let active = true;
+    if (!conversationId) return;
+    getMyReportedMessageIds(conversationId)
+      .then((ids) => {
+        if (active) {
+          setReportedMessageIds(ids);
+          setReportedMessageIdsError("");
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setReportedMessageIdsError(
+            "Previously reported messages could not be checked. The server will prevent duplicate reports.",
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [conversationId]);
 
   const query = search.trim().toLowerCase();
   const conversations = chat.conversations.filter(
@@ -267,7 +290,6 @@ export default function Messages() {
     if (reportSubmitting) return;
     setReportTarget(null);
     setReportReason("");
-    setCustomReason("");
     setReportDetails("");
     setReportError("");
     setReportSubmitted(false);
@@ -275,10 +297,15 @@ export default function Messages() {
 
   async function submitMessageReport(event) {
     event.preventDefault();
-    const reason =
-      reportReason === "Other" ? customReason.trim() : reportReason;
-    if (!reason) {
-      setReportError("Select or enter a reason before submitting.");
+    const reason = reportReason.trim();
+    if (!reason || !reportDetails.trim()) {
+      setReportError(
+        !reason && !reportDetails.trim()
+          ? "Select a reason and explain what happened before submitting."
+          : !reason
+            ? "Select a reason before submitting."
+            : "Enter what happened before submitting.",
+      );
       return;
     }
 
@@ -289,11 +316,16 @@ export default function Messages() {
         reason,
         details: reportDetails.trim() || undefined,
       });
+      setReportedMessageIds((ids) => [...ids, reportTarget.id]);
       setReportSubmitted(true);
     } catch (error) {
       setReportError(
-        error.response?.data?.message ||
-          "We couldn't submit your report. Please try again.",
+        error.response?.status === 409
+          ? "You have already reported this message."
+          : error.response?.status === 403
+            ? "You can't report your own message."
+            : error.response?.data?.message ||
+              "We couldn't submit your report. Please try again.",
       );
     } finally {
       setReportSubmitting(false);
@@ -653,17 +685,21 @@ export default function Messages() {
                                     {timeLabel(message.sentAt)}
                                   </time>
                                 </div>
-                                <button
-                                  type="button"
-                                  className="messages-report-trigger"
-                                  onClick={() => {
-                                    setReportTarget(message);
-                                    setReportError("");
-                                  }}
-                                  aria-label={`Report message from ${outgoing ? "you" : chat.conversation.participant.name}`}
-                                >
-                                  Report
-                                </button>
+                                {!outgoing && !reportedMessageIds.includes(message.id) && (
+                                  <button
+                                    type="button"
+                                    className="messages-report-trigger"
+                                    onClick={() => {
+                                      setReportTarget(message);
+                                      setReportReason("");
+                                      setReportDetails("");
+                                      setReportError("");
+                                    }}
+                                    aria-label="Report message"
+                                  >
+                                    Report
+                                  </button>
+                                )}
                               </div>
                             </div>
                           );
@@ -732,10 +768,13 @@ export default function Messages() {
           onSubmit={submitPickup}
         />
       )}
+      {reportedMessageIdsError && conversationId && (
+        <p className="messages-error" role="status">{reportedMessageIdsError}</p>
+      )}
       {reportTarget && (
         <div className="messages-report-backdrop">
           <section
-            className="messages-report-dialog"
+            className={`messages-report-dialog${reportSubmitted ? " messages-report-dialog--confirmation" : ""}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="messages-report-title"
@@ -753,7 +792,7 @@ export default function Messages() {
                 </button>
               </div>
             ) : (
-              <form onSubmit={submitMessageReport}>
+              <form onSubmit={submitMessageReport} noValidate>
                 <h2 id="messages-report-title">Report a message</h2>
                 <p className="messages-report-privacy">
                   Your report is private. The other member will not see who
@@ -761,7 +800,7 @@ export default function Messages() {
                 </p>
                 <div className="messages-report-selected">
                   <span>Selected message</span>
-                  <p>{reportTarget.content}</p>
+                  <p>“{reportTarget.content}”</p>
                 </div>
                 <label className="messages-report-field">
                   <span>
@@ -791,30 +830,21 @@ export default function Messages() {
                     <option value="Other">Other</option>
                   </select>
                 </label>
-                {reportReason === "Other" && (
-                  <label className="messages-report-field">
-                    <span>
-                      Enter a reason <b aria-hidden="true">*</b>
-                    </span>
-                    <input
-                      required
-                      maxLength={500}
-                      value={customReason}
-                      onChange={(event) => setCustomReason(event.target.value)}
-                      placeholder="Briefly explain your reason"
-                    />
-                  </label>
-                )}
                 <label className="messages-report-field">
-                  <span>What happened? (optional)</span>
-                  <textarea
-                    maxLength={2000}
+                  <span>What happened? <b aria-hidden="true">*</b></span>
+                  <input
                     value={reportDetails}
-                    onChange={(event) => setReportDetails(event.target.value)}
-                    placeholder="Include context that will help a moderator review the report."
-                    rows={3}
+                    onChange={(event) => {
+                      setReportDetails(event.target.value);
+                      setReportError("");
+                    }}
+                    maxLength={2000}
+                    required
                   />
                 </label>
+                <p className="messages-report-hint">
+                  Include context that will help a moderator review the report.
+                </p>
                 {reportError && (
                   <p className="messages-report-error" role="alert">
                     {reportError}
@@ -830,11 +860,7 @@ export default function Messages() {
                   </button>
                   <button
                     type="submit"
-                    disabled={
-                      reportSubmitting ||
-                      !reportReason ||
-                      (reportReason === "Other" && !customReason.trim())
-                    }
+                    disabled={reportSubmitting}
                   >
                     {reportSubmitting ? "Submitting…" : "Submit report"}
                   </button>

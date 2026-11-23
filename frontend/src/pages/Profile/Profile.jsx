@@ -1,7 +1,8 @@
 
 import ListingImage from "../../components/ListingImage";
 import useAuth from "../../hooks/useAuth";
-import { useEffect, useState } from "react";
+import Button from "../../components/Button/Button";
+import { useEffect, useRef, useState } from "react";
 import {
   Link,
   useLocation,
@@ -17,6 +18,7 @@ function ListingCards({
   items,
   onMarkSold,
   onRelist,
+  onVisibility,
   pending,
 }) {
   if (items.length === 0) {
@@ -55,12 +57,12 @@ function ListingCards({
 
               <span
                 className={
-                  item.status === "SOLD"
+                  item.sellerHidden ? "profile-badge is-hidden" : item.status === "SOLD"
                     ? "profile-badge sold"
                     : "profile-badge"
                 }
               >
-                {item.status === "SOLD" ? "SOLD" : "Available"}
+                {item.sellerHidden ? "Hidden" : item.status === "SOLD" ? "SOLD" : "Available"}
               </span>
             </div>
           </div>
@@ -97,10 +99,69 @@ function ListingCards({
                 </button>
               </>
             )}
+            {(!item.moderationVisibility || item.moderationVisibility === "VISIBLE") && (
+              <Button type="button" disabled={pending} onClick={() => onVisibility(item)}>
+                {item.sellerHidden ? "Restore listing" : "Hide listing"}
+              </Button>
+            )}
           </div>
         </article>
       ))}
     </div>
+  );
+}
+
+function VisibilityDialog({ item, complete, pending, error, onConfirm, onClose }) {
+  const dialog = useRef(null);
+  useEffect(() => {
+    const element = dialog.current;
+    element.showModal();
+    return () => element.close();
+  }, []);
+
+  const restoring = item.sellerHidden;
+  const action = restoring ? "Restore listing" : "Hide listing";
+  const price = item.listingType === "Trade" ? "Trade" : Number(item.price) === 0
+    ? "Free" : `$${Number(item.price).toFixed(2).replace(/\.00$/, "")}`;
+
+  return (
+    <dialog
+      ref={dialog}
+      className="profile-visibility-dialog"
+      aria-labelledby="listing-visibility-title"
+      onCancel={(event) => { event.preventDefault(); if (!pending) onClose(); }}
+    >
+      <div className="profile-visibility-content">
+        {complete && <span className="profile-visibility-success">{restoring ? "Visible" : "Done"}</span>}
+        <h2 id="listing-visibility-title">
+          {complete ? (restoring ? "Listing restored" : "Listing hidden")
+            : (restoring ? "Restore this listing?" : "Hide this listing?")}
+        </h2>
+        {complete ? (
+          <>
+            <p>{restoring ? "Your listing is visible to buyers again."
+              : "Buyers cannot see this item in browse or search. You can restore it from your listings."}</p>
+            <Button type="button" className="profile-visibility-primary" onClick={onClose}>Done</Button>
+          </>
+        ) : (
+          <>
+            <p>{item.title} · {price}</p>
+            <div className="profile-visibility-info">
+              <strong>{restoring ? "Visible to buyers" : "Hidden from buyers"}</strong>
+              <p>{restoring ? "Your listing will appear in browse and search again."
+                : "Your listing will disappear from browse and search. You can make it visible again later."}</p>
+            </div>
+            {error && <p className="profile-visibility-error" role="alert">{error}</p>}
+            <div className="profile-visibility-actions">
+              <Button type="button" disabled={pending} onClick={onClose}>Cancel</Button>
+              <Button type="button" className="profile-visibility-primary" disabled={pending} onClick={onConfirm}>
+                {pending ? "Saving…" : action}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    </dialog>
   );
 }
 
@@ -114,6 +175,7 @@ function Profile({
   onMarkSold,
   onRelist,
   onResetPassword,
+  onUpdateVisibility,
 }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -123,6 +185,7 @@ function Profile({
   const [message, setMessage] = useState("");
   const [actionError, setActionError] = useState("");
   const [pending, setPending] = useState(false);
+  const [visibilityDialog, setVisibilityDialog] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -202,6 +265,25 @@ function Profile({
       );
     } finally {
       setPending(false);
+    }
+  }
+
+  async function confirmVisibility() {
+    const { item } = visibilityDialog;
+    setVisibilityDialog({ item, pending: true });
+    try {
+      await onUpdateVisibility(item.id, !item.sellerHidden);
+      setVisibilityDialog({ item, complete: true });
+    } catch (err) {
+      const status = err.response?.status;
+      const message = err.response?.data?.detail || err.response?.data?.message;
+      const fallback = {
+        401: "Sign in again to change listing visibility.",
+        403: "Only the listing owner can change its visibility.",
+        404: "The visibility endpoint is unavailable. Make sure the backend is running the latest version, then try again.",
+        409: "This listing is restricted or has changed. Refresh before trying again.",
+      };
+      setVisibilityDialog({ item, error: message || fallback[status] || "Could not update visibility. Please try again." });
     }
   }
 
@@ -429,6 +511,7 @@ function Profile({
                   <ListingCards
                     items={activeListings}
                     pending={pending}
+                    onVisibility={(item) => setVisibilityDialog({ item })}
                     onMarkSold={(id) =>
                       changeListingStatus(id, true)
                     }
@@ -448,6 +531,7 @@ function Profile({
                   <ListingCards
                     items={soldListings}
                     pending={pending}
+                    onVisibility={(item) => setVisibilityDialog({ item })}
                     onRelist={(id) =>
                       changeListingStatus(id, false)
                     }
@@ -460,6 +544,13 @@ function Profile({
       </main>
 
       <Footer />
+      {visibilityDialog && (
+        <VisibilityDialog
+          {...visibilityDialog}
+          onConfirm={confirmVisibility}
+          onClose={() => setVisibilityDialog(null)}
+        />
+      )}
     </>
   );
 }

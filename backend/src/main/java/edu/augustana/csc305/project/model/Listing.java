@@ -32,8 +32,10 @@ public class Listing {
     private String pickupArea;
     private String listingType = "For sale";
     private String imageUrl;
+    private boolean sellerHidden;
     private Visibility moderationVisibility = Visibility.VISIBLE;
     private ObjectId temporaryHideCaseId;
+    private ObjectId accountSuspensionId;
 
     @Version
     private Long version;
@@ -117,6 +119,10 @@ public class Listing {
         this.listingType = listingType;
     }
 
+    public boolean isSellerHidden() { return sellerHidden; }
+
+    public void setSellerHidden(boolean sellerHidden) { this.sellerHidden = sellerHidden; }
+
     public String getImageUrl() {
         return imageUrl;
     }
@@ -158,6 +164,9 @@ public class Listing {
     @JsonIgnore
     public ObjectId getTemporaryHideCaseId() { return temporaryHideCaseId; }
     public void setTemporaryHideCaseId(ObjectId caseId) { temporaryHideCaseId = caseId; }
+    @JsonIgnore
+    public ObjectId getAccountSuspensionId() { return accountSuspensionId; }
+    public void setAccountSuspensionId(ObjectId accountSuspensionId) { this.accountSuspensionId = accountSuspensionId; }
 
     public void setStatus(ListingStatus status) {
         this.status = status;

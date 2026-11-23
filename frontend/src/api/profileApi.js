@@ -36,6 +36,13 @@ export async function updateListingStatus(id, status) {
   return data;
 }
 
+export async function updateListingVisibility(id, hidden) {
+  const { data } = await api.patch(`/home/${encodeURIComponent(id)}/visibility`, null, {
+    params: { hidden },
+  });
+  return data;
+}
+
 // Request a password reset
 export async function resetPassword(email) {
   const { data, status } = await api.post(endpoints.resetPassword, { email });

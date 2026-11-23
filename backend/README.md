@@ -24,11 +24,7 @@ Running the application *requires* the following environment variables
 to be set:
 
   + `MONGODB_URI`: the URI for your backing MongoDB cluster. The URI
-    should start with `mongodb://` or `mongodb+srv://` and include your
-    credentials (username and password). For local MongoDB, a URI can look
-    like `mongodb://localhost:27017/dormdrop`; for Atlas, use the `mongodb+srv://`
-    connection string provided by your cluster. Percent-encode reserved
-    characters in the username or password.
+    should include your credentials (username and password).
   + `JWT_SECRET`: a base-64 encoded secret key for generating JWT
     tokens, which are used as part of user authentication. You can
     generate a key on the command line by saying `openssl rand -base64
@@ -100,6 +96,12 @@ sort. Case-insensitive substring matching can require scanning candidates;
 inspect query plans on representative data before adding indexes.
 
 ### Backend tests and CI
+
+Listing-review hides and account-suspension holds are tracked independently.
+Resolving a listing review does not release an active suspension hold, and
+suspension expiry does not release a listing-review hide or restore a removed
+listing. Expiry runs on a schedule (60 seconds by default) and requires the
+same MongoDB transaction support as report moderation.
 
 Use Java 17 and Maven to run the backend unit tests from the repository root:
 

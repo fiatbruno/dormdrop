@@ -1,34 +1,47 @@
 package edu.augustana.csc305.project.service;
 
 import edu.augustana.csc305.project.model.*;
+import edu.augustana.csc305.project.security.PermissionPolicy;
+import edu.augustana.csc305.project.security.StaffAccess;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
+import java.time.Instant;
 
 /** Shared moderation policy. Lifecycle and moderation visibility remain independent. */
 @Component
 public class ListingVisibilityPolicy {
-    /** Integration point for a future account policy; suspensions are deliberately not implemented here. */
-    protected boolean accountAllowsMarketplace(User user) { return true; }
+    protected boolean accountAllowsMarketplace(User user) {
+        return user != null && (user.getSuspendedUntil() == null || !Instant.now().isBefore(user.getSuspendedUntil()));
+    }
 
     public boolean visible(Listing listing) {
+        return moderationVisible(listing) && !listing.isSellerHidden();
+    }
+    private boolean moderationVisible(Listing listing) {
         return listing != null && listing.getModerationVisibility() == ModerationTypes.Visibility.VISIBLE;
     }
     public Criteria visibleCriteria() {
+        return moderatableBySellerCriteria().and("sellerHidden").ne(true);
+    }
+    public Criteria moderatableBySellerCriteria() {
         // Mongo null matches missing fields, so unmigrated legacy listings stay visible.
         return Criteria.where("moderationVisibility").in("VISIBLE", null);
     }
     public boolean maySeeRestrictedSummary(Listing listing, User viewer) {
         return listing != null && viewer != null && accountAllowsMarketplace(viewer)
-                && (viewer.getId().equals(listing.getOwnerId()) || viewer.getRole().name().equals("ADMIN")
-                    || viewer.getRole().name().equals("MODERATOR"));
+                && (viewer.getId().equals(listing.getOwnerId())
+                    || StaffAccess.permits(viewer.getRole(), PermissionPolicy.Capability.REVIEW_REPORTS));
     }
     public Listing view(Listing listing, User viewer) {
         if (listing == null || !accountAllowsMarketplace(viewer)) throw notFound();
-        if (visible(listing)) return listing;
+        if (visible(listing) || (moderationVisible(listing) && maySeeRestrictedSummary(listing, viewer))) return listing;
         if (!maySeeRestrictedSummary(listing, viewer)) throw notFound();
         return restrictedSummary(listing);
+    }
+    public boolean maySeePhoto(Listing listing, User viewer) {
+        return visible(listing) || (moderationVisible(listing) && maySeeRestrictedSummary(listing, viewer));
     }
     public Listing restrictedSummary(Listing listing) {
         Listing summary = new Listing();
@@ -37,6 +50,7 @@ public class ListingVisibilityPolicy {
         summary.setListingType(null);
         summary.setStatus(listing.getStatus());
         summary.setModerationVisibility(listing.getModerationVisibility());
+        summary.setSellerHidden(listing.isSellerHidden());
         summary.setVersion(listing.getVersion());
         return summary;
     }
@@ -53,9 +67,13 @@ public class ListingVisibilityPolicy {
         if (!viewer.getId().equals(listing.getOwnerId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not own this listing.");
         }
-        if (!accountAllowsMarketplace(viewer) || !visible(listing)) {
+        if (!accountAllowsMarketplace(viewer) || !moderationVisible(listing)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Restricted listings cannot be changed by the seller.");
         }
+    }
+    public void requireActiveMarketplaceAccess(User viewer) {
+        if (!accountAllowsMarketplace(viewer))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Marketplace access is restricted during your account suspension.");
     }
     public void requireStatusTransition(Listing listing, ListingStatus next) {
         if (next == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status is required.");

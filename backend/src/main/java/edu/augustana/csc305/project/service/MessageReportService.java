@@ -11,6 +11,7 @@ import edu.augustana.csc305.project.repository.MessageReportRepository;
 import edu.augustana.csc305.project.repository.MessageRepository;
 import edu.augustana.csc305.project.repository.UserRepository;
 import org.bson.types.ObjectId;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -67,6 +68,12 @@ public class MessageReportService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Message not found in this conversation."));
 
         User reporter = user(authentication.getName());
+        if (reporter.getId().equals(reportedMessage.getSenderId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot report your own message.");
+        }
+        if (reports.existsByMessageIdAndReporterId(reportedMessage.getId(), reporter.getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "You have already reported this message.");
+        }
         User sender = user(reportedMessage.getSenderId());
         User buyer = user(conversation.getBuyerId());
         User seller = user(conversation.getSellerId());
@@ -94,26 +101,31 @@ public class MessageReportService {
                         message.getSentAt()))
                 .toList();
 
-        MessageReport report = reports.save(new MessageReport(
-                null,
-                conversation.getId(),
-                conversation.getListingId(),
-                listing == null ? "Listing unavailable" : listing.getTitle(),
-                reportedMessage.getId(),
-                reportedMessage.getContent(),
-                reportedMessage.getSentAt(),
-                sender.getId(),
-                sender.getName(),
-                sender.getEmail(),
-                reporter.getId(),
-                reporter.getName(),
-                reporter.getEmail(),
-                request.reason().strip(),
-                request.details() == null || request.details().isBlank() ? null : request.details().strip(),
-                context,
-                Instant.now(),
-                "OPEN"
-        ));
+        MessageReport report;
+        try {
+            report = reports.save(new MessageReport(
+                    null,
+                    conversation.getId(),
+                    conversation.getListingId(),
+                    listing == null ? "Listing unavailable" : listing.getTitle(),
+                    reportedMessage.getId(),
+                    reportedMessage.getContent(),
+                    reportedMessage.getSentAt(),
+                    sender.getId(),
+                    sender.getName(),
+                    sender.getEmail(),
+                    reporter.getId(),
+                    reporter.getName(),
+                    reporter.getEmail(),
+                    request.reason().strip(),
+                    request.details() == null || request.details().isBlank() ? null : request.details().strip(),
+                    context,
+                    Instant.now(),
+                    "OPEN"
+            ));
+        } catch (DuplicateKeyException duplicate) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "You have already reported this message.");
+        }
         return new MessageReportDtos.Receipt(
                 report.id().toHexString(),
                 report.status(),
@@ -124,6 +136,15 @@ public class MessageReportService {
     public List<MessageReportDtos.Report> adminQueue() {
         return reports.findAllByOrderByCreatedAtDesc().stream()
                 .map(MessageReportDtos.Report::from)
+                .toList();
+    }
+
+    public List<String> myReportedMessageIds(String conversationId, Authentication authentication) {
+        Conversation conversation = conversations.getConversation(conversationId, authentication.getName());
+        User reporter = user(authentication.getName());
+        return reports.findByConversationIdAndReporterId(conversation.getId(), reporter.getId())
+                .stream()
+                .map(report -> report.messageId().toHexString())
                 .toList();
     }
 

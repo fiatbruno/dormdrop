@@ -95,7 +95,7 @@ public class OfferService {
             return new Submission(previous.result(), false);
         }
         Listing listing = mongo.findById(listingId, Listing.class);
-        if (listing == null || listing.getModerationVisibility() != Visibility.VISIBLE)
+        if (listing == null || (listing.getModerationVisibility() != Visibility.VISIBLE || listing.isSellerHidden()))
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found.");
         if (listing.getOwnerId() == null)
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found.");
@@ -121,7 +121,7 @@ public class OfferService {
         mongo.insert(offer);
         // Fence concurrent seller edits, deletion and visibility/status changes without changing listing lifecycle.
         Criteria visible = new Criteria().orOperator(Criteria.where("moderationVisibility").is(Visibility.VISIBLE),
-                Criteria.where("moderationVisibility").is(null));
+                Criteria.where("moderationVisibility").is(null)).and("sellerHidden").ne(true);
         Criteria available = new Criteria().orOperator(Criteria.where("status").is(ListingStatus.AVAILABLE),
                 Criteria.where("status").exists(false));
         Query versionedListing = Query.query(new Criteria().andOperator(Criteria.where("_id").is(listingId),
@@ -283,13 +283,13 @@ public class OfferService {
     private void fenceAvailableListing(OfferNegotiation offer, boolean requireSale) {
         Listing listing = mongo.findById(offer.listingId(), Listing.class);
         if (listing == null || listing.getStatus() != ListingStatus.AVAILABLE
-                || listing.getModerationVisibility() != Visibility.VISIBLE
+                || (listing.getModerationVisibility() != Visibility.VISIBLE || listing.isSellerHidden())
                 || !offer.sellerId().equals(listing.getOwnerId())
                 || (requireSale && (!"For sale".equalsIgnoreCase(listing.getListingType())
                     || listing.getPrice() == null || listing.getPrice().signum() <= 0)))
             throw conflict("Listing is not available for this offer action.");
         Criteria visible = new Criteria().orOperator(Criteria.where("moderationVisibility").is(Visibility.VISIBLE),
-                Criteria.where("moderationVisibility").is(null));
+                Criteria.where("moderationVisibility").is(null)).and("sellerHidden").ne(true);
         Criteria available = new Criteria().orOperator(Criteria.where("status").is(ListingStatus.AVAILABLE),
                 Criteria.where("status").exists(false));
         Query fence = Query.query(new Criteria().andOperator(Criteria.where("_id").is(offer.listingId()),
