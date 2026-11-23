@@ -583,6 +583,13 @@ function StaffReportsContent({ caseId, staff }) {
 
                     <section className="staff-case-section" aria-labelledby="evidence-title">
                       <h3 id="evidence-title">Retained listing evidence</h3>
+                      {caseDetail.sellerHidden && (
+                        <p className="staff-evidence-state">
+                          <strong>Hidden by seller</strong>
+                          {" · "}
+                          <Link to={`/items/${encodeURIComponent(caseDetail.caseSummary.listingId)}`}>View listing</Link>
+                        </p>
+                      )}
                       {(caseDetail.snapshots || []).length === 0 ? (
                         <p className="staff-evidence-state">
                           No retained snapshot is available for this case.
