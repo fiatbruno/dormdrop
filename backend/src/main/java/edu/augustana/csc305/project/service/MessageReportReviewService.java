@@ -133,7 +133,7 @@ public class MessageReportReviewService {
             if (member.getSuspensionReportId() != null) {
                 mongo.updateMulti(Query.query(Criteria.where("ownerId").is(member.getId())
                                 .and("accountSuspensionId").is(member.getSuspensionReportId())),
-                        new Update().set("accountSuspensionId", report.id()), Listing.class);
+                        new Update().set("accountSuspensionId", report.id()).inc("version", 1L), Listing.class);
             }
             Update userUpdate = new Update().set("suspendedUntil", expiresAt)
                     .set("suspensionReportId", report.id());
@@ -144,6 +144,13 @@ public class MessageReportReviewService {
             Update hide = new Update().set("moderationVisibility", ModerationTypes.Visibility.HIDDEN)
                     .set("accountSuspensionId", report.id()).inc("version", 1L);
             long hiddenListings = mongo.updateMulti(activeVisible, hide, Listing.class).getModifiedCount();
+            Query reportHidden = Query.query(Criteria.where("ownerId").is(member.getId())
+                    .and("status").in(List.of(ListingStatus.AVAILABLE, ListingStatus.RESERVED))
+                    .and("moderationVisibility").is(ModerationTypes.Visibility.HIDDEN)
+                    .and("temporaryHideCaseId").ne(null)
+                    .and("accountSuspensionId").is(null));
+            mongo.updateMulti(reportHidden, new Update().set("accountSuspensionId", report.id())
+                    .inc("version", 1L), Listing.class);
 
             actions.save(new MessageReportAction(new ObjectId(), report.id(), actor.getId(), actor.getName(),
                     MessageReportAction.Type.ACCOUNT_SUSPENDED, request.message().strip(),
