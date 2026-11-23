@@ -131,7 +131,7 @@ export default function EditListing() {
             : []
         );
 
-        setStatus(data.status || "AVAILABLE");
+        setStatus(data.sellerHidden ? "HIDDEN" : data.status || "AVAILABLE");
         setLoaded(true);
       })
       .catch((err) => {
@@ -709,7 +709,7 @@ export default function EditListing() {
                     <strong>{previewPrice}</strong>
 
                     <span className="available">
-                      {status === "SOLD"
+                      {status === "HIDDEN" ? "Hidden" : status === "SOLD"
                         ? "Sold"
                         : "Available"}
                     </span>

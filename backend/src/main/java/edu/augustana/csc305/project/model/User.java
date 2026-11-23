@@ -37,6 +37,8 @@ public class User {
     private String aboutYou;
     private Instant lastActiveAt;
     private Instant lastLoginAt;
+    private Instant suspendedUntil;
+    private ObjectId suspensionReportId;
 
     // Default constructor required by MongoDB
     public User() {
@@ -175,4 +177,14 @@ public class User {
     public Instant getLastLoginAt() { return lastLoginAt; }
 
     public void setLastLoginAt(Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public Instant getSuspendedUntil() { return suspendedUntil; }
+
+    public void setSuspendedUntil(Instant suspendedUntil) { this.suspendedUntil = suspendedUntil; }
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public ObjectId getSuspensionReportId() { return suspensionReportId; }
+
+    public void setSuspensionReportId(ObjectId suspensionReportId) { this.suspensionReportId = suspensionReportId; }
 }

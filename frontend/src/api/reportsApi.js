@@ -14,6 +14,38 @@ export async function getAdminMessageReports() {
   return data;
 }
 
+export async function addMessageReportNote(reportId, content) {
+  const { data } = await api.post(
+    `/admin/message-reports/${encodeURIComponent(reportId)}/notes`,
+    { content },
+  );
+  return data;
+}
+
+export async function dismissMessageReport(reportId, request) {
+  const { data } = await api.post(
+    `/admin/message-reports/${encodeURIComponent(reportId)}/dismiss`,
+    request,
+  );
+  return data;
+}
+
+export async function warnMessageReportMember(reportId, request) {
+  const { data } = await api.post(
+    `/admin/message-reports/${encodeURIComponent(reportId)}/warnings`,
+    request,
+  );
+  return data;
+}
+
+export async function suspendMessageReportMember(reportId, request) {
+  const { data } = await api.post(
+    `/admin/message-reports/${encodeURIComponent(reportId)}/suspensions`,
+    request,
+  );
+  return data;
+}
+
 export async function getMyReports(page = 0, size = 20) {
   const { data } = await api.get("/me/reports", { params: { page, size } });
   return data;

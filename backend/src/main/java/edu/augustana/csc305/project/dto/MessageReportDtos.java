@@ -26,7 +26,8 @@ public final class MessageReportDtos {
             String details,
             List<ContextMessage> conversationContext,
             Instant createdAt,
-            String status
+            String status,
+            List<InternalNote> internalNotes
     ) {
         public static Report from(MessageReport report) {
             return new Report(
@@ -51,10 +52,13 @@ public final class MessageReportDtos {
                                     message.sentAt()))
                             .toList(),
                     report.createdAt(),
-                    report.status()
+                    report.status(),
+                    List.of()
             );
         }
     }
+
+    public record InternalNote(String authorName, String content, Instant createdAt) {}
 
     public record ContextMessage(
             String messageId,

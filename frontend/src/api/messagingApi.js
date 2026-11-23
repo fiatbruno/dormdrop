@@ -1,8 +1,6 @@
-
 import api from "./client";
 
-const path = (id) =>
-  `/conversations/${encodeURIComponent(id)}`;
+const path = (id) => `/conversations/${encodeURIComponent(id)}`;
 
 export const startConversation = async (listingId) =>
   (
@@ -14,19 +12,22 @@ export const startConversation = async (listingId) =>
 export const getConversations = async () =>
   (await api.get("/conversations")).data;
 
-export const getConversation = async (id) =>
-  (await api.get(path(id))).data;
+export const getConversation = async (id) => (await api.get(path(id))).data;
 
 export const getMessages = async (id) =>
   (await api.get(`${path(id)}/messages`)).data;
 
+export const getPickupProposals = async (id) =>
+  (await api.get(`${path(id)}/pickup-proposals`)).data;
+
+export const createPickupProposal = async (id, proposal) =>
+  (await api.post(`${path(id)}/pickup-proposals`, proposal)).data;
+
+export const respondToPickupProposal = async (conversationId, proposalId, decision) =>
+  (await api.patch(`${path(conversationId)}/pickup-proposals/${encodeURIComponent(proposalId)}/respond`, null, { params: { decision } })).data;
+
 export const sendMessage = async (id, content) =>
-  (
-    await api.post(
-      `${path(id)}/messages`,
-      { content }
-    )
-  ).data;
+  (await api.post(`${path(id)}/messages`, { content })).data;
 
 export const markRead = async (id) => {
   await api.patch(`${path(id)}/read`);
@@ -40,6 +41,13 @@ export const reportMessage = async (conversationId, messageId, report) =>
     )
   ).data;
 
+export const getMyReportedMessageIds = async (conversationId) =>
+  (
+    await api.get(
+      `${path(conversationId)}/message-reports/mine`,
+    )
+  ).data;
+
 export function websocketUrl(
   base = api.defaults.baseURL
 ) {
@@ -48,14 +56,12 @@ export function websocketUrl(
     window.location.origin
   );
 
-  url.pathname =
-    `${url.pathname.replace(/\/$/, "")}/ws`;
+  url.pathname = `${url.pathname.replace(/\/$/, "")}/ws`;
 
   url.search = "";
   url.hash = "";
 
-  url.protocol =
-    url.protocol === "https:" ? "wss:" : "ws:";
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
 
   return url.href;
 }

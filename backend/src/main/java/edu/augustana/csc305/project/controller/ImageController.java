@@ -116,10 +116,12 @@ public class ImageController {
 
     @GetMapping("/{filename}")
     public ResponseEntity<Resource> getImage(
-            @PathVariable String filename) throws IOException {
+            @PathVariable String filename, Authentication auth) throws IOException {
 
         var linked = listings.findAllByImageUrl(storage.imageUrl(filename));
-        if (linked.isEmpty() || linked.stream().anyMatch(listing -> !visibility.visible(listing))) {
+        User viewer = auth == null || linked.stream().allMatch(visibility::visible)
+                ? null : users.findByEmail(auth.getName()).orElse(null);
+        if (linked.isEmpty() || linked.stream().anyMatch(listing -> !visibility.maySeePhoto(listing, viewer))) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image not found.");
         }
         Path path = storage.getImage(filename);

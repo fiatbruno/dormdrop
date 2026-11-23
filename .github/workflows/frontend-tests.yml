@@ -37,7 +37,7 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run homepage tests
+      - name: Run tests
         run: npx playwright test --project=chromium
 
       - name: Upload test report if tests fail

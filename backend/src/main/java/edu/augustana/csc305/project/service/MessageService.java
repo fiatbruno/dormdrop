@@ -71,6 +71,9 @@ public class MessageService {
         }
 
         User sender = getUserByEmail(userEmail);
+        if (sender.getSuspendedUntil() != null && Instant.now().isBefore(sender.getSuspendedUntil())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Messaging is restricted during your account suspension.");
+        }
         User buyer = getParticipant(conversation.getBuyerId());
         User seller = getParticipant(conversation.getSellerId());
 

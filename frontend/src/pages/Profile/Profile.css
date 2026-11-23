@@ -591,3 +591,119 @@ html {
     scroll-behavior: auto;
   }
 }
+
+.profile-badge.is-hidden {
+  background: #edf4fa;
+  color: #134074;
+}
+
+.profile-card-actions {
+  flex-wrap: wrap;
+}
+
+.profile-card-actions > :is(a, button) {
+  flex-basis: 100px;
+}
+
+.profile-visibility-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  box-sizing: border-box;
+  width: min(600px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  padding: 0;
+  border: 1px solid #ecedf0;
+  border-radius: 12px;
+  background: #fff;
+  color: #0b2255;
+  font-family: var(--sans, Inter, sans-serif);
+}
+
+.profile-visibility-dialog::backdrop {
+  background: rgb(11 34 85 / 45%);
+}
+
+.profile-visibility-content {
+  display: grid;
+  gap: 20px;
+  padding: clamp(20px, 5vw, 32px);
+}
+
+.profile-visibility-content h2 {
+  font-family: var(--heading, sans-serif);
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 36px;
+}
+
+.profile-visibility-content p {
+  margin: 0;
+  color: #596b82;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.profile-visibility-info {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 8px;
+  background: #edf4fa;
+}
+
+.profile-visibility-info strong {
+  color: #134074;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.profile-visibility-info p {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.profile-visibility-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.89fr;
+  gap: 16px;
+}
+
+.profile-visibility-dialog button {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid #ccd5e0;
+  border-radius: 8px;
+  background: #fff;
+  color: #134074;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.profile-visibility-dialog button.profile-visibility-primary {
+  border-color: #134074;
+  background: #134074;
+  color: #fff;
+}
+
+.profile-visibility-dialog button:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+
+.profile-visibility-success {
+  display: grid;
+  place-items: center;
+  width: 100px;
+  min-height: 28px;
+  border-radius: 6px;
+  background: #eef7f0;
+  color: #217553;
+  font-size: 12px;
+}
+
+.profile-visibility-content .profile-visibility-error {
+  color: #b42318;
+}

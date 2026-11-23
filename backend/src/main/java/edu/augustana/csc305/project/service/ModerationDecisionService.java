@@ -103,12 +103,16 @@ public class ModerationDecisionService {
             if (request.action() == DecisionAction.REMOVE) {
                 visibility = Visibility.REMOVED;
                 change.set("moderationVisibility", visibility).unset("temporaryHideCaseId");
-            } else if (request.action() == DecisionAction.HIDE && visibility == Visibility.VISIBLE) {
+            } else if (request.action() == DecisionAction.HIDE) {
+                if (listing.getTemporaryHideCaseId() != null
+                        && !reportCase.id().equals(listing.getTemporaryHideCaseId())) {
+                    throw conflict("Another listing review is already keeping this listing hidden.");
+                }
                 visibility = Visibility.HIDDEN;
                 change.set("moderationVisibility", visibility).set("temporaryHideCaseId", reportCase.id());
             } else if (request.action() == DecisionAction.KEEP && visibility == Visibility.HIDDEN
                     && reportCase.id().equals(listing.getTemporaryHideCaseId())) {
-                visibility = Visibility.VISIBLE;
+                visibility = listing.getAccountSuspensionId() == null ? Visibility.VISIBLE : Visibility.HIDDEN;
                 change.set("moderationVisibility", visibility).unset("temporaryHideCaseId");
             }
             if (mongo.updateFirst(Query.query(Criteria.where("_id").is(listing.getId())

@@ -1,3 +1,4 @@
+
 package edu.augustana.csc305.project.service;
 
 import com.mongodb.MongoException;
@@ -146,6 +147,7 @@ public class OfferService {
 
         if (listing == null
                 || listing.getModerationVisibility() != Visibility.VISIBLE
+                || listing.isSellerHidden()
                 || listing.getOwnerId() == null) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND, "Listing not found."
@@ -675,13 +677,17 @@ public class OfferService {
         if (listing == null
                 || listing.getStatus() != ListingStatus.AVAILABLE
                 || listing.getModerationVisibility() != Visibility.VISIBLE
+                || listing.isSellerHidden()
                 || !offer.sellerId().equals(listing.getOwnerId())) {
             throw conflict("Listing is not available for acceptance.");
         }
 
-        Criteria visible = new Criteria().orOperator(
-                Criteria.where("moderationVisibility").is(Visibility.VISIBLE),
-                Criteria.where("moderationVisibility").is(null)
+        Criteria visible = new Criteria().andOperator(
+                new Criteria().orOperator(
+                        Criteria.where("moderationVisibility").is(Visibility.VISIBLE),
+                        Criteria.where("moderationVisibility").is(null)
+                ),
+                Criteria.where("sellerHidden").ne(true)
         );
 
         Criteria available = new Criteria().orOperator(
@@ -729,6 +735,7 @@ public class OfferService {
         if (listing == null
                 || listing.getStatus() != ListingStatus.AVAILABLE
                 || listing.getModerationVisibility() != Visibility.VISIBLE
+                || listing.isSellerHidden()
                 || !offer.sellerId().equals(listing.getOwnerId())
                 || (requireSale
                 && (!"For sale".equalsIgnoreCase(listing.getListingType())
@@ -751,9 +758,12 @@ public class OfferService {
             ObjectId reservedOfferId,
             String failureMessage
     ) {
-        Criteria visible = new Criteria().orOperator(
-                Criteria.where("moderationVisibility").is(Visibility.VISIBLE),
-                Criteria.where("moderationVisibility").is(null)
+        Criteria visible = new Criteria().andOperator(
+                new Criteria().orOperator(
+                        Criteria.where("moderationVisibility").is(Visibility.VISIBLE),
+                        Criteria.where("moderationVisibility").is(null)
+                ),
+                Criteria.where("sellerHidden").ne(true)
         );
 
         Criteria available = new Criteria().orOperator(

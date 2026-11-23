@@ -83,7 +83,7 @@ public class MyListingsService {
         if (listing == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found.");
         visibility.requireSellerMutation(listing, user);
         query.addCriteria(Criteria.where("version").is(listing.getVersion()));
-        query.addCriteria(visibility.visibleCriteria());
+        query.addCriteria(visibility.moderatableBySellerCriteria());
         long deletedCount = mongoTemplate.remove(query, Listing.class).getDeletedCount();
 
         if (deletedCount == 0) {
