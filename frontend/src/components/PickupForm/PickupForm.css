@@ -1,0 +1,14 @@
+.pickup-field { margin: 18px 0; }
+.pickup-field label { display: block; font-weight: 600; margin-bottom: 6px; }
+.pickup-field input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #c8d4e3;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #10295c;
+  background: #fff;
+  font: inherit;
+}
+.pickup-field input[aria-invalid="true"] { border-color: #b33a3a; }
+.pickup-field p { color: #a32b2b; margin: 6px 0 0; }

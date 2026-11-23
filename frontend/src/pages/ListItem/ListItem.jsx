@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Upload, ShieldCheck, ChevronDown } from "lucide-react";
-import { createListing, uploadListingImage } from "../../api/marketplaceApi";
+import { ShieldCheck, ChevronDown } from "lucide-react";
+import { createListing, updateListing, saveListingPhotos } from "../../api/marketplaceApi";
+import ListingPhotos, { PhotoGallery } from "../../components/ListingPhotos";
 import Footer from "../../components/Footer/Footer";
 import "./ListItem.css";
 import Navbar from "../../components/Navbar/Navbar";
 import { useNavigate } from "react-router-dom";
+import useAuth from "../../hooks/useAuth";
 
 const emptyForm = {
   title: "",
@@ -196,41 +198,41 @@ function Dropdown({
 }
 
 function ListItem() {
+  const { token } = useAuth();
+  let accountId;
+  try {
+    const claims = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    accountId = claims.id;
+  } catch {
+    // The protected route handles missing or expired sessions.
+  }
+  const retryKey = accountId ? `dormdrop-pending-listing:${accountId}` : null;
+  return <ListItemForm key={retryKey} retryKey={retryKey} />;
+}
+
+function ListItemForm({ retryKey }) {
   const navigate = useNavigate();
 
   const [form, setForm] = useState(emptyForm);
   const [photos, setPhotos] = useState([]);
-  const [photoUrl, setPhotoUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [photoError, setPhotoError] = useState("");
   const [success, setSuccess] = useState("");
   const [descriptionError, setDescriptionError] = useState("");
 
-  const fileInput = useRef(null);
   const submitting = useRef(false);
   const [createdListingId, setCreatedListingId] = useState(null);
-
-  useEffect(() => {
-    if (!photos.length) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Clear the preview when there is no file to create an object URL for.
-      setPhotoUrl("");
-      return;
-    }
-
-    const url = URL.createObjectURL(photos[0]);
-    setPhotoUrl(url);
-
-    return () => URL.revokeObjectURL(url);
-  }, [photos]);
 
   // Restore saved text details when returning to this page.
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("dormdrop-listing-draft");
-      if (!saved) return;
-
-      const draft = JSON.parse(saved);
+      const pending = retryKey ? JSON.parse(sessionStorage.getItem(retryKey)) : null;
+      const draft = pending?.form ?? JSON.parse(localStorage.getItem("dormdrop-listing-draft"));
+      if (typeof pending?.id === "string" && pending.id) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore the unfinished upload after a refresh.
+        setCreatedListingId(pending.id);
+      }
 
       if (!draft || typeof draft !== "object") return;
 
@@ -262,7 +264,7 @@ function ListItem() {
     } catch {
       setError("Could not restore your saved draft.");
     }
-  }, []);
+  }, [retryKey]);
 
   function setField(name, value) {
     setForm((previous) => ({ ...previous, [name]: value }));
@@ -271,34 +273,6 @@ function ListItem() {
 
   function updateField(event) {
     setField(event.target.name, event.target.value);
-  }
-
-  function choosePhotos(event) {
-    const selected = Array.from(event.target.files || []);
-    event.target.value = "";
-
-    if (!selected.length) return;
-
-    if (photos.length + selected.length > 1) {
-      setPhotoError("You can upload one photo per listing.");
-      return;
-    }
-
-    const invalid = selected.some(
-      (photo) =>
-        !["image/jpeg", "image/png"].includes(photo.type) ||
-        photo.size === 0 ||
-        photo.size > 5 * 1024 * 1024,
-    );
-
-    if (invalid) {
-      setPhotoError("Choose JPG or PNG photos, up to 5 MB each.");
-      return;
-    }
-
-    setPhotos((previous) => [...previous, ...selected]);
-    setPhotoError("");
-    setSuccess("");
   }
 
   function selectType(listingType) {
@@ -312,7 +286,11 @@ function ListItem() {
 
   function saveDraft() {
     try {
-      localStorage.setItem("dormdrop-listing-draft", JSON.stringify(form));
+      if (createdListingId && retryKey) {
+        sessionStorage.setItem(retryKey, JSON.stringify({ id: createdListingId, form }));
+      } else {
+        localStorage.setItem("dormdrop-listing-draft", JSON.stringify(form));
+      }
       setError("");
       setSuccess(
         "Draft saved on this device. Select your photos again when you return.",
@@ -391,11 +369,17 @@ function ListItem() {
         const saved = await createListing(listing);
         id = saved.id;
         setCreatedListingId(id);
+      } else {
+        await updateListing(id, { ...listing, pickupLocation: listing.pickupArea });
       }
 
-      if (photos[0]) {
-        await uploadListingImage(id, photos[0]);
+      // Save the listing ID before uploading so a refresh can resume this listing.
+      if (retryKey) {
+        sessionStorage.setItem(retryKey, JSON.stringify({ id, form }));
       }
+
+      await saveListingPhotos(id, photos);
+      if (retryKey) sessionStorage.removeItem(retryKey);
 
       // Clear the form after successful publishing
       setForm(emptyForm);
@@ -428,7 +412,7 @@ function ListItem() {
         setError(
           typeof message === "string"
             ? message
-            : "Could not publish your listing. Please try again.",
+            : err.message || "Could not publish your listing or upload its photos. Your selection is kept; try again.",
         );
       }
     } finally {
@@ -455,70 +439,22 @@ function ListItem() {
         <header className="listing-header">
           <h1>List a campus find</h1>
           <p>
-            Add a few details, upload a photo, and share it with your campus.
+            Add a few details, upload photos, and share it with your campus.
           </p>
         </header>
 
         <div className="listing-layout">
           <form className="listing-form" onSubmit={publishListing} noValidate>
-            <fieldset disabled={loading || Boolean(createdListingId)}>
+            <fieldset disabled={loading}>
               <h2>Photos</h2>
 
-              <div className="photo-box">
-                {photoUrl && (
-                  <img
-                    className="photo-thumb"
-                    src={photoUrl}
-                    alt="First selected photo"
-                  />
-                )}
-
-                <div className="photo-details">
-                  <button
-                    type="button"
-                    className="photo-button"
-                    onClick={() => fileInput.current?.click()}
-                    disabled={photos.length >= 1}
-                  >
-                    <span className="upload-icon">
-                      <Upload size={18} aria-hidden="true" />
-                    </span>
-                    {photos.length ? "Photo added" : "Upload a photo"}
-                  </button>
-
-                  <p>
-                    {photos.length} of 1 photo added · JPG or PNG · Up to 5 MB
-                    each
-                  </p>
-
-                  {photos.length > 0 && (
-                    <button
-                      type="button"
-                      className="remove-photos"
-                      onClick={() => {
-                        setPhotos([]);
-                        setPhotoError("");
-                      }}
-                    >
-                      Remove photos
-                    </button>
-                  )}
-                </div>
-
-                <input
-                  ref={fileInput}
-                  type="file"
-                  accept="image/jpeg,image/png"
-                  hidden
-                  onChange={choosePhotos}
-                />
-              </div>
-
-              {photoError && (
-                <p className="listing-error" role="alert">
-                  {photoError}
+              {createdListingId && (
+                <p className="field-help">
+                  Your listing details are saved. Select your photos again if you refreshed, then retry publishing to finish this listing.
                 </p>
               )}
+
+              <ListingPhotos photos={photos} onChange={setPhotos} error={photoError} onError={setPhotoError} disabled={loading} />
 
               <div className="field">
                 <label htmlFor="title">Display name</label>
@@ -663,7 +599,7 @@ function ListItem() {
 
               <div className="form-buttons">
                 <button className="publish-button" type="submit">
-                  {loading ? "Publishing..." : "Publish listing"}
+                  {loading ? "Publishing..." : createdListingId ? "Retry publishing" : "Publish listing"}
                 </button>
                 <button
                   className="draft-button"
@@ -694,17 +630,7 @@ function ListItem() {
             </p>
 
             <article className="preview-card">
-              {photoUrl ? (
-                <img
-                  className="preview-photo"
-                  src={photoUrl}
-                  alt="Your listing"
-                />
-              ) : (
-                <div className="preview-placeholder">
-                  Your photo will appear here
-                </div>
-              )}
+              <PhotoGallery photos={photos} title={form.title} fallback={<div className="preview-placeholder">Your photos will appear here</div>} />
 
               <div className="preview-details">
                 <span className="preview-category">
