@@ -38,6 +38,23 @@ public class ImageStorageService {
         }
     }
 
+    // New photos match the frontend. Legacy WebP photos remain readable.
+    public String storeListingPhoto(MultipartFile file) {
+        String type = file.getContentType();
+        if (!"image/jpeg".equals(type) && !"image/png".equals(type)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose JPG or PNG photos.");
+        }
+        try (InputStream input = file.getInputStream()) {
+            byte[] signature = input.readNBytes(12);
+            if (!isJpeg(signature) && !isPng(signature)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose JPG or PNG photos.");
+            }
+        } catch (IOException failure) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot read image.");
+        }
+        return store(file); // Reuse the existing non-empty and 5 MB validation.
+    }
+
     public String store(MultipartFile file) {
         if (file.isEmpty() ||
                 file.getSize() > 5 * 1024 * 1024) {

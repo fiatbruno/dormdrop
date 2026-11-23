@@ -1,0 +1,13 @@
+.listing-photo-picker { padding: 16px; margin-bottom: 22px; border: 1px solid #d5dfed; border-radius: 9px; background: #faf9f7; }
+.listing-photo-slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.listing-photo-entry { min-width: 0; color: #687d9b; font-size: 9px; }
+.listing-photo-entry img, .listing-photo-entry > span:first-child { display: block; width: 100%; height: 86px; object-fit: cover; border-radius: 5px; margin-bottom: 6px; }
+.listing-page .listing-photo-entry button { display: block; padding: 3px 0; border: 0; background: transparent; color: #19497e; font-size: 10px; text-decoration: underline; cursor: pointer; }
+.listing-page .listing-add-photo { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; width: 100%; min-height: 112px; padding: 8px; border: 1px solid #d5dfed; border-radius: 6px; background: #fff; color: #19497e; font-size: 11px; cursor: pointer; }
+.listing-add-photo strong { font-size: 22px; }
+.listing-photo-picker p { margin: 10px 0 0; color: #687d9b; font-size: 11px; line-height: 1.6; }
+.listing-gallery { position: relative; }
+.photo-navigation { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 8px; color: #10295c; font-size: 12px; }
+.photo-navigation button { width: 32px; height: 30px; border: 1px solid #d5dfed; border-radius: 5px; background: #fff; color: #19497e; font-size: 20px; cursor: pointer; }
+.photo-navigation button:focus-visible { outline: 2px solid #19497e; outline-offset: 2px; }
+@media (max-width: 480px) { .listing-photo-slots { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

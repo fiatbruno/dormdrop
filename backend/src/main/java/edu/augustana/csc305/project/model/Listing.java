@@ -14,6 +14,7 @@ import edu.augustana.csc305.project.model.ModerationTypes.Visibility;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Document(collection = "listings")
 public class Listing {
@@ -32,6 +33,7 @@ public class Listing {
     private String pickupArea;
     private String listingType = "For sale";
     private String imageUrl;
+    private List<String> imageUrls;
     private boolean sellerHidden;
     private Visibility moderationVisibility = Visibility.VISIBLE;
     private ObjectId temporaryHideCaseId;
@@ -124,11 +126,22 @@ public class Listing {
     public void setSellerHidden(boolean sellerHidden) { this.sellerHidden = sellerHidden; }
 
     public String getImageUrl() {
-        return imageUrl;
+        return getImageUrls().isEmpty() ? null : getImageUrls().get(0);
     }
 
     public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
+        setImageUrls(imageUrl == null || imageUrl.isBlank() ? List.of() : List.of(imageUrl));
+    }
+
+    public List<String> getImageUrls() {
+        if (imageUrls != null) return List.copyOf(imageUrls);
+        // Older documents only have imageUrl; no migration is needed.
+        return imageUrl == null || imageUrl.isBlank() ? List.of() : List.of(imageUrl);
+    }
+
+    public void setImageUrls(List<String> imageUrls) {
+        this.imageUrls = List.copyOf(imageUrls);
+        this.imageUrl = imageUrls.isEmpty() ? null : imageUrls.get(0);
     }
 
     public LocalDateTime getListedOn() {

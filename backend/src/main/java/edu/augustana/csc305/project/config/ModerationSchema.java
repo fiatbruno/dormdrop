@@ -72,6 +72,10 @@ public class ModerationSchema implements ApplicationRunner {
 
         mongo.getCollection("listingSnapshots").createIndex(Indexes.ascending("caseId"), new IndexOptions().name("snapshots_by_case"));
 
+        // Initialize private photo storage before report/decision transactions use it.
+        mongo.getCollection("snapshotPhotos").createIndex(Indexes.ascending("snapshotId"),
+                new IndexOptions().name("photos_by_snapshot"));
+
         mongo.getCollection("moderationDecisions").createIndex(Indexes.compoundIndex(Indexes.ascending("caseId"), Indexes.descending("createdAt", "_id")), new IndexOptions().name("decisions_by_case"));
 
         mongo.getCollection("moderationActivity").createIndex(Indexes.compoundIndex(Indexes.ascending("caseId"), Indexes.descending("createdAt", "_id")), new IndexOptions().name("activity_by_case"));

@@ -27,12 +27,12 @@ public class DecisionEvidenceService {
                 .with(Sort.by(Sort.Order.desc("capturedAt"), Sort.Order.desc("_id"))), ListingSnapshot.class);
         if (retained != null) return retained;
         if (listing == null) throw new ResponseStatusException(HttpStatus.CONFLICT, "Listing was deleted and retained evidence is missing.");
-        List<RetainedImage> media = listing.getImageUrl() == null || listing.getImageUrl().isBlank()
-                ? List.of() : List.of(images.retain(listing.getImageUrl()));
+        List<String> mediaKeys = SnapshotPhotos.retain(mongo, images,
+                decisionId, reportCase.id(), listing.getImageUrls());
         String sellerName = listing.getOwnerId() == null ? null : users.findById(listing.getOwnerId()).map(User::getName).orElse(null);
         return mongo.insert(new ListingSnapshot(decisionId, reportCase.id(), listing.getId(), listing.getOwnerId(),
                 sellerName, listing.getVersion(), listing.getTitle(), listing.getDescription(), listing.getCategory(),
                 listing.getPrice(), listing.getCondition(), listing.getPickupArea(), listing.getListingType(),
-                listing.getStatus(), media.stream().map(RetainedImage::key).toList(), Instant.now(), media));
+                listing.getStatus(), mediaKeys, Instant.now(), List.of()));
     }
 }
