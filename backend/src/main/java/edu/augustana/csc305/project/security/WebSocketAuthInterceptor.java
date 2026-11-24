@@ -61,9 +61,8 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                 if (claims.getExpiration() == null || claims.getExpiration().getTime() <= System.currentTimeMillis()) {
                     throw new AccessDeniedException("Expired token.");
                 }
-                var user = users.loadUserByUsername(email);
-                var versioned = (PersistedUserDetailsService.VersionedUserDetails) user;
-                sessions.registerUser(accessor.getSessionId(), versioned.id(), versioned.roleVersion());
+                var user = users.loadTokenUser(claims);
+                sessions.registerUser(accessor.getSessionId(), user.id(), user.roleVersion());
                 sessions.expireAt(accessor.getSessionId(), claims.getExpiration().getTime());
                 accessor.setUser(
                         new UsernamePasswordAuthenticationToken(

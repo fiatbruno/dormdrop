@@ -6,6 +6,7 @@ import edu.augustana.csc305.project.dto.UpdateProfileRequest;
 import edu.augustana.csc305.project.model.User;
 import edu.augustana.csc305.project.repository.UserRepository;
 import edu.augustana.csc305.project.security.PermissionPolicy;
+import edu.augustana.csc305.project.service.AccountDeletionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,11 +19,13 @@ import java.util.Optional;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final AccountDeletionService accountDeletion;
 
     public UserController(
-            UserRepository userRepository
+            UserRepository userRepository, AccountDeletionService accountDeletion
     ) {
         this.userRepository = userRepository;
+        this.accountDeletion = accountDeletion;
     }
 
     @GetMapping("/me")
@@ -136,6 +139,26 @@ public class UserController {
         return ResponseEntity.ok(
                 toProfileResponse(user)
         );
+    }
+
+    public record DeleteAccountRequest(String confirmation) {}
+
+    @DeleteMapping("/me")
+    public ResponseEntity<?> deleteMyAccount(@RequestBody DeleteAccountRequest request,
+                                              Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        if (request == null || !"DELETE".equals(request.confirmation())) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", "Type DELETE to confirm."));
+        }
+        try {
+            accountDeletion.delete(authentication.getName());
+            return ResponseEntity.noContent().build();
+        } catch (org.springframework.web.server.ResponseStatusException error) {
+            return ResponseEntity.status(error.getStatusCode())
+                    .body(java.util.Map.of("message", error.getReason()));
+        }
     }
 
     private ProfileResponse toProfileResponse(

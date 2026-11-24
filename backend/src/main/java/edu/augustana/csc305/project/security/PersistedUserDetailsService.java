@@ -37,4 +37,13 @@ public class PersistedUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         return new VersionedUserDetails(user);
     }
+
+    public VersionedUserDetails loadTokenUser(io.jsonwebtoken.Claims claims) {
+        var user = (VersionedUserDetails) loadUserByUsername(claims.getSubject());
+        // A deleted account's token must not authenticate a new registration with the same email.
+        if (!user.id().toHexString().equals(claims.get("id", String.class))) {
+            throw new UsernameNotFoundException("Token account no longer exists");
+        }
+        return user;
+    }
 }
