@@ -184,9 +184,10 @@ public class ConversationService {
         OfferNegotiation offer = mongoTemplate.findOne(active, OfferNegotiation.class);
         if (offer == null) offer = mongoTemplate.findOne(Query.query(participants).with(newest), OfferNegotiation.class);
         return new ConversationResponse(conversation.getId().toHexString(), current.getId().toHexString(),
-                new ConversationResponse.Participant(other == null ? "Member unavailable" : other.getName(),
-                        other != null && other.isEmailVerified()), summary, preview,
-                conversation.getCreatedAt(), conversation.getLastMessageAt(), unread, offer == null ? null : OfferDtos.from(offer));
+                new ConversationResponse.Participant(other == null ? "Deleted account" : other.getName(),
+                        other != null && other.isEmailVerified(), other == null), summary, preview,
+                conversation.getCreatedAt(), conversation.getLastMessageAt(), unread,
+                offer == null || other == null ? null : OfferDtos.from(offer));
     }
 
     private User getUserByEmail(String email) {

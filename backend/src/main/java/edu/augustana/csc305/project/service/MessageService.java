@@ -164,7 +164,7 @@ public class MessageService {
     private User getParticipant(ObjectId id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Conversation participant not found."
+                        HttpStatus.CONFLICT, "This account was deleted. You can still read past messages."
                 ));
     }
 
