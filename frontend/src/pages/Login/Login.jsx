@@ -89,6 +89,7 @@ function Login() {
           </h1>
 
           <p>Your next campus find is waiting.</p>
+          {location.state?.accountDeleted && <p role="status">Your account was deleted.</p>}
 
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="input">

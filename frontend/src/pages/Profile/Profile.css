@@ -707,3 +707,59 @@ html {
 .profile-visibility-content .profile-visibility-error {
   color: #b42318;
 }
+.profile-delete-account h2,
+.profile-delete-dialog .profile-delete-warning strong {
+  color: #b42318;
+}
+
+.profile-delete-dialog .profile-delete-warning {
+  background: #fef0ef;
+}
+
+.profile-delete-account button,
+.profile-delete-dialog button.profile-delete-submit {
+  border-color: #ad2014;
+  background: #ad2014;
+  color: #fff;
+}
+
+.profile-security.profile-delete-account button:hover:not(:disabled),
+.profile-delete-dialog button.profile-delete-submit:hover:not(:disabled) {
+  border-color: #8f1b11;
+  background: #8f1b11;
+  color: #fff;
+}
+
+.profile-security.profile-delete-account button:active:not(:disabled),
+.profile-delete-dialog button.profile-delete-submit:active:not(:disabled) {
+  border-color: #74160e;
+  background: #74160e;
+  color: #fff;
+}
+
+.profile-security.profile-delete-account button:focus-visible,
+.profile-delete-dialog button.profile-delete-submit:focus-visible {
+  outline: 2px solid #8f1b11;
+  outline-offset: 3px;
+}
+
+.profile-delete-label {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.profile-delete-label input {
+  min-width: 0;
+  min-height: 48px;
+  border: 1px solid #ccd5e0;
+  border-radius: 8px;
+  background: #fff;
+  color: #0b2255;
+  padding: 0 12px;
+}
+
+.profile-delete-dialog button:disabled {
+  cursor: not-allowed;
+}

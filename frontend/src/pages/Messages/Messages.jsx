@@ -233,6 +233,7 @@ export default function Messages() {
     (item) => item.unreadCount > 0,
   ).length;
   const item = chat.conversation?.listing;
+  const participantDeleted = chat.conversation?.participant.deleted === true;
   const offer = chat.conversation?.offer;
   const offerAccepted = offer?.status === "ACCEPTED";
   const proposals = pickupState.id === conversationId ? pickupState.proposals : [];
@@ -295,6 +296,7 @@ export default function Messages() {
   }
 
   function openExchange() {
+    if (participantDeleted) return;
     setExchangeConversation(conversationId);
     void refreshPickups(conversationId);
   }
@@ -392,13 +394,13 @@ export default function Messages() {
           </div>
           <div className="messages-heading-actions">
             <span role="status">{chat.connection}</span>
-            <button type="button" disabled={!chat.conversation} onClick={openExchange}>
+            <button type="button" disabled={!chat.conversation || participantDeleted} onClick={openExchange}>
               Your exchange
             </button>
             <button
               type="button"
               onClick={arrangePickup}
-              disabled={!chat.conversation}
+              disabled={!chat.conversation || participantDeleted}
             >
               Propose pickup
             </button>
@@ -630,7 +632,7 @@ export default function Messages() {
                                   <p>{pickupTimeLabel(proposal.timePickUp)}</p>
                                   <PickupDetails
                                     proposal={proposal}
-                                    canRespond={typeof proposal.idSuggester === "string" && typeof chat.conversation.currentUserId === "string" && !outgoing}
+                                    canRespond={!participantDeleted && typeof proposal.idSuggester === "string" && typeof chat.conversation.currentUserId === "string" && !outgoing}
                                     onRespond={respondPickup}
                                     onExchange={openExchange}
                                   />
@@ -768,45 +770,49 @@ export default function Messages() {
                           New messages ↓
                         </button>
                       )}
-                      <form
-                        className="messages-composer"
-                        onSubmit={(event) => {
-                          event.preventDefault();
-                          void chat.send();
-                        }}
-                      >
-                        {chat.sendError && (
-                          <p role="alert" className="messages-error">
-                            {chat.sendError}
-                          </p>
-                        )}
-                        <label className="messages-input">
-                          <span className="messages-sr-only">
-                            Write a message
-                          </span>
-                          <textarea
-                            ref={composerInput}
-                            placeholder="Write a message…"
-                            value={chat.draft}
-                            onChange={(event) =>
-                              chat.setDraft(event.target.value)
-                            }
-                            maxLength={5000}
-                            disabled={chat.sending}
-                            rows={2}
-                          />
-                        </label>
-                        <button
-                          type="submit"
-                          disabled={chat.sending || !chat.draft.trim()}
+                      {participantDeleted ? (
+                        <p className="messages-state">This account was deleted. You can still read past messages.</p>
+                      ) : (
+                        <form
+                          className="messages-composer"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            void chat.send();
+                          }}
                         >
-                          {chat.sending ? "Sending…" : "Send"}
-                        </button>
-                        <span className="messages-character-count">
-                          {chat.draft.length}/5000 · Propose pickups in
-                          messages.
-                        </span>
-                      </form>
+                          {chat.sendError && (
+                            <p role="alert" className="messages-error">
+                              {chat.sendError}
+                            </p>
+                          )}
+                          <label className="messages-input">
+                            <span className="messages-sr-only">
+                              Write a message
+                            </span>
+                            <textarea
+                              ref={composerInput}
+                              placeholder="Write a message…"
+                              value={chat.draft}
+                              onChange={(event) =>
+                                chat.setDraft(event.target.value)
+                              }
+                              maxLength={5000}
+                              disabled={chat.sending}
+                              rows={2}
+                            />
+                          </label>
+                          <button
+                            type="submit"
+                            disabled={chat.sending || !chat.draft.trim()}
+                          >
+                            {chat.sending ? "Sending…" : "Send"}
+                          </button>
+                          <span className="messages-character-count">
+                            {chat.draft.length}/5000 · Propose pickups in
+                            messages.
+                          </span>
+                        </form>
+                      )}
                     </>
                   )
                 )}

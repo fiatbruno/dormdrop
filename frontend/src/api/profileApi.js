@@ -11,6 +11,10 @@ const endpoints = {
 };
 
 // Get logged-in user's profile
+export async function deleteMyAccount(confirmation) {
+  await api.delete(endpoints.profile, { data: { confirmation } });
+}
+
 export async function getProfile() {
   const { data } = await api.get(endpoints.profile);
   return data;
