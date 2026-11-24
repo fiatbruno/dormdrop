@@ -12,6 +12,7 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import "./Profile.css";
 import useProfile from "../../hooks/useProfile";
+import DeleteAccountDialog from "./DeleteAccountDialog";
 import { getStaffIdentity } from "../../auth/staffCapabilities";
 
 function ListingCards({
@@ -186,6 +187,7 @@ function Profile({
   const [actionError, setActionError] = useState("");
   const [pending, setPending] = useState(false);
   const [visibilityDialog, setVisibilityDialog] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -324,6 +326,7 @@ function Profile({
           <aside className="profile-sidebar">
             <a href="#your-profile">Your profile</a>
             <a href="#account-security">Account security</a>
+            <a href="#delete-account">Delete account</a>
             <a href="#my-listings">Active listings</a>
             <a href="#sold-listings">Sold listings</a>
             <Link to="/my-reports">My reports</Link>
@@ -497,6 +500,14 @@ function Profile({
                   </button>
                 </section>
 
+                <section className="profile-security profile-delete-account" id="delete-account">
+                  <div>
+                    <h2>Delete account</h2>
+                    <p>Permanently remove your account and listings.</p>
+                  </div>
+                  <Button type="button" onClick={() => setDeleteDialogOpen(true)}>Delete my account</Button>
+                </section>
+
                 <section
                   id="my-listings"
                   className="profile-section"
@@ -544,6 +555,15 @@ function Profile({
       </main>
 
       <Footer />
+      {deleteDialogOpen && (
+        <DeleteAccountDialog
+          onClose={() => setDeleteDialogOpen(false)}
+          onDeleted={() => {
+            navigate("/login", { replace: true, flushSync: true, state: { accountDeleted: true } });
+            logout();
+          }}
+        />
+      )}
       {visibilityDialog && (
         <VisibilityDialog
           {...visibilityDialog}
