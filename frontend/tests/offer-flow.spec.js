@@ -20,7 +20,7 @@ const offer = {
   listingPrice: listing.price,
   status: "PENDING",
   version: 0,
-  createdAt: "2026-11-04T20:00:00Z",
+  createdAt: new Date().toISOString(),
   expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
 };
 

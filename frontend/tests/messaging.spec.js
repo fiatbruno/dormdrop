@@ -9,6 +9,9 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/v1/conversations/*/pickup-proposals", (route) =>
     route.fulfill({ json: [] }),
   );
+  await page.route("**/api/v1/offers/*/transaction/status", (route) =>
+    route.fulfill({ json: { buyer: true, canConfirm: false, waitingForPickupTime: false, transaction: null } }),
+  );
 });
 
 async function openReportableConversation(
@@ -189,7 +192,7 @@ test("accepted offer appears as a pickup card in the conversation", async ({
   await expect(acceptedCard.getByText(/You and Alex Morgan agreed/)).toBeVisible();
 
   await acceptedCard.getByRole("button", { name: "Proposed pickup" }).click();
-  await expect(page.getByRole("dialog", { name: "Propose a pickup" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Arrange pickup" })).toBeVisible();
 });
 
 test("a participant cannot report their own message", async ({

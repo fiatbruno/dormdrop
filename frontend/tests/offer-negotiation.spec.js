@@ -3,9 +3,12 @@ import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ context }) => {
   await context.route("**/api/v1/users/me", route => route.fulfill({ json: { id: "buyer", name: "Test User" } }));
+  await context.route("**/api/v1/me/notifications/unread-count", route => route.fulfill({ json: { count: 0 } }));
   await context.route("**/api/v1/conversations", route => route.fulfill({ json: [] }));
   await context.route("**/api/v1/conversations/*/pickup-proposals", route => route.fulfill({ json: [] }));
   await context.route("**/api/v1/conversations/*/message-reports/mine", route => route.fulfill({ json: [] }));
+  await context.route("**/api/v1/offers/*/transaction/status", route =>
+    route.fulfill({ json: { buyer: false, canConfirm: false, waitingForPickupTime: false, transaction: null } }));
 });
 
 const makeToken = (userId) => {
@@ -14,6 +17,9 @@ const makeToken = (userId) => {
   ).toString("base64url");
   return `test.${payload}.signature`;
 };
+
+const recentTimestamp = (minutesAgo = 0) =>
+  new Date(Date.now() - minutesAgo * 60_000).toISOString();
 
 const listing = {
   id: "listing-1",
@@ -39,7 +45,7 @@ const makeOffer = (overrides = {}) => ({
       action: "PROPOSED",
       actorId: "buyer-1",
       amount: 60,
-      createdAt: "2026-11-02T18:00:00Z",
+      createdAt: recentTimestamp(5),
     },
   ],
   ...overrides,
@@ -107,7 +113,7 @@ test("seller accepts buyer offer without implying payment or sale", async ({
             action: "ACCEPTED",
             actorId: "seller-1",
             amount: 60,
-            createdAt: "2026-11-02T18:05:00Z",
+            createdAt: recentTimestamp(),
           },
         ],
       },
@@ -121,7 +127,7 @@ test("seller accepts buyer offer without implying payment or sale", async ({
   await expect(page.getByText(/agreement only; no payment is taken/i)).toBeVisible();
   const acceptedCard = page.getByRole("article", { name: "Offer accepted" });
   await acceptedCard.getByRole("button", { name: "Proposed pickup" }).click();
-  await expect(page.getByRole("dialog", { name: "Propose a pickup" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Arrange pickup" })).toBeVisible();
   expect(requestBody).toEqual({ action: "ACCEPT", expectedVersion: 0 });
 });
 
@@ -158,6 +164,40 @@ test("an offer notification refreshes the open offer details page", async ({ pag
   await expect(page.getByRole("button", { name: "Accept", exact: true })).toBeEnabled();
 });
 
+test("offer details uses the server's buyer eligibility and keeps completion after refresh", async ({ page }) => {
+  const offer = makeOffer({ status: "ACCEPTED", version: 1 });
+  let receipt = { buyer: false, canConfirm: false, waitingForPickupTime: false, transaction: null };
+
+  await page.addInitScript((token) => localStorage.setItem("token", token), makeToken("buyer-1"));
+  await page.route("**/api/v1/offers/offer-1", (route) => route.fulfill({ json: offer }));
+  await page.route("**/api/v1/home/listing-1", (route) => route.fulfill({ json: { ...listing, status: "RESERVED" } }));
+  await page.route("**/api/v1/offers/offer-1/transaction/status", (route) => route.fulfill({ json: receipt }));
+
+  const openOffer = async () => {
+    const status = page.waitForResponse("**/api/v1/offers/offer-1/transaction/status");
+    await page.goto("/offers/offer-1");
+    await status;
+    await expect(page.getByText("Checking exchange status…")).toHaveCount(0);
+  };
+  const confirm = page.getByRole("button", { name: "Confirm item received" });
+
+  await openOffer();
+  await expect(confirm).toHaveCount(0);
+
+  receipt = { ...receipt, buyer: true, waitingForPickupTime: true };
+  await openOffer();
+  await expect(confirm).toHaveCount(0);
+
+  receipt = { ...receipt, canConfirm: true, waitingForPickupTime: false };
+  await openOffer();
+  await expect(confirm).toBeVisible();
+
+  receipt = { ...receipt, canConfirm: false, transaction: { id: "transaction-1", status: "COMPLETED" } };
+  await openOffer();
+  await expect(page.getByText("Completed", { exact: true })).toBeVisible();
+  await expect(confirm).toHaveCount(0);
+});
+
 test("buyer counters seller proposal with version and idempotency header", async ({
   page,
 }) => {
@@ -171,7 +211,7 @@ test("buyer counters seller proposal with version and idempotency header", async
         action: "COUNTERED",
         actorId: "seller-1",
         amount: 70,
-        createdAt: "2026-11-02T18:02:00Z",
+        createdAt: recentTimestamp(2),
       },
     ],
   });
@@ -191,7 +231,7 @@ test("buyer counters seller proposal with version and idempotency header", async
             action: "COUNTERED",
             actorId: "buyer-1",
             amount: 65.5,
-            createdAt: "2026-11-02T18:03:00Z",
+            createdAt: recentTimestamp(),
           },
         ],
       },
@@ -341,7 +381,7 @@ test("recipient refreshes current offer after a stale decision", async ({
         action: "COUNTERED",
         actorId: "seller-1",
         amount: 70,
-        createdAt: "2026-11-02T18:02:00Z",
+        createdAt: recentTimestamp(2),
       },
     ],
   });
@@ -361,7 +401,7 @@ test("recipient refreshes current offer after a stale decision", async ({
             action: "COUNTERED",
             actorId: "seller-1",
             amount: 75,
-            createdAt: "2026-11-02T18:04:00Z",
+            createdAt: recentTimestamp(),
           },
         ],
       },

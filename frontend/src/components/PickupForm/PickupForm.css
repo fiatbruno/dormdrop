@@ -1,14 +1,58 @@
-.pickup-field { margin: 18px 0; }
-.pickup-field label { display: block; font-weight: 600; margin-bottom: 6px; }
-.pickup-field input {
+.exchange-dialog.pickup-dialog {
+  width: min(588px, calc(100% - 32px));
+  padding: 40px 22px 26px;
+  font-size: 15px;
+}
+
+.pickup-dialog h2 { color: #173e6f; font-weight: 600; margin: 0 32px 20px 0; }
+.pickup-dialog button.pickup-dialog__close {
+  position: absolute;
+  top: 36px;
+  right: 26px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-color: transparent;
+}
+.pickup-dialog .pickup-dialog__intro { margin: 0 0 8px; }
+.pickup-dialog .pickup-dialog__notice {
+  margin: 0 0 22px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #fdf4df;
+  color: #805505;
+}
+.pickup-dialog fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.pickup-field + .pickup-field { margin-top: 20px; }
+.pickup-field label { display: block; margin-bottom: 8px; font-weight: 600; }
+.pickup-field :is(input, textarea) {
   width: 100%;
-  min-height: 48px;
+  min-width: 0;
+  min-height: 56px;
   border: 1px solid #c8d4e3;
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: 10px;
+  padding: 12px 15px;
   color: #10295c;
   background: #fff;
   font: inherit;
 }
-.pickup-field input[aria-invalid="true"] { border-color: #b33a3a; }
-.pickup-field p { color: #a32b2b; margin: 6px 0 0; }
+.pickup-field input[type="datetime-local"] { font-weight: 600; }
+.pickup-field textarea { display: block; min-height: 104px; resize: vertical; }
+.pickup-field :is(input, textarea)::placeholder { color: #63748e; }
+.pickup-field :is(input, textarea)[aria-invalid="true"] { border-color: #b33a3a; }
+.pickup-dialog .pickup-field p { color: #a32b2b; margin: 6px 0 0; }
+.pickup-dialog__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 32px; }
+.pickup-dialog .pickup-dialog__actions button { min-width: 116px; min-height: 58px; padding: 10px 26px; font-size: 17px; font-weight: 500; }
+.pickup-dialog .pickup-dialog__actions .exchange-primary { min-width: 190px; }
+
+@media (max-width: 500px) {
+  .exchange-dialog.pickup-dialog { padding: 28px 18px 20px; }
+  .pickup-dialog button.pickup-dialog__close { top: 23px; right: 14px; }
+  .pickup-field + .pickup-field { margin-top: 16px; }
+  .pickup-field textarea { min-height: 96px; }
+  .pickup-dialog__actions { margin-top: 24px; }
+  .pickup-dialog .pickup-dialog__actions button,
+  .pickup-dialog .pickup-dialog__actions .exchange-primary { min-width: 0; min-height: 48px; padding-inline: 16px; font-size: 16px; }
+}

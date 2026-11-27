@@ -4,13 +4,8 @@ import api from "./client";
 const offerPath = (offerId) => `/offers/${encodeURIComponent(offerId)}`;
 const transactionPath = (offerId) => `${offerPath(offerId)}/transaction`;
 
-export async function getCompletedTransaction(offerId) {
-  try {
-    return (await api.get(transactionPath(offerId))).data;
-  } catch (error) {
-    if (error.response?.status === 404) return null;
-    throw error;
-  }
+export async function getReceiptStatus(offerId) {
+  return (await api.get(`${transactionPath(offerId)}/status`)).data;
 }
 
 export async function confirmItemReceived(offerId) {

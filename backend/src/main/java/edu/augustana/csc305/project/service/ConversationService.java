@@ -170,7 +170,8 @@ public class ConversationService {
         Listing listing = mongoTemplate.findById(conversation.getListingId(), Listing.class);
         var summary = !visibility.visible(listing) ? null : new ConversationResponse.ListingSummary(
                 listing.getIdString(), listing.getTitle(), listing.getPrice(), listing.getListingType(),
-                listing.getStatus().name(), listing.getImageUrl());
+                listing.getStatus().name(), listing.getImageUrl(),
+                listing.getReservedOfferId() == null ? null : listing.getReservedOfferId().toHexString());
         String preview = messageRepository.findFirstByConversationIdOrderBySentAtDesc(conversation.getId())
                 .map(message -> message.getContent()).orElse("");
         long unread = messageRepository.countByConversationIdAndSenderIdNotAndReadAtIsNull(conversation.getId(), current.getId());

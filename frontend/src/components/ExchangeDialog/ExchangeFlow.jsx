@@ -1,23 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Button from "../Button/Button";
 import ExchangeDialog from "./ExchangeDialog";
 import {
   confirmItemReceived,
-  getCompletedTransaction,
   getSellerReviews,
   submitSellerReview,
 } from "../../api/offersApi";
-import { campusNow } from "../../schemas/pickupSchema";
+import useReceiptStatus from "../../hooks/useReceiptStatus";
+import "./ExchangeOverview.css";
 
 const stacked = "exchange-dialog__actions exchange-dialog__actions--stacked";
 const actions = "exchange-dialog__actions";
 const primary = "exchange-primary";
 
-export default function ExchangeFlow({ offerId, isBuyer, pickup, pickupLabel, itemTitle, price, partner, onClose, onComplete }) {
+export default function ExchangeFlow({ offerId, pickup, itemTitle, price, partner, onComplete, inConversation = false }) {
   const [step, setStep] = useState("summary");
-  const [record, setRecord] = useState(null);
-  const [loading, setLoading] = useState(Boolean(offerId));
-  const [loadFailed, setLoadFailed] = useState(false);
+  const [savedRecord, setRecord] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [rating, setRating] = useState(0);
@@ -25,15 +24,11 @@ export default function ExchangeFlow({ offerId, isBuyer, pickup, pickupLabel, it
   const [reviews, setReviews] = useState([]);
   const inFlight = useRef(false);
 
-  useEffect(() => {
-    if (!offerId) return;
-    let active = true;
-    getCompletedTransaction(offerId)
-      .then((result) => { if (active) setRecord(result); })
-      .catch(() => { if (active) setLoadFailed(true); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [offerId]);
+  const pickupVersion = pickup ? `${pickup.id}:${pickup.status}:${pickup.timePickUp}` : undefined;
+  const { status, error: loadFailed, loading, retry } = useReceiptStatus(offerId, pickupVersion);
+  const record = savedRecord ?? status?.transaction;
+  const isBuyer = status?.buyer === true;
+  const canConfirmReceipt = status?.buyer === true && status.canConfirm === true && !record;
 
   function go(next) {
     setError("");
@@ -62,40 +57,39 @@ export default function ExchangeFlow({ offerId, isBuyer, pickup, pickupLabel, it
     }, "Could not load seller reviews. Try again.");
   }
 
-  let title = "Your exchange";
+  let title;
   let badge;
   let content;
   const canReview = isBuyer && record && !record.sellerReview;
-  const pickupPassed = pickup?.status === "ACCEPTED" && typeof pickup.timePickUp === "string" &&
-    pickup.timePickUp.slice(0, 16) <= campusNow();
+  const backLabel = inConversation ? "Back to messages" : "Back to exchange";
 
-  if (step === "receipt") {
+  if (step === "receipt" && !record) {
     title = "Did you receive the item?";
     content = <>
       <p>{itemTitle}{price && ` · Agreed price ${price}`}</p>
       <div className="exchange-dialog__callout">
         <strong>Confirm after inspecting the item</strong>
-        <p>This marks the exchange as complete and the listing as sold.</p>
+        <p>This records the exchange as completed and lets you review the seller.</p>
       </div>
       <div className={actions}>
         <Button type="button" disabled={busy} onClick={() => go("summary")}>Cancel</Button>
-        <Button type="button" className={primary} disabled={busy} onClick={() => void run(async () => {
+        <Button type="button" className={primary} disabled={busy || !canConfirmReceipt} onClick={() => void run(async () => {
           setRecord(await confirmItemReceived(offerId));
-          onComplete();
+          onComplete?.();
           go("completed");
         }, "Could not confirm receipt. Check the pickup time and try again.")}>
-          {busy ? "Confirming…" : "Yes, I received it"}
+          {busy ? "Confirming…" : "Yes, received"}
         </Button>
       </div>
     </>;
-  } else if (step === "completed") {
+  } else if (step === "completed" || (step === "receipt" && record)) {
     title = "Exchange completed";
     badge = "Completed";
     content = <>
-      <p>Your receipt confirmation has been recorded.</p>
+      <p>Your receipt confirmation has been recorded. Share your experience to help other campus buyers.</p>
       <div className={stacked}>
         {canReview && <Button type="button" className={primary} onClick={() => go("review")}>Rate the seller</Button>}
-        <Button type="button" onClick={() => go("summary")}>Back to exchange</Button>
+        <Button type="button" onClick={() => go("summary")}>{backLabel}</Button>
       </div>
     </>;
   } else if (step === "review") {
@@ -108,9 +102,9 @@ export default function ExchangeFlow({ offerId, isBuyer, pickup, pickupLabel, it
         go("submitted");
       }, "Could not submit your review. Try again.");
     }}>
-      <p>Your review helps other students decide who to buy from.</p>
+      <p>{partner ? `Share your experience with ${partner}.` : "Your review helps other students decide who to buy from."}</p>
       <fieldset className="exchange-rating" disabled={busy}>
-        <legend>Your rating</legend>
+        <legend>Your rating <span aria-hidden="true">*</span></legend>
         {[1, 2, 3, 4, 5].map((value) => (
           <label key={value}>
             <input type="radio" name="seller-rating" value={value} checked={rating === value} onChange={() => setRating(value)} aria-label={`${value} ${value === 1 ? "star" : "stars"}`} />
@@ -122,6 +116,7 @@ export default function ExchangeFlow({ offerId, isBuyer, pickup, pickupLabel, it
         Your review (optional)
         <textarea value={comment} onChange={(event) => setComment(event.target.value)} maxLength={500} rows={3} disabled={busy} />
       </label>
+      <p className="exchange-review-hint">Share details about the exchange.</p>
       <div className={actions}>
         <Button type="button" disabled={busy} onClick={() => go("summary")}>Cancel</Button>
         <Button type="submit" className={primary} disabled={busy}>{busy ? "Submitting…" : "Submit review"}</Button>
@@ -131,7 +126,7 @@ export default function ExchangeFlow({ offerId, isBuyer, pickup, pickupLabel, it
     title = "Thanks for your review";
     badge = "Submitted";
     content = <>
-      <p>Your feedback has been saved.</p>
+      <p>Your feedback helps other members shop with confidence.</p>
       <div className={stacked}>
         <Button type="button" className={primary} disabled={busy} onClick={showReviews}>View seller reviews</Button>
       </div>
@@ -146,32 +141,63 @@ export default function ExchangeFlow({ offerId, isBuyer, pickup, pickupLabel, it
           {review.comment && <p>{review.comment}</p>}
         </li>)}
       </ul>
-      <div className={stacked}><Button type="button" className={primary} onClick={() => go("summary")}>Back to exchange</Button></div>
-    </>;
-  } else {
-    content = <>
-      <p>{itemTitle}{price && ` · Agreed price ${price}`}</p>
-      {pickup && <div className="exchange-dialog__callout">
-        <strong>{pickup.status === "ACCEPTED" ? "Pickup confirmed" : pickup.status === "REJECTED" ? "Pickup declined" : "Pickup proposed"}</strong>
-        <p>{pickup.meetingPlace} · {pickupLabel}</p>
-      </div>}
-      {loading && <p role="status">Checking exchange status…</p>}
-      {loadFailed && <p role="alert">Could not load exchange status. Close and reopen to try again.</p>}
-      {record && <p>Exchange completed{record.sellerReview ? " · Review submitted" : ""}</p>}
-      {!record && !loading && !loadFailed && offerId && isBuyer && pickup?.status === "ACCEPTED" && !pickupPassed &&
-        <p>You can confirm receipt after the scheduled pickup time.</p>}
-      <div className={stacked}>
-        {!loading && !loadFailed && !record && offerId && isBuyer && pickupPassed &&
-          <Button type="button" className={primary} onClick={() => go("receipt")}>Confirm item received</Button>}
-        {canReview && <Button type="button" className={primary} onClick={() => go("review")}>Rate the seller</Button>}
-        {record && <Button type="button" disabled={busy} onClick={showReviews}>View seller reviews</Button>}
-        <Button type="button" disabled={busy} onClick={onClose}>Back to conversation</Button>
-      </div>
+      <div className={stacked}><Button type="button" className={primary} onClick={() => go("summary")}>{backLabel}</Button></div>
     </>;
   }
 
-  return <ExchangeDialog title={title} badge={badge} busy={busy} onClose={onClose}>
-    {content}
-    {error && <p className="exchange-error" role="alert">{error}</p>}
-  </ExchangeDialog>;
+  const receiptButton = canConfirmReceipt && (
+    <Button type="button" className={primary} aria-haspopup="dialog" onClick={() => go("receipt")}>
+      Confirm item received
+    </Button>
+  );
+  const completedBadge = record && <span className="exchange-overview__badge">Completed</span>;
+  const dialog = title && (
+    <ExchangeDialog title={title} badge={badge} busy={busy} onClose={() => go("summary")}>
+      {content}
+      {error && <p className="exchange-error" role="alert">{error}</p>}
+    </ExchangeDialog>
+  );
+
+  if (inConversation) {
+    return <>
+      {receiptButton}
+      {completedBadge}
+      {dialog && createPortal(dialog, document.body)}
+    </>;
+  }
+
+  return (
+    <section className="exchange-overview__card" aria-label="Complete your exchange">
+      <div className="exchange-overview__card-header">
+        <h2>Complete your exchange</h2>
+        {completedBadge}
+      </div>
+      {!record && (
+        <ol className="exchange-overview__steps">
+          <li>Seller accepts the pickup time</li>
+          <li>Meet and inspect</li>
+          <li>Confirm receipt</li>
+        </ol>
+      )}
+      {loading && <p role="status">Checking exchange status…</p>}
+      {loadFailed && !record && <p role="alert">Could not load exchange status. <button type="button" onClick={retry}>Try again</button></p>}
+      {record?.sellerReview && <p>Review submitted</p>}
+      {!record && !loading && !loadFailed && (
+        <p>{status?.buyer === false
+          ? "The exchange stays open until the buyer confirms receipt after pickup."
+          : status?.waitingForPickupTime
+          ? "You can confirm receipt after the scheduled pickup time."
+          : canConfirmReceipt
+            ? "Confirm receipt after you’ve collected and inspected the item."
+            : "Propose a pickup time for the seller to accept. You can confirm receipt once that time has passed."}</p>
+      )}
+      <div className="exchange-overview__actions">
+        {receiptButton}
+        {canReview && <Button type="button" className={primary} onClick={() => go("review")}>Rate the seller</Button>}
+        {record && <Button type="button" disabled={busy} onClick={showReviews}>View seller reviews</Button>}
+      </div>
+      {dialog}
+      {!dialog && error && <p role="alert">{error}</p>}
+    </section>
+  );
 }

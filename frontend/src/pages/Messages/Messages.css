@@ -61,6 +61,12 @@
   opacity: 0.55;
   cursor: default;
 }
+.messages-heading-actions > button.exchange-primary {
+  border-color: #173e6f;
+  background: #173e6f;
+  color: #fff;
+  font-weight: 600;
+}
 .messages-page :is(button, a, input, textarea):focus-visible {
   outline: 3px solid #386aa3;
   outline-offset: 3px;

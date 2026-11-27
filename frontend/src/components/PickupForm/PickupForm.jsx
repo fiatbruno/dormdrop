@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { X } from "lucide-react";
 import Button from "../Button/Button";
 import ExchangeDialog from "../ExchangeDialog/ExchangeDialog";
-import { pickupSchema } from "../../schemas/pickupSchema";
+import { campusNow, pickupSchema } from "../../schemas/pickupSchema";
 import "./PickupForm.css";
 
 export default function PickupForm({ onClose, onSubmit }) {
@@ -15,7 +16,7 @@ export default function PickupForm({ onClose, onSubmit }) {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(pickupSchema),
-    defaultValues: { location: "", pickupDate: "", pickupTime: "" },
+    defaultValues: { location: "", pickupDateTime: "", note: "" },
   });
 
   async function submit(data) {
@@ -41,8 +42,9 @@ export default function PickupForm({ onClose, onSubmit }) {
 
   return (
     <ExchangeDialog
-      title={sent ? "Proposal sent" : "Propose a pickup"}
+      title={sent ? "Proposal sent" : "Arrange pickup"}
       badge={sent ? "Done" : undefined}
+      className={sent ? undefined : "pickup-dialog"}
       busy={isSubmitting}
       onClose={onClose}
     >
@@ -55,40 +57,31 @@ export default function PickupForm({ onClose, onSubmit }) {
         </>
       ) : (
         <form onSubmit={handleSubmit(submit)} noValidate>
-          <p>
-            Choose a public campus location, date, and time. Times are in campus
-            time.
+          <Button type="button" className="pickup-dialog__close" aria-label="Close arrange pickup"
+            onClick={onClose} disabled={isSubmitting}>
+            <X size={20} aria-hidden="true" />
+          </Button>
+          <p className="pickup-dialog__intro">Choose a future pickup time in Central Time (Rock Island campus).</p>
+          <p className="pickup-dialog__notice">
+            A new proposal will become the latest arrangement and may require a new acceptance before receipt can be confirmed.
           </p>
-          {[
-            ["location", "Location", "text"],
-            ["pickupDate", "Date", "date"],
-            ["pickupTime", "Time", "time"],
-          ].map(([name, label, type]) => (
-            <div className="pickup-field" key={name}>
-              <label htmlFor={`pickup-${name}`}>{label}</label>
-              <input
-                id={`pickup-${name}`}
-                type={type}
-                {...register(name)}
-                disabled={isSubmitting}
-                aria-invalid={Boolean(errors[name])}
-                aria-describedby={
-                  errors[name] ? `pickup-${name}-error` : undefined
-                }
-              />
-              {errors[name] && (
-                <p id={`pickup-${name}-error`} role="alert">
-                  {errors[name].message}
-                </p>
-              )}
-            </div>
-          ))}
+          <fieldset disabled={isSubmitting}>
+            <PickupField name="location" label="Meeting place" error={errors.location}>
+              {(field) => <input {...field} placeholder="e.g. Olin Center entrance" maxLength={200} required {...register("location")} />}
+            </PickupField>
+            <PickupField name="pickupDateTime" label="Pickup date and time (Central Time)" error={errors.pickupDateTime}>
+              {(field) => <input {...field} type="datetime-local" min={campusNow()} required {...register("pickupDateTime")} />}
+            </PickupField>
+            <PickupField name="note" label="Note (optional)" error={errors.note}>
+              {(field) => <textarea {...field} rows={3} maxLength={500} placeholder="Any details about where to meet" {...register("note")} />}
+            </PickupField>
+          </fieldset>
           {serverError && (
             <p className="exchange-error" role="alert">
               {serverError}
             </p>
           )}
-          <div className="exchange-dialog__actions">
+          <div className="pickup-dialog__actions">
             <Button type="button" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
@@ -97,11 +90,22 @@ export default function PickupForm({ onClose, onSubmit }) {
               className="exchange-primary"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Sending…" : "Send proposal"}
+              {isSubmitting ? "Sending…" : "Propose pickup"}
             </Button>
           </div>
         </form>
       )}
     </ExchangeDialog>
+  );
+}
+
+function PickupField({ name, label, error, children }) {
+  const id = `pickup-${name}`;
+  return (
+    <div className="pickup-field">
+      <label htmlFor={id}>{label}</label>
+      {children({ id, "aria-invalid": Boolean(error), "aria-describedby": error ? `${id}-error` : undefined })}
+      {error && <p id={`${id}-error`} role="alert">{error.message}</p>}
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Tag } from "lucide-react";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
@@ -15,6 +15,7 @@ import {
 import PickupForm from "../../components/PickupForm/PickupForm";
 import Button from "../../components/Button/Button";
 import ExchangeDialog from "../../components/ExchangeDialog/ExchangeDialog";
+import ExchangeOverview from "../../components/ExchangeDialog/ExchangeOverview";
 import ExchangeFlow from "../../components/ExchangeDialog/ExchangeFlow";
 import "./Messages.css";
 import OfferNegotiation from "../../components/OfferNegotiation/OfferNegotiation";
@@ -63,12 +64,12 @@ function priceLabel(item) {
   }).format(item.price);
 }
 
-function PickupDetails({ proposal, canRespond, onRespond, onExchange }) {
+function PickupDetails({ proposal, canRespond, onRespond, onExchange, onSuggest, partner, purchaseBuyerId }) {
   const [dialog, setDialog] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const pending = useRef(false);
-  const status = proposal.status === "REJECTED" ? "Declined" : proposal.status === "ACCEPTED" ? "Accepted" : "Pending";
+  const status = proposal.status === "REJECTED" ? "Declined" : proposal.status === "ACCEPTED" ? "Pickup time accepted" : "Pending";
 
   async function respond(decision) {
     if (pending.current) return;
@@ -77,7 +78,7 @@ function PickupDetails({ proposal, canRespond, onRespond, onExchange }) {
     setError("");
     try {
       await onRespond(proposal.id, decision);
-      setDialog(decision === "ACCEPTED" ? "confirmed" : null);
+      setDialog(decision === "ACCEPTED" ? "accepted" : null);
     }
     catch (err) {
       setError(err.response?.status === 409
@@ -87,21 +88,37 @@ function PickupDetails({ proposal, canRespond, onRespond, onExchange }) {
     } finally { pending.current = false; setSubmitting(false); }
   }
 
+  const canDecide = proposal.status === "PENDING" && canRespond && typeof proposal.id === "string";
+  const controls = (
+    <div className={onSuggest
+      ? `exchange-overview__actions${canDecide ? " exchange-overview__actions--pickup" : ""}`
+      : "pickup-card__actions"}>
+      {canDecide && <Button type="button" className={onSuggest ? "exchange-primary" : undefined}
+        disabled={submitting} onClick={() => void respond("ACCEPTED")}>
+        {onSuggest ? "Accept pickup time" : "Accept"}
+      </Button>}
+      {onSuggest && <Button type="button" disabled={submitting} onClick={onSuggest}>Suggest another time</Button>}
+      {canDecide && <Button type="button" className={onSuggest ? "exchange-overview__text-button" : undefined}
+        disabled={submitting} onClick={() => { setError(""); setDialog("decline"); }}>Decline</Button>}
+    </div>
+  );
+  const responseError = error && !dialog && <p role="alert" className="pickup-card__error">{error}</p>;
+
   return <>
-    <p className="pickup-card__status">{status}</p>
-    <details>
-      <summary>View pickup details →</summary>
-      {proposal.meetingNote && <p>{proposal.meetingNote}</p>}
-      {proposal.status === "PENDING" && canRespond && typeof proposal.id === "string" &&
-        <div className="pickup-card__actions">
-          <Button type="button" disabled={submitting} onClick={() => void respond("ACCEPTED")}>Accept</Button>
-          <Button type="button" disabled={submitting} onClick={() => { setError(""); setDialog("decline"); }}>Decline</Button>
-        </div>}
-      {error && !dialog && <p role="alert" className="pickup-card__error">{error}</p>}
-    </details>
+    {onSuggest ? <>{controls}{responseError}</> : (
+      <>
+        <p className="pickup-card__status">{status}</p>
+        <details>
+          <summary>View pickup details →</summary>
+          {proposal.meetingNote && <p>{proposal.meetingNote}</p>}
+          {canDecide && controls}
+          {responseError}
+        </details>
+      </>
+    )}
     {dialog === "decline" && (
       <ExchangeDialog title="Decline this pickup?" busy={submitting} onClose={() => setDialog(null)}>
-        <p>You can suggest another time or place in your conversation.</p>
+        <p>{partner ? `${partner} can see your response. ` : ""}You can suggest another time or place in your conversation.</p>
         {error && <p role="alert" className="exchange-error">{error}</p>}
         <div className="exchange-dialog__actions">
           <Button type="button" disabled={submitting} onClick={() => setDialog(null)}>Cancel</Button>
@@ -111,12 +128,15 @@ function PickupDetails({ proposal, canRespond, onRespond, onExchange }) {
         </div>
       </ExchangeDialog>
     )}
-    {dialog === "confirmed" && (
-      <ExchangeDialog title="Pickup confirmed" badge="Confirmed" onClose={() => setDialog(null)}>
+    {dialog === "accepted" && (
+      <ExchangeDialog title="Pickup time accepted" badge="Time agreed" onClose={() => setDialog(null)}>
         <p>{proposal.meetingPlace}<br />{pickupTimeLabel(proposal.timePickUp)} · Central Time</p>
         <div className="exchange-dialog__callout">
           <strong>Both people can see the details</strong>
           <p>Use your conversation if you need to change the plan.</p>
+          {purchaseBuyerId && <p>{proposal.idSuggester === purchaseBuyerId
+            ? "The exchange stays open until the buyer confirms they received the item."
+            : "To confirm receipt, the buyer must propose a pickup time for the seller to accept."}</p>}
         </div>
         <div className="exchange-dialog__actions exchange-dialog__actions--stacked">
           <Button type="button" className="exchange-primary" onClick={() => { setDialog(null); onExchange(); }}>
@@ -130,9 +150,12 @@ function PickupDetails({ proposal, canRespond, onRespond, onExchange }) {
 
 export default function Messages() {
   const { conversationId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const exchangeOpen = Boolean(conversationId) && searchParams.get("exchange") === "1";
   const chat = useMessaging(conversationId);
+  const offer = chat.conversation?.offer;
+  const offerAccepted = offer?.status === "ACCEPTED";
   const [pickupFormConversation, setPickupFormConversation] = useState(null);
-  const [exchangeConversation, setExchangeConversation] = useState(null);
   const [pickupState, setPickupState] = useState({
     id: null,
     proposals: [],
@@ -178,9 +201,18 @@ export default function Messages() {
     return () => {
       revisionRef.current++;
       setPickupFormConversation(null);
-      setExchangeConversation(null);
     };
   }, [conversationId, refreshPickups]);
+  useEffect(() => {
+    if (!exchangeOpen && !offerAccepted) return;
+    const refresh = () => void refreshPickups(conversationId);
+    const timer = window.setInterval(refresh, 12_000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [conversationId, exchangeOpen, offerAccepted, refreshPickups]);
   const bottom = () => {
     if (scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight;
     nearBottom.current = true;
@@ -233,8 +265,6 @@ export default function Messages() {
     (item) => item.unreadCount > 0,
   ).length;
   const item = chat.conversation?.listing;
-  const offer = chat.conversation?.offer;
-  const offerAccepted = offer?.status === "ACCEPTED";
   const proposals = pickupState.id === conversationId ? pickupState.proposals : [];
   const latestPickup = proposals.reduce((latest, proposal) => {
     if (!latest) return proposal;
@@ -295,15 +325,25 @@ export default function Messages() {
   }
 
   function openExchange() {
-    setExchangeConversation(conversationId);
+    if (!conversationId) return;
+    const next = new URLSearchParams(searchParams);
+    next.set("exchange", "1");
+    setSearchParams(next);
     void refreshPickups(conversationId);
   }
 
-  async function submitPickup({ location, pickupDate, pickupTime }) {
+  function closeExchange() {
+    const next = new URLSearchParams(searchParams);
+    next.delete("exchange");
+    setSearchParams(next, { replace: true });
+  }
+
+  async function submitPickup({ location, pickupDateTime, note }) {
     const current = conversationId;
     const proposal = await createPickupProposal(current, {
       meetingPlace: location,
-      timePickup: `${pickupDate}T${pickupTime}:00`,
+      timePickup: `${pickupDateTime}:00`,
+      ...(note && { note }),
     });
     if (selectedPickupConversation.current !== current) return;
     pickupRevision.current++;
@@ -381,6 +421,46 @@ export default function Messages() {
     }
   }
 
+  const pickupForm = pickupFormConversation === conversationId && conversationId && (
+    <PickupForm key={conversationId} onClose={() => setPickupFormConversation(null)} onSubmit={submitPickup} />
+  );
+
+  if (exchangeOpen) {
+    const conversation = chat.conversation;
+    const partner = conversation?.participant.name;
+    const buyer = conversation?.currentUserId === offer?.buyerId;
+    const partnerRole = offerAccepted ? (buyer ? "Seller" : "Buyer") : "";
+    const ownProposal = conversation?.currentUserId === latestPickup?.idSuggester;
+    const proposedBy = ownProposal ? "You" : [partner, partnerRole].filter(Boolean).join(" · ");
+
+    return (
+      <div className="messages-shell">
+        <Navbar />
+        {conversation ? (
+          <ExchangeOverview offerId={offerAccepted ? offer.id : null} item={item}
+            price={offerAccepted ? formattedAgreedPrice : ""} partner={partner} partnerRole={partnerRole}
+            pickup={latestPickup} pickupLabel={latestPickup ? pickupTimeLabel(latestPickup.timePickUp) : ""}
+            proposedBy={proposedBy} pickupLoading={pickupState.id !== conversationId}
+            pickupError={pickupState.id === conversationId ? pickupState.error : ""}
+            onRetryPickup={() => void refreshPickups(conversationId)} onProposePickup={arrangePickup}
+            onBack={closeExchange} onComplete={chat.refresh}
+            pickupActions={latestPickup && <PickupDetails key={latestPickup.id} proposal={latestPickup}
+              canRespond={Boolean(latestPickup.idSuggester) && !ownProposal} partner={partner}
+              purchaseBuyerId={offerAccepted ? offer.buyerId : undefined}
+              onRespond={respondPickup} onSuggest={arrangePickup} onExchange={() => void refreshPickups(conversationId)} />}
+          />
+        ) : (
+          <main className="exchange-overview">
+            <h1>Your exchange</h1>
+            {chat.error ? <p role="alert">{chat.error}</p> : <p role="status">Loading exchange…</p>}
+            <button type="button" onClick={closeExchange}>View conversation</button>
+          </main>
+        )}
+        {pickupForm}
+      </div>
+    );
+  }
+
   return (
     <div className="messages-shell">
       <Navbar showSearch={false} />
@@ -402,6 +482,11 @@ export default function Messages() {
             >
               Propose pickup
             </button>
+            {offerAccepted && (
+              <ExchangeFlow key={offer.id} inConversation offerId={offer.id} pickup={latestPickup}
+                itemTitle={item?.title || "Listing unavailable"} price={formattedAgreedPrice}
+                partner={chat.conversation.participant.name} onComplete={chat.refresh} />
+            )}
           </div>
         </header>
         <div
@@ -630,6 +715,7 @@ export default function Messages() {
                                   <p>{pickupTimeLabel(proposal.timePickUp)}</p>
                                   <PickupDetails
                                     proposal={proposal}
+                                    purchaseBuyerId={offerAccepted ? offer.buyerId : undefined}
                                     canRespond={typeof proposal.idSuggester === "string" && typeof chat.conversation.currentUserId === "string" && !outgoing}
                                     onRespond={respondPickup}
                                     onExchange={openExchange}
@@ -815,27 +901,7 @@ export default function Messages() {
           </section>
         </div>
       </main>
-      {exchangeConversation === conversationId && chat.conversation && (
-        <ExchangeFlow
-          key={`${conversationId}:${offerAccepted ? offer.id : ""}`}
-          offerId={offerAccepted ? offer.id : null}
-          isBuyer={offerAccepted && offer.buyerId === chat.conversation.currentUserId}
-          pickup={latestPickup}
-          pickupLabel={latestPickup ? pickupTimeLabel(latestPickup.timePickUp) : ""}
-          itemTitle={item?.title || "Listing unavailable"}
-          price={offerAccepted ? formattedAgreedPrice : ""}
-          partner={chat.conversation.participant.name}
-          onClose={() => setExchangeConversation(null)}
-          onComplete={chat.refresh}
-        />
-      )}
-      {pickupFormConversation === conversationId && conversationId && (
-        <PickupForm
-          key={conversationId}
-          onClose={() => setPickupFormConversation(null)}
-          onSubmit={submitPickup}
-        />
-      )}
+      {pickupForm}
       {reportedMessageIdsError && conversationId && (
         <p className="messages-error" role="status">{reportedMessageIdsError}</p>
       )}

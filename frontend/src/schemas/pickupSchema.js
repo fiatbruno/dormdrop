@@ -16,25 +16,13 @@ export const campusNow = () => {
   return `${value.year}-${value.month}-${value.day}T${value.hour}:${value.minute}`;
 };
 
-export const pickupSchema = z
-  .object({
-    location: z
-      .string()
-      .trim()
-      .min(1, "Location is required")
-      .max(200, "Location must be 200 characters or fewer"),
-    pickupDate: z
-      .string()
-      .min(1, "Date is required")
-      .pipe(z.iso.date("Enter a valid date")),
-    pickupTime: z
-      .string()
-      .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Enter a valid time"),
-  })
-  .refine(
-    ({ pickupDate, pickupTime }) => `${pickupDate}T${pickupTime}` > campusNow(),
-    {
-      message: "Choose a future date and time (campus time).",
-      path: ["pickupTime"],
-    },
-  );
+export const pickupSchema = z.object({
+  location: z.string().trim()
+    .min(1, "Meeting place is required")
+    .max(200, "Meeting place must be 200 characters or fewer"),
+  pickupDateTime: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "Enter a pickup date and time")
+    .pipe(z.iso.datetime({ local: true, precision: -1 }))
+    .refine((value) => value > campusNow(), "Choose a future pickup time in Central Time."),
+  note: z.string().trim().max(500, "Note must be 500 characters or fewer"),
+});
