@@ -19,15 +19,17 @@
 .exchange-dialog p { margin: 0 0 16px; color: #566986; }
 .exchange-dialog__badge {
   display: inline-block;
+  min-width: 120px;
   margin-bottom: 16px;
   padding: 4px 16px;
   border-radius: 5px;
   background: #e9f5ed;
   color: #28764c;
   font-size: 13px;
+  text-align: center;
 }
 .exchange-dialog__actions { display: grid; grid-template-columns: 1fr 1.9fr; gap: 16px; margin-top: 20px; }
-.exchange-dialog__actions--stacked { grid-template-columns: 1fr; gap: 10px; }
+.exchange-dialog__actions--stacked { grid-template-columns: 1fr; gap: 18px; }
 .exchange-dialog button {
   min-height: 44px;
   padding: 8px 14px;
@@ -44,8 +46,9 @@
 .exchange-dialog button:focus-visible,
 .exchange-dialog :is(input, textarea):focus-visible { outline: 2px solid #386aa3; outline-offset: 2px; }
 .exchange-dialog .exchange-error { color: #a32b2b; margin: 10px 0 0; }
-.exchange-dialog__callout { padding: 12px; margin: 16px 0; border-radius: 6px; background: #eaf2f9; }
-.exchange-dialog__callout p { margin: 4px 0 0; }
+.exchange-dialog__callout { padding: 16px; margin: 16px 0; border-radius: 8px; background: #eaf2f9; }
+.exchange-dialog__callout strong { font-weight: 600; }
+.exchange-dialog__callout p { margin: 6px 0 0; }
 
 @media (max-width: 500px) {
   .exchange-dialog { padding: 22px; }
@@ -55,9 +58,10 @@
 .exchange-rating legend, .exchange-review-field { color: #10295c; font-weight: 600; }
 .exchange-rating label { position: relative; display: inline-block; cursor: pointer; }
 .exchange-rating input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-.exchange-rating span { display: block; padding: 0 4px; color: #8e671e; font-size: 27px; }
+.exchange-rating label span { display: block; padding: 0 4px; color: #8e671e; font-size: 34px; }
 .exchange-rating input:focus-visible + span { outline: 2px solid #386aa3; border-radius: 4px; }
 .exchange-review-field textarea { display: block; width: 100%; margin-top: 6px; padding: 10px; border: 1px solid #c8d4e3; border-radius: 8px; font: inherit; font-weight: 400; resize: vertical; }
+.exchange-dialog .exchange-review-hint { margin: 6px 0 0; font-size: 13px; }
 .exchange-reviews { margin: 0; padding: 0; list-style: none; }
 .exchange-reviews li { padding: 10px 0; border-bottom: 1px solid #e7ebf0; overflow-wrap: anywhere; }
 .exchange-reviews p { margin: 4px 0 0; }

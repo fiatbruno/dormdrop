@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '25'
           cache: maven
       - name: Run backend tests
         run: mvn --batch-mode --no-transfer-progress -f backend/pom.xml -DfailIfNoTests=true clean test

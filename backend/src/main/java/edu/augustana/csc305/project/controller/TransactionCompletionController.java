@@ -58,6 +58,19 @@ public class TransactionCompletionController {
                 ));
     }
 
+    public record ReceiptStatusResponse(boolean buyer, boolean canConfirm, boolean waitingForPickupTime,
+                                        CompletedTransactionResponse transaction) {}
+
+    @GetMapping("/status")
+    public ResponseEntity<ReceiptStatusResponse> getReceiptStatus(
+            @PathVariable String offerId, Authentication authentication) {
+        var status = service.getReceiptStatus(offerId, authentication);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new ReceiptStatusResponse(
+                status.buyer(), status.canConfirm(), status.waitingForPickupTime(),
+                status.transaction() == null ? null : CompletedTransactionResponse.from(status.transaction())
+        ));
+    }
+
     public record ReviewRequest(@NotNull @Min(1) @Max(5) Integer rating, @Size(max = 500) String comment) {}
 
     @PostMapping("/review")

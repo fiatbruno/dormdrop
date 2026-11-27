@@ -11,22 +11,20 @@ import edu.augustana.csc305.project.model.PickupProposal;
 import edu.augustana.csc305.project.model.PickupStatus;
 import edu.augustana.csc305.project.model.User;
 import edu.augustana.csc305.project.repository.UserRepository;
-
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.LockSupport;
-
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -84,7 +82,7 @@ public class TransactionCompletionService {
 
                 throw error(
                         HttpStatus.CONFLICT,
-                        "This listing already has a completed transaction."
+                        "A transaction has already been recorded for this offer."
                 );
             } catch (DataAccessException | TransactionException exception) {
                 CompletedTransaction existing = findByOffer(id);
@@ -154,11 +152,41 @@ public class TransactionCompletionService {
             return existing;
         }
 
+        PickupProposal pickup = requireAcceptedPickup(offer);
+        Instant now = Instant.now();
+        if (now.isBefore(pickupTime(pickup))) {
+            throw error(HttpStatus.CONFLICT, "Receipt cannot be confirmed before pickup.");
+        }
+        Listing listing = requireReservedListing(offer);
+
+        Criteria expected = new Criteria().andOperator(
+                Criteria.where("_id").is(listing.getId()),
+                Criteria.where("ownerId").is(offer.sellerId()),
+                Criteria.where("status").is(ListingStatus.RESERVED),
+                Criteria.where("reservedOfferId").is(offer.id()),
+                Criteria.where("version").is(listing.getVersion())
+        );
+
+        Update update = new Update().set("status", ListingStatus.SOLD);
+        if (listing.getVersion() == null) {
+            update.set("version", 1L);
+        } else {
+            update.inc("version", 1L);
+        }
+
+        if (mongo.updateFirst(Query.query(expected), update, Listing.class).getModifiedCount() != 1) {
+            throw new OptimisticLockingFailureException("Listing changed during confirmation.");
+        }
+
+        return mongo.insert(new CompletedTransaction(
+                offer.id(), offer.listingId(), offer.buyerId(), offer.sellerId(),
+                pickup.getConversationId(), pickup.getId(), now
+        ));
+    }
+
+    private PickupProposal requireAcceptedPickup(OfferNegotiation offer) {
         if (offer.status() != OfferNegotiation.Status.ACCEPTED) {
-            throw error(
-                    HttpStatus.CONFLICT,
-                    "The offer must be accepted first."
-            );
+            throw error(HttpStatus.CONFLICT, "The offer must be accepted first.");
         }
 
         Query conversationQuery = Query.query(
@@ -199,11 +227,13 @@ public class TransactionCompletionService {
                 PickupProposal.class
         );
 
-        if (pickup == null
-                || pickup.getStatus() != PickupStatus.ACCEPTED) {
+        // Only the other participant can accept a proposal. An accepted
+        // proposal from the buyer therefore records the seller's acceptance.
+        if (pickup == null || pickup.getStatus() != PickupStatus.ACCEPTED
+                || !offer.buyerId().equals(pickup.getIdSuggester())) {
             throw error(
                     HttpStatus.CONFLICT,
-                    "An accepted pickup arrangement is required."
+                    "The seller must accept a pickup time proposed by the buyer."
             );
         }
 
@@ -214,19 +244,14 @@ public class TransactionCompletionService {
             );
         }
 
-        Instant now = Instant.now();
+        return pickup;
+    }
 
-        Instant pickupTime = pickup.getTimePickUp()
-                .atZone(CAMPUS_ZONE)
-                .toInstant();
+    private Instant pickupTime(PickupProposal pickup) {
+        return pickup.getTimePickUp().atZone(CAMPUS_ZONE).toInstant();
+    }
 
-        if (now.isBefore(pickupTime)) {
-            throw error(
-                    HttpStatus.CONFLICT,
-                    "Receipt cannot be confirmed before pickup."
-            );
-        }
-
+    private Listing requireReservedListing(OfferNegotiation offer) {
         Listing listing = mongo.findById(
                 offer.listingId(),
                 Listing.class
@@ -246,63 +271,40 @@ public class TransactionCompletionService {
             );
         }
 
-        ListingStatus currentStatus = listing.getStatus();
-
-        if (currentStatus != ListingStatus.RESERVED
-                && currentStatus != ListingStatus.AVAILABLE) {
+        if (listing.getStatus() != ListingStatus.RESERVED
+                || !offer.id().equals(listing.getReservedOfferId())) {
             throw error(
                     HttpStatus.CONFLICT,
                     "Listing cannot be completed in its current state."
             );
         }
 
-        Criteria expectedStatus = Criteria.where("status").is(currentStatus);
-        if (currentStatus == ListingStatus.AVAILABLE) {
-            expectedStatus = new Criteria().orOperator(expectedStatus, Criteria.where("status").exists(false));
-        }
-        Criteria expected = new Criteria().andOperator(
-                Criteria.where("_id")
-                        .is(listing.getId()),
-                Criteria.where("ownerId")
-                        .is(offer.sellerId()),
-                expectedStatus,
-                Criteria.where("version")
-                        .is(listing.getVersion())
-        );
+        return listing;
+    }
 
-        Update update = new Update()
-                .set("status", ListingStatus.SOLD);
+    public record ReceiptStatus(boolean buyer, boolean canConfirm, boolean waitingForPickupTime,
+                                CompletedTransaction transaction) {}
 
-        if (listing.getVersion() == null) {
-            update.set("version", 1L);
-        } else {
-            update.inc("version", 1L);
+    public ReceiptStatus getReceiptStatus(String offerId, Authentication authentication) {
+        User user = currentUser(authentication);
+        OfferNegotiation offer = requireOfferParticipant(parseId(offerId), user);
+        boolean buyer = user.getId().equals(offer.buyerId());
+        CompletedTransaction completed = findByOffer(offer.id());
+        if (!buyer || completed != null) {
+            return new ReceiptStatus(buyer, false, false, completed);
         }
 
-        long modified = mongo.updateFirst(
-                Query.query(expected),
-                update,
-                Listing.class
-        ).getModifiedCount();
-
-        if (modified != 1) {
-            throw new OptimisticLockingFailureException(
-                    "Listing changed during confirmation."
-            );
+        try {
+            Instant scheduledPickup = pickupTime(requireAcceptedPickup(offer));
+            requireReservedListing(offer);
+            boolean waiting = Instant.now().isBefore(scheduledPickup);
+            return new ReceiptStatus(true, !waiting, waiting, null);
+        } catch (ResponseStatusException failure) {
+            if (failure.getStatusCode() != HttpStatus.CONFLICT && failure.getStatusCode() != HttpStatus.NOT_FOUND) {
+                throw failure;
+            }
+            return new ReceiptStatus(true, false, false, null);
         }
-
-        CompletedTransaction completed =
-                new CompletedTransaction(
-                        offer.id(),
-                        offer.listingId(),
-                        offer.buyerId(),
-                        offer.sellerId(),
-                        conversation.getId(),
-                        pickup.getId(),
-                        now
-                );
-
-        return mongo.insert(completed);
     }
 
     public CompletedTransaction getCompletedTransaction(
@@ -311,7 +313,16 @@ public class TransactionCompletionService {
     ) {
         User user = currentUser(authentication);
         ObjectId id = parseId(offerId);
+        requireOfferParticipant(id, user);
 
+        CompletedTransaction completed = findByOffer(id);
+        if (completed == null) {
+            throw error(HttpStatus.NOT_FOUND, "Transaction has not been completed.");
+        }
+        return completed;
+    }
+
+    private OfferNegotiation requireOfferParticipant(ObjectId id, User user) {
         OfferNegotiation offer = mongo.findById(
                 id,
                 OfferNegotiation.class
@@ -334,16 +345,7 @@ public class TransactionCompletionService {
             );
         }
 
-        CompletedTransaction completed = findByOffer(id);
-
-        if (completed == null) {
-            throw error(
-                    HttpStatus.NOT_FOUND,
-                    "Transaction has not been completed."
-            );
-        }
-
-        return completed;
+        return offer;
     }
 
     private CompletedTransaction findByOffer(ObjectId offerId) {
@@ -356,34 +358,107 @@ public class TransactionCompletionService {
     }
 
     public CompletedTransaction submitReview(
-            String offerId, Authentication authentication, int rating, String comment
+            String offerId,
+            Authentication authentication,
+            int rating,
+            String comment
     ) {
-        CompletedTransaction transaction = getCompletedTransaction(offerId, authentication);
-        if (!transaction.getBuyerId().equals(currentUser(authentication).getId())) {
-            throw error(HttpStatus.FORBIDDEN, "Only the buyer can review the seller.");
+        CompletedTransaction transaction =
+                getCompletedTransaction(offerId, authentication);
+
+        if (!transaction.getBuyerId().equals(
+                currentUser(authentication).getId()
+        )) {
+            throw error(
+                    HttpStatus.FORBIDDEN,
+                    "Only the buyer can review the seller."
+            );
+        }
+
+        if (rating < 1 || rating > 5) {
+            throw error(
+                    HttpStatus.BAD_REQUEST,
+                    "Rating must be between 1 and 5."
+            );
         }
 
         String reviewText = comment == null ? "" : comment.strip();
-        var review = new CompletedTransaction.SellerReview(rating, reviewText, Instant.now());
-        Query query = Query.query(Criteria.where("_id").is(transaction.getId()).and("sellerReview").isNull());
-        CompletedTransaction updated = mongo.findAndModify(query, new Update().set("sellerReview", review),
-                FindAndModifyOptions.options().returnNew(true), CompletedTransaction.class);
-        if (updated != null) return updated;
 
-        CompletedTransaction existing = findByOffer(transaction.getOfferId());
-        var saved = existing == null ? null : existing.getSellerReview();
-        if (saved != null && saved.rating() == rating && saved.comment().equals(reviewText)) return existing;
-        throw error(HttpStatus.CONFLICT, "A review has already been submitted for this exchange.");
+        if (reviewText.length() > 500) {
+            throw error(
+                    HttpStatus.BAD_REQUEST,
+                    "Review comment must not exceed 500 characters."
+            );
+        }
+
+        CompletedTransaction.SellerReview review =
+                new CompletedTransaction.SellerReview(
+                        rating,
+                        reviewText,
+                        Instant.now()
+                );
+
+        Query query = Query.query(
+                Criteria.where("_id")
+                        .is(transaction.getId())
+                        .and("sellerReview")
+                        .isNull()
+        );
+
+        CompletedTransaction updated = mongo.findAndModify(
+                query,
+                new Update().set("sellerReview", review),
+                FindAndModifyOptions.options().returnNew(true),
+                CompletedTransaction.class
+        );
+
+        if (updated != null) {
+            return updated;
+        }
+
+        CompletedTransaction existing =
+                findByOffer(transaction.getOfferId());
+
+        CompletedTransaction.SellerReview saved =
+                existing == null ? null : existing.getSellerReview();
+
+        if (saved != null
+                && saved.rating() == rating
+                && saved.comment().equals(reviewText)) {
+            return existing;
+        }
+
+        throw error(
+                HttpStatus.CONFLICT,
+                "A review has already been submitted for this exchange."
+        );
     }
 
-    public List<CompletedTransaction.SellerReview> getSellerReviews(String offerId, Authentication authentication) {
-        CompletedTransaction transaction = getCompletedTransaction(offerId, authentication);
-        Query query = Query.query(Criteria.where("sellerId").is(transaction.getSellerId())
-                .and("sellerReview").ne(null))
-                .with(Sort.by(Sort.Order.desc("sellerReview.submittedAt"), Sort.Order.desc("_id")))
-                .limit(50);
-        return mongo.find(query, CompletedTransaction.class).stream()
-                .map(CompletedTransaction::getSellerReview).toList();
+    public List<CompletedTransaction.SellerReview> getSellerReviews(
+            String offerId,
+            Authentication authentication
+    ) {
+        CompletedTransaction transaction =
+                getCompletedTransaction(offerId, authentication);
+
+        Query query = Query.query(
+                Criteria.where("sellerId")
+                        .is(transaction.getSellerId())
+                        .and("sellerReview")
+                        .ne(null)
+        ).with(
+                Sort.by(
+                        Sort.Order.desc("sellerReview.submittedAt"),
+                        Sort.Order.desc("_id")
+                )
+        ).limit(50);
+
+        return mongo.find(
+                        query,
+                        CompletedTransaction.class
+                ).stream()
+                .map(CompletedTransaction::getSellerReview)
+                .toList();
     }
 
     private User currentUser(Authentication authentication) {

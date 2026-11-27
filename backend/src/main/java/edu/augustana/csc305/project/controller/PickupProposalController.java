@@ -32,11 +32,13 @@ public class PickupProposalController {
             @Valid @RequestBody PickupProposalRequest request,
             Authentication authentication
     ) {
-        return PickupProposalResponse.from(service.createProposal(
-                conversationId,
-                authentication.getName(),
-                request
-        ));
+        return PickupProposalResponse.from(
+                service.createProposal(
+                        conversationId,
+                        authentication.getName(),
+                        request
+                )
+        );
     }
 
     @GetMapping
@@ -45,9 +47,11 @@ public class PickupProposalController {
             Authentication authentication
     ) {
         return service.getProposals(
-                conversationId,
-                authentication.getName()
-        ).stream().map(PickupProposalResponse::from).toList();
+                        conversationId,
+                        authentication.getName()
+                ).stream()
+                .map(PickupProposalResponse::from)
+                .toList();
     }
 
     @PatchMapping("/{proposalId}/respond")
@@ -57,11 +61,13 @@ public class PickupProposalController {
             @RequestParam PickupStatus decision,
             Authentication authentication
     ) {
-        return PickupProposalResponse.from(service.respondToProposal(
-                conversationId,
-                proposalId,
-                authentication.getName(),
-                decision
-        ));
+        return PickupProposalResponse.from(
+                service.respondToProposal(
+                        conversationId,
+                        proposalId,
+                        authentication.getName(),
+                        decision
+                )
+        );
     }
 }

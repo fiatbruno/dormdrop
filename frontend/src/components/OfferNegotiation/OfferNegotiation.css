@@ -1,3 +1,4 @@
+
 .offer-negotiation {
   margin: 14px 24px;
   padding: 18px;
@@ -88,9 +89,17 @@
   line-height: 1.5;
 }
 
-.offer-negotiation__hint { color: #657b9b; }
-.offer-negotiation__confirmation { color: #24633d; }
-.offer-negotiation__error { color: #a3332d; }
+.offer-negotiation__hint {
+  color: #657b9b;
+}
+
+.offer-negotiation__confirmation {
+  color: #24633d;
+}
+
+.offer-negotiation__error {
+  color: #a3332d;
+}
 
 .offer-negotiation__actions {
   display: flex;
@@ -119,7 +128,7 @@
 
 .offer-negotiation__actions button:disabled,
 .offer-negotiation__modal-actions button:disabled {
-  opacity: .55;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
@@ -141,17 +150,57 @@
   box-shadow: 0 16px 48px #0003;
 }
 
-.counteroffer-dialog h2 { margin: 0 0 10px; color: #10295c; }
-.counteroffer-dialog p { color: #526882; }
-.counteroffer-dialog label { display: block; margin: 14px 0 6px; font-weight: 600; }
-.counteroffer-dialog input { width: 100%; min-height: 44px; padding: 8px; border: 1px solid #b9c7d7; border-radius: 6px; font: inherit; }
+.counteroffer-dialog h2 {
+  margin: 0 0 10px;
+  color: #10295c;
+}
+
+.counteroffer-dialog p {
+  color: #526882;
+}
+
+.counteroffer-dialog label {
+  display: block;
+  margin: 14px 0 6px;
+  font-weight: 600;
+}
+
+.counteroffer-dialog input {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid #b9c7d7;
+  border-radius: 6px;
+  font: inherit;
+}
+
 .counteroffer-dialog input:focus-visible,
 .counteroffer-dialog button:focus-visible,
-.offer-negotiation button:focus-visible { outline: 3px solid #2785d1; outline-offset: 2px; }
-.offer-negotiation__modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.offer-negotiation button:focus-visible {
+  outline: 3px solid #2785d1;
+  outline-offset: 2px;
+}
+
+.offer-negotiation__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
 
 @media (max-width: 700px) {
-  .offer-negotiation { margin: 12px; padding: 14px; }
-  .offer-negotiation__actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .offer-negotiation__actions button { padding: 8px 5px; }
+  .offer-negotiation {
+    margin: 12px;
+    padding: 14px;
+  }
+
+  .offer-negotiation__actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .offer-negotiation__actions button {
+    padding: 8px 5px;
+  }
+
 }

@@ -25,7 +25,37 @@ public class CompletedTransactionSchema implements ApplicationRunner {
                 mongo.getCollection("completedTransactions");
 
         ensureUniqueIndex(collection, "offerId");
-        ensureUniqueIndex(collection, "listingId");
+        removeObsoleteListingUniqueIndex(collection);
+    }
+
+    private void removeObsoleteListingUniqueIndex(
+            MongoCollection<Document> collection
+    ) {
+        String obsoleteIndexName = null;
+
+        for (Document index : collection.listIndexes()) {
+            Document keys = index.get("key", Document.class);
+
+            if (keys == null || keys.size() != 1) {
+                continue;
+            }
+
+            Object direction = keys.get("listingId");
+
+            if (!(direction instanceof Number)
+                    || ((Number) direction).intValue() != 1) {
+                continue;
+            }
+
+            if (Boolean.TRUE.equals(index.getBoolean("unique"))) {
+                obsoleteIndexName = index.getString("name");
+                break;
+            }
+        }
+
+        if (obsoleteIndexName != null) {
+            collection.dropIndex(obsoleteIndexName);
+        }
     }
 
     private void ensureUniqueIndex(

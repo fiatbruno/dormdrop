@@ -89,7 +89,7 @@ The diagram shows the high-level design rather than every class or endpoint. See
 ### Prerequisites
 
 - **Node.js 22.12+** and npm for the Vite frontend (per current project notes).
-- **Java and Maven** compatible with [`backend/pom.xml`](backend/pom.xml) (the documented Java target is 17).
+- **Java 25 and Maven** compatible with [`backend/pom.xml`](backend/pom.xml).
 - **MongoDB**, local or hosted.
 - **SMTP credentials** and an Augustana email inbox to test the normal verification flow.
 

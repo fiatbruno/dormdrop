@@ -20,6 +20,7 @@ public record ListingDetailsResponse(
         LocalDateTime listedOn,
         ListingStatus status,
         String ownerId,
+        String reservedOfferId,
         String sellerName,
         edu.augustana.csc305.project.model.ModerationTypes.Visibility moderationVisibility,
         boolean sellerHidden,
@@ -30,7 +31,8 @@ public record ListingDetailsResponse(
                 listing.getIdString(), listing.getTitle(), listing.getDescription(),
                 listing.getCategory(), listing.getPrice(), listing.getCondition(),
                 listing.getPickupArea(), listing.getListingType(), listing.getImageUrl(), listing.getImageUrls(),
-                listing.getListedOn(), listing.getStatus(), listing.getOwnerId() == null ? null : listing.getOwnerId().toHexString(), sellerName,
+                listing.getListedOn(), listing.getStatus(), listing.getOwnerId() == null ? null : listing.getOwnerId().toHexString(),
+                listing.getReservedOfferId() == null ? null : listing.getReservedOfferId().toHexString(), sellerName,
                 listing.getModerationVisibility(), listing.isSellerHidden(), listing.getModerationVisibility() != edu.augustana.csc305.project.model.ModerationTypes.Visibility.VISIBLE
         );
     }

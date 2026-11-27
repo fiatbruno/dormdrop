@@ -23,6 +23,20 @@ async function openListing(page) {
     (token) => localStorage.setItem("token", token),
     `test.${payload}.signature`,
   );
+  await page.route("**/api/v1/users/me", (route) =>
+    route.fulfill({
+      status: 200,
+      json: {
+        id: "buyer-1",
+        name: "Test Buyer",
+        email: "buyer@augustana.edu",
+      },
+    }),
+  );
+
+  await page.route("**/api/v1/conversations", (route) =>
+    route.fulfill({ status: 200, json: [] }),
+  );
   await page.route("**/api/v1/admin/users**", (route) =>
     route.fulfill({ status: 403, json: { message: "Not an administrator" } }),
   );

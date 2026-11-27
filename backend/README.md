@@ -103,7 +103,7 @@ suspension expiry does not release a listing-review hide or restore a removed
 listing. Expiry runs on a schedule (60 seconds by default) and requires the
 same MongoDB transaction support as report moderation.
 
-Use Java 17 and Maven to run the backend unit tests from the repository root:
+Use Java 25 and Maven to run the backend unit tests from the repository root:
 
 ```sh
 mvn --batch-mode --no-transfer-progress -f backend/pom.xml -DfailIfNoTests=true clean test

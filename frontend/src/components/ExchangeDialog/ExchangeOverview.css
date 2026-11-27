@@ -1,0 +1,66 @@
+.exchange-overview {
+  flex: 1;
+  width: min(1280px, 89%);
+  margin: 48px auto 80px;
+  color: #10295c;
+  text-align: left;
+}
+
+.exchange-overview__heading { margin-bottom: 24px; }
+.exchange-overview__heading h1 { margin: 0 0 8px; font-size: 28px; font-weight: 700; }
+.exchange-overview__heading p { margin: 0; color: #566986; }
+.exchange-overview__layout { display: grid; grid-template-columns: 2fr minmax(250px, 1fr); gap: 24px; align-items: start; }
+.exchange-overview__details { display: grid; gap: 20px; min-width: 0; }
+
+.exchange-overview__card {
+  border: 1px solid #e5ebf2;
+  border-radius: 12px;
+  padding: 24px;
+  background: #fff;
+  color: #10295c;
+  font: 14px/1.5 var(--sans, Arial, sans-serif);
+  text-align: left;
+}
+
+.exchange-overview__card > h2, .exchange-overview__card-header h2 { font-size: 19px; font-weight: 700; margin: 0; }
+.exchange-overview__card > p { margin: 10px 0; color: #566986; }
+.exchange-overview__card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.exchange-overview__badge { padding: 3px 12px; border-radius: 5px; background: #e9f5ed; color: #28764c; font-size: 12px; }
+.exchange-overview__badge[data-status="PENDING"] { background: #fcf4e3; color: #805505; }
+.exchange-overview__badge[data-status="REJECTED"] { background: #f9ebe9; color: #912e27; }
+.exchange-overview__listing-status { display: inline-block; text-transform: capitalize; }
+.exchange-overview__pickup { margin: 0; }
+.exchange-overview__pickup div { display: grid; grid-template-columns: minmax(94px, 24%) 1fr; gap: 12px; margin-bottom: 12px; }
+.exchange-overview__pickup dt { color: #566986; }
+.exchange-overview__pickup dd { margin: 0; overflow-wrap: anywhere; }
+.exchange-overview__steps { display: flex; flex-wrap: wrap; gap: 10px 28px; margin: 0 0 16px; padding: 0 0 16px; border-bottom: 1px solid #e5ebf2; list-style: decimal inside; }
+.exchange-overview__steps li:not(:last-child)::after { content: "→"; margin-left: 16px; }
+.exchange-overview__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+.exchange-overview__actions--pickup { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.exchange-overview__actions:empty { display: none; }
+.exchange-overview__card button {
+  min-height: 44px;
+  padding: 8px 18px;
+  border: 1px solid #c8d4e3;
+  border-radius: 8px;
+  background: #fff;
+  color: #173e6f;
+  font: 600 14px/1.25 var(--sans, Arial, sans-serif);
+  cursor: pointer;
+}
+.exchange-overview__card button.exchange-primary { border-color: #173e6f; background: #173e6f; color: #fff; }
+.exchange-overview__card button.exchange-danger { border-color: #ae241c; background: #ae241c; color: #fff; }
+.exchange-overview__card button.exchange-overview__text-button { border-color: transparent; }
+.exchange-overview__card button:disabled { opacity: 0.6; cursor: default; }
+.exchange-overview__card button:focus-visible { outline: 2px solid #386aa3; outline-offset: 2px; }
+.exchange-overview__item button { width: 100%; margin-top: 6px; }
+.exchange-overview__item .exchange-overview__price { color: #173e6f; }
+.exchange-overview__image { width: 100%; aspect-ratio: 2.1; margin-bottom: 12px; border-radius: 8px; object-fit: cover; }
+
+@media (max-width: 760px) {
+  .exchange-overview { width: calc(100% - 32px); margin: 28px auto 48px; }
+  .exchange-overview__layout { grid-template-columns: 1fr; gap: 16px; }
+  .exchange-overview__card { padding: 18px; }
+  .exchange-overview__actions--pickup { display: flex; }
+  .exchange-overview__steps li::after { display: none; }
+}

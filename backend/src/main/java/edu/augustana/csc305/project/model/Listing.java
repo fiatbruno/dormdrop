@@ -48,6 +48,7 @@ public class Listing {
     private ListingStatus status = ListingStatus.AVAILABLE;
 
     private ObjectId ownerId;
+    private ObjectId reservedOfferId;
 
     public Listing() {}
 
@@ -121,9 +122,13 @@ public class Listing {
         this.listingType = listingType;
     }
 
-    public boolean isSellerHidden() { return sellerHidden; }
+    public boolean isSellerHidden() {
+        return sellerHidden;
+    }
 
-    public void setSellerHidden(boolean sellerHidden) { this.sellerHidden = sellerHidden; }
+    public void setSellerHidden(boolean sellerHidden) {
+        this.sellerHidden = sellerHidden;
+    }
 
     public String getImageUrl() {
         return getImageUrls().isEmpty() ? null : getImageUrls().get(0);
@@ -155,6 +160,7 @@ public class Listing {
     public ListingStatus getStatus() {
         return status;
     }
+
     public Visibility getModerationVisibility() {
         return moderationVisibility == null
                 ? Visibility.VISIBLE
@@ -175,11 +181,22 @@ public class Listing {
     }
 
     @JsonIgnore
-    public ObjectId getTemporaryHideCaseId() { return temporaryHideCaseId; }
-    public void setTemporaryHideCaseId(ObjectId caseId) { temporaryHideCaseId = caseId; }
+    public ObjectId getTemporaryHideCaseId() {
+        return temporaryHideCaseId;
+    }
+
+    public void setTemporaryHideCaseId(ObjectId caseId) {
+        temporaryHideCaseId = caseId;
+    }
+
     @JsonIgnore
-    public ObjectId getAccountSuspensionId() { return accountSuspensionId; }
-    public void setAccountSuspensionId(ObjectId accountSuspensionId) { this.accountSuspensionId = accountSuspensionId; }
+    public ObjectId getAccountSuspensionId() {
+        return accountSuspensionId;
+    }
+
+    public void setAccountSuspensionId(ObjectId accountSuspensionId) {
+        this.accountSuspensionId = accountSuspensionId;
+    }
 
     public void setStatus(ListingStatus status) {
         this.status = status;
@@ -187,6 +204,15 @@ public class Listing {
 
     public ObjectId getOwnerId() {
         return ownerId;
+    }
+
+    @JsonIgnore
+    public ObjectId getReservedOfferId() {
+        return reservedOfferId;
+    }
+
+    public void setReservedOfferId(ObjectId reservedOfferId) {
+        this.reservedOfferId = reservedOfferId;
     }
 
     public void setOwnerId(ObjectId ownerId) {

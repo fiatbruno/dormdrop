@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef } from "react";
 import "./ExchangeDialog.css";
 
-export default function ExchangeDialog({ title, badge, busy, onClose, children }) {
+export default function ExchangeDialog({ title, badge, busy, onClose, children, className = "" }) {
   const titleId = useId();
   const dialog = useRef(null);
   const heading = useRef(null);
@@ -23,7 +23,7 @@ export default function ExchangeDialog({ title, badge, busy, onClose, children }
   return (
     <dialog
       ref={dialog}
-      className="exchange-dialog"
+      className={`exchange-dialog ${className}`.trim()}
       aria-labelledby={titleId}
       onCancel={(event) => {
         event.preventDefault();
